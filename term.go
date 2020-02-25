@@ -95,8 +95,12 @@ func (t *Terminal) run(c fyne.Canvas) {
 	for {
 		num, err := t.pty.Read(buf)
 		if err != nil {
-			fyne.LogError("output err", err)
-			break // presuming broken pipe
+			// this is the pre-go 1.13 way to check for the read failing (terminal closed)
+			if err, ok := err.(*os.PathError); ok && err.Err.Error() == "input/output error" {
+				break // broken pipe, terminal exit
+			}
+
+			fyne.LogError("pty read error", err)
 		}
 
 		t.handleOutput(buf[:num])
