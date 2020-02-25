@@ -12,10 +12,13 @@ import (
 	termCrypt "golang.org/x/crypto/ssh/terminal"
 )
 
+// Config is the state of a terminal, updated upon certain actions or commands.
+// Use Terminal.OnConfigure hook to register for changes.
 type Config struct {
 	Title string
 }
 
+// Terminal is a terminal widget that loads a shell and handles input/output.
 type Terminal struct {
 	content     *widget.TextGrid
 	Config      Config
@@ -155,8 +158,8 @@ func (t *Terminal) handleOutput(buf []byte) {
 	t.content.SetText(t.content.Text() + out)
 }
 
-// TODO remove canvas param!
-func (t *Terminal) Run(c fyne.Canvas) error {
+// Run starts the terminal by loading a shell and starting to process the input/output
+func (t *Terminal) Run(c fyne.Canvas) error { // TODO remove canvas param!
 	err := t.open()
 	if err != nil {
 		return err
@@ -167,10 +170,12 @@ func (t *Terminal) Run(c fyne.Canvas) error {
 	return t.close()
 }
 
+// BuildUI returns the interface component of this terminal
 func (t *Terminal) BuildUI() fyne.CanvasObject { // TODO fix by having terminal a widget
 	return t.content
 }
 
+// NewTerminal sets up a new terminal instance with the bash shell
 func NewTerminal() *Terminal {
 	t := &Terminal{}
 	t.content = widget.NewTextGrid("")
