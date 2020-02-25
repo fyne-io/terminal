@@ -12,18 +12,34 @@ import (
 	termCrypt "golang.org/x/crypto/ssh/terminal"
 )
 
-type terminal struct {
-	content *widget.TextGrid
+type Config struct {
+	Title string
+}
+
+type Terminal struct {
+	content     *widget.TextGrid
+	Config      Config
+	OnConfigure func()
 
 	pty      *os.File
 	oldState *termCrypt.State
 }
 
-func (t *terminal) handleOSC(code string) {
-	log.Println("Unrecognised OSC:", code)
+func (t *Terminal) handleOSC(code string) {
+	if len(code) > 2 && code[1] == ';' {
+		switch code[0] {
+		case '0':
+			t.Config.Title = code[2:]
+			if t.OnConfigure != nil {
+				t.OnConfigure()
+			}
+		}
+	} else {
+		log.Println("Unrecognised OSC:", code)
+	}
 }
 
-func (t *terminal) handleEscape(code string) {
+func (t *Terminal) handleEscape(code string) {
 	switch code {
 	case "2J":
 		t.content.SetText("")
@@ -35,7 +51,7 @@ func (t *terminal) handleEscape(code string) {
 	}
 }
 
-func (t *terminal) open() error {
+func (t *Terminal) open() error {
 	// Create shell command.
 	c := exec.Command("bash")
 
@@ -51,13 +67,13 @@ func (t *terminal) open() error {
 	return err
 }
 
-func (t *terminal) close() error {
+func (t *Terminal) close() error {
 	_ = termCrypt.Restore(int(os.Stdin.Fd()), t.oldState) // Best effort.
 
 	return t.pty.Close()
 }
 
-func (t *terminal) run(c fyne.Canvas) {
+func (t *Terminal) run(c fyne.Canvas) {
 	// TODO fit to window size...
 	size := &pty.Winsize{Cols: 80, Rows: 24}
 	_ = pty.Setsize(t.pty, size)
@@ -87,7 +103,7 @@ func (t *terminal) run(c fyne.Canvas) {
 	}
 }
 
-func (t *terminal) handleOutput(buf []byte) {
+func (t *Terminal) handleOutput(buf []byte) {
 	out := ""
 	esc := -5
 	code := ""
@@ -101,7 +117,7 @@ func (t *terminal) handleOutput(buf []byte) {
 				continue
 			} else if r == ']' {
 				// TODO only up to BEL or ST
-				t.handleOSC(string(buf[2:]))
+				t.handleOSC(string(buf[2 : len(buf)-1]))
 				break
 			} else {
 				esc = -5
@@ -136,7 +152,7 @@ func (t *terminal) handleOutput(buf []byte) {
 }
 
 // TODO remove canvas param!
-func (t *terminal) Run(c fyne.Canvas) error {
+func (t *Terminal) Run(c fyne.Canvas) error {
 	err := t.open()
 	if err != nil {
 		return err
@@ -147,12 +163,12 @@ func (t *terminal) Run(c fyne.Canvas) error {
 	return t.close()
 }
 
-func (t *terminal) BuildUI() fyne.CanvasObject { // TODO fix by having terminal a widget
+func (t *Terminal) BuildUI() fyne.CanvasObject { // TODO fix by having terminal a widget
 	return t.content
 }
 
-func NewTerminal() *terminal {
-	t := &terminal{}
+func NewTerminal() *Terminal {
+	t := &Terminal{}
 	t.content = widget.NewTextGrid("")
 
 	return t

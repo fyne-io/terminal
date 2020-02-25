@@ -12,9 +12,13 @@ import (
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
 )
 
+const (
+	termTitle = "Fyne Terminal"
+)
+
 func main() {
 	a := app.New()
-	w := a.NewWindow("Fyne Terminal")
+	w := a.NewWindow(termTitle)
 	w.SetPadded(false)
 
 	bg := canvas.NewRectangle(&color.RGBA{8, 8, 8, 255})
@@ -23,6 +27,9 @@ func main() {
 	img.Translucency = 0.85
 
 	t := terminal.NewTerminal()
+	t.OnConfigure = func() {
+		w.SetTitle(termTitle + ": " + t.Config.Title)
+	}
 	w.SetContent(fyne.NewContainerWithLayout(layout.NewMaxLayout(), bg, img, t.BuildUI()))
 	w.Resize(fyne.NewSize(420, 260))
 
