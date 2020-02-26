@@ -47,8 +47,7 @@ func (t *Terminal) handleEscape(code string) {
 	case "2J":
 		t.content.SetText("")
 	case "K":
-		runes := []rune(t.content.Text())
-		t.content.SetText(string(runes[:len(runes)-1]))
+		// TODO clear from the cursor to end line
 	default:
 		log.Println("Unrecognised Escape:", code)
 	}
@@ -91,6 +90,10 @@ func (t *Terminal) run(c fyne.Canvas) {
 			_, _ = t.pty.Write([]byte{'\n'})
 		case fyne.KeyBackspace:
 			_, _ = t.pty.Write([]byte{8})
+		case fyne.KeyUp:
+			_, _ = t.pty.Write([]byte{0x1b, '[', 'A'})
+		case fyne.KeyDown:
+			_, _ = t.pty.Write([]byte{0x1b, '[', 'B'})
 		}
 	})
 
@@ -145,6 +148,9 @@ func (t *Terminal) handleOutput(buf []byte) {
 
 		switch r {
 		case 8: // Backspace
+			runes := []rune(t.content.Text())
+			t.content.SetText(string(runes[:len(runes)-1]))
+			continue
 		case '\r':
 			continue
 		case '\t': // TODO remove silly approximation
