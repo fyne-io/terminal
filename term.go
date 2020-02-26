@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
+	"time"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/widget"
@@ -26,6 +28,26 @@ type Terminal struct {
 
 	pty      *os.File
 	oldState *termCrypt.State
+}
+
+func (t *Terminal) bell() {
+	if t.OnConfigure == nil {
+		return // we're going to configure the title to "ring the bell"
+	}
+
+	add := "*BELL* "
+	title := t.Config.Title
+	if strings.Index(title, add) == 0 { // don't ring twice at once
+		return
+	}
+
+	t.Config.Title = add + title
+	t.OnConfigure()
+	select {
+	case <-time.After(time.Millisecond * 300):
+		t.Config.Title = title
+		t.OnConfigure()
+	}
 }
 
 func (t *Terminal) handleOSC(code string) {
@@ -152,6 +174,9 @@ func (t *Terminal) handleOutput(buf []byte) {
 			t.content.SetText(string(runes[:len(runes)-1]))
 			continue
 		case '\r':
+			continue
+		case 7: // Bell
+			go t.bell()
 			continue
 		case '\t': // TODO remove silly approximation
 			out += "    "
