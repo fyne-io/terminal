@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/widget"
 
 	"github.com/creack/pty"
-	termCrypt "golang.org/x/crypto/ssh/terminal"
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -34,7 +33,6 @@ type Terminal struct {
 	listeners    []chan Config
 
 	pty      *os.File
-	oldState *termCrypt.State
 	focused  bool
 }
 
@@ -135,15 +133,10 @@ func (t *Terminal) open() error {
 		return err
 	}
 	t.pty = handle
-
-	// Set stdin in raw mode.
-	t.oldState, err = termCrypt.MakeRaw(int(os.Stdin.Fd()))
-	return err
+	return nil
 }
 
 func (t *Terminal) close() error {
-	_ = termCrypt.Restore(int(os.Stdin.Fd()), t.oldState) // Best effort.
-
 	return t.pty.Close()
 }
 
