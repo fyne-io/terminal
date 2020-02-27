@@ -16,6 +16,18 @@ const (
 	termTitle = "Fyne Terminal"
 )
 
+func setupListener(t *terminal.Terminal, w fyne.Window) {
+	listen := make(chan terminal.Config)
+	go func() {
+		for {
+			config := <-listen
+
+			w.SetTitle(termTitle + ": " + config.Title)
+		}
+	}()
+	t.AddListener(listen)
+}
+
 func main() {
 	a := app.New()
 	w := a.NewWindow(termTitle)
@@ -27,9 +39,7 @@ func main() {
 	img.Translucency = 0.85
 
 	t := terminal.NewTerminal()
-	t.OnConfigure = func() {
-		w.SetTitle(termTitle + ": " + t.Config.Title)
-	}
+	setupListener(t, w)
 	w.SetContent(fyne.NewContainerWithLayout(layout.NewMaxLayout(), bg, img, t.BuildUI()))
 	w.Resize(fyne.NewSize(420, 260))
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"fyne.io/fyne"
@@ -22,31 +23,35 @@ type Config struct {
 
 // Terminal is a terminal widget that loads a shell and handles input/output.
 type Terminal struct {
-	content     *widget.TextGrid
-	Config      Config
-	OnConfigure func()
+	content      *widget.TextGrid
+	config       Config
+	listenerLock sync.Mutex
+	listeners    []chan Config
 
 	pty      *os.File
 	oldState *termCrypt.State
 }
 
-func (t *Terminal) bell() {
-	if t.OnConfigure == nil {
-		return // we're going to configure the title to "ring the bell"
-	}
+// AddListener registers a new outgoing channel that will have our Config sent each time it changes.
+func (t *Terminal) AddListener(listener chan Config) {
+	t.listenerLock.Lock()
+	t.listeners = append(t.listeners, listener)
+	t.listenerLock.Unlock()
+}
 
+func (t *Terminal) bell() {
 	add := "*BELL* "
-	title := t.Config.Title
+	title := t.config.Title
 	if strings.Index(title, add) == 0 { // don't ring twice at once
 		return
 	}
 
-	t.Config.Title = add + title
-	t.OnConfigure()
+	t.config.Title = add + title
+	t.onConfigure()
 	select {
 	case <-time.After(time.Millisecond * 300):
-		t.Config.Title = title
-		t.OnConfigure()
+		t.config.Title = title
+		t.onConfigure()
 	}
 }
 
@@ -54,10 +59,8 @@ func (t *Terminal) handleOSC(code string) {
 	if len(code) > 2 && code[1] == ';' {
 		switch code[0] {
 		case '0':
-			t.Config.Title = code[2:]
-			if t.OnConfigure != nil {
-				t.OnConfigure()
-			}
+			t.config.Title = code[2:]
+			t.onConfigure()
 		}
 	} else {
 		log.Println("Unrecognised OSC:", code)
@@ -73,6 +76,18 @@ func (t *Terminal) handleEscape(code string) {
 	default:
 		log.Println("Unrecognised Escape:", code)
 	}
+}
+
+func (t *Terminal) onConfigure() {
+	t.listenerLock.Lock()
+	for _, l := range t.listeners {
+		select {
+		case l <- t.config:
+		default:
+			// channel blocked, might be closed
+		}
+	}
+	t.listenerLock.Unlock()
 }
 
 func (t *Terminal) open() error {
