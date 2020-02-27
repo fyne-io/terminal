@@ -28,6 +28,13 @@ func setupListener(t *terminal.Terminal, w fyne.Window) {
 	t.AddListener(listen)
 }
 
+func guessCellSize() fyne.Size {
+	cell := canvas.NewText("M", color.White)
+	cell.TextStyle.Monospace = true
+
+	return cell.MinSize()
+}
+
 func main() {
 	a := app.New()
 	w := a.NewWindow(termTitle)
@@ -41,7 +48,9 @@ func main() {
 	t := terminal.NewTerminal()
 	setupListener(t, w)
 	w.SetContent(fyne.NewContainerWithLayout(layout.NewMaxLayout(), bg, img, t))
-	w.Resize(fyne.NewSize(420, 260))
+
+	cellSize := guessCellSize()
+	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
 	w.Canvas().Focus(t)
 
 	go func() {
