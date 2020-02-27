@@ -23,6 +23,7 @@ type Config struct {
 
 // Terminal is a terminal widget that loads a shell and handles input/output.
 type Terminal struct {
+	widget.BaseWidget
 	content      *widget.TextGrid
 	config       Config
 	listenerLock sync.Mutex
@@ -30,6 +31,7 @@ type Terminal struct {
 
 	pty      *os.File
 	oldState *termCrypt.State
+	focused  bool
 }
 
 // AddListener registers a new outgoing channel that will have our Config sent each time it changes.
@@ -112,27 +114,10 @@ func (t *Terminal) close() error {
 	return t.pty.Close()
 }
 
-func (t *Terminal) run(c fyne.Canvas) {
+func (t *Terminal) run() {
 	// TODO fit to window size...
 	size := &pty.Winsize{Cols: 80, Rows: 24}
 	_ = pty.Setsize(t.pty, size)
-
-	// TODO move to (Focusable) widget
-	c.SetOnTypedRune(func(r rune) {
-		_, _ = t.pty.WriteString(string(r))
-	})
-	c.SetOnTypedKey(func(e *fyne.KeyEvent) {
-		switch e.Name {
-		case fyne.KeyEnter, fyne.KeyReturn:
-			_, _ = t.pty.Write([]byte{'\n'})
-		case fyne.KeyBackspace:
-			_, _ = t.pty.Write([]byte{8})
-		case fyne.KeyUp:
-			_, _ = t.pty.Write([]byte{0x1b, '[', 'A'})
-		case fyne.KeyDown:
-			_, _ = t.pty.Write([]byte{0x1b, '[', 'B'})
-		}
-	})
 
 	buf := make([]byte, 1024)
 	for {
@@ -205,25 +190,21 @@ func (t *Terminal) handleOutput(buf []byte) {
 }
 
 // Run starts the terminal by loading a shell and starting to process the input/output
-func (t *Terminal) Run(c fyne.Canvas) error { // TODO remove canvas param!
+func (t *Terminal) Run() error {
 	err := t.open()
 	if err != nil {
 		return err
 	}
 
-	t.run(c)
+	t.run()
 
 	return t.close()
-}
-
-// BuildUI returns the interface component of this terminal
-func (t *Terminal) BuildUI() fyne.CanvasObject { // TODO fix by having terminal a widget
-	return t.content
 }
 
 // NewTerminal sets up a new terminal instance with the bash shell
 func NewTerminal() *Terminal {
 	t := &Terminal{}
+	t.ExtendBaseWidget(t)
 	t.content = widget.NewTextGrid("")
 
 	return t

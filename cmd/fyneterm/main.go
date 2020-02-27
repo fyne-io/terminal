@@ -40,11 +40,12 @@ func main() {
 
 	t := terminal.NewTerminal()
 	setupListener(t, w)
-	w.SetContent(fyne.NewContainerWithLayout(layout.NewMaxLayout(), bg, img, t.BuildUI()))
+	w.SetContent(fyne.NewContainerWithLayout(layout.NewMaxLayout(), bg, img, t))
 	w.Resize(fyne.NewSize(420, 260))
+	w.Canvas().Focus(t)
 
 	go func() {
-		err := t.Run(w.Canvas())
+		err := t.Run()
 		if err != nil {
 			fyne.LogError("Failure in terminal", err)
 		}
