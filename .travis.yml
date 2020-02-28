@@ -18,4 +18,14 @@ script:
   - go test -tags ci -race ./...
   - go vet -tags ci ./...
   - golint -set_exit_status $(go list -tags ci)
+  - |
+    set -e
+    if [[ "$TRAVIS_PULL_REQUEST" == "false" && -n "$COVERALLS_TOKEN" ]]
+    then
+      go test -tags ci -covermode=atomic -coverprofile=coverage.out ./...
+      $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+    fi
 
+env:
+  global:
+    secure: "V2JnYIsbY2RVBgMVeb4ATn6nZ5cqn8mMXs1wkqUBrL1PtOVqg9t/SFv4Kx8uF1vHjFLF0i2+d1mN7jKmz04npVO8m4DnfgbvNQlM2UMn080zPwPiag9453w7JR8YHV2ougvHHxKUlZJEgr3e80ryzVB+LUH6z0KfSXNq2+0dTF8CmnQThubZSPQC/8FfkLgB0VM+2AIXy7Q0FyY5VBrpsvwMEMdcMpIt74hDo6r871JZeyVobBPtGi3Ilk7jk3BarjxYYW3qvE0z5sj9TzwCRx20CNrK5+vPBLr4VPRr3mpB8MyH3UIXF0YXJS5fl94lxj2nrfbEZcf5F71ReY4pleQJyGHQjFGgq5WaYfvWLvc7atUpjDMg4D2koDslrlx6cn/hNkjjfx9OSW4qMdxNF9Mq71z+YQsJBrtaZ2BUeHtOWrPx/wudOTzetHb31CSJ6JJIkd4pTEx3xnxkx0NtPexoHYDy8AFWBcQYiWWXtQ2P7qPjlkosRQ+J/8btIFjouo76WWklybNjsGSHZparadvGirRr0LWh4Hl8xOYQjIAQytbNWVG8aOHAthU5c06TbI2SbaOURFe0moPvJ8yfA1zNIcgMe91mPXJTVLH+O97hJ5b2SdU3NaL14lZ3AKW4WPRB0MehrJALveRiUHWGYf0vU6x7gQSF9Ybflsp1QSo="
