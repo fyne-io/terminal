@@ -2,7 +2,6 @@ package terminal
 
 import (
 	"image/color"
-	"log"
 	"math"
 	"os"
 	"os/exec"
@@ -32,8 +31,8 @@ type Terminal struct {
 	listenerLock sync.Mutex
 	listeners    []chan Config
 
-	pty      *os.File
-	focused  bool
+	pty     *os.File
+	focused bool
 }
 
 // AddListener registers a new outgoing channel that will have our Config sent each time it changes.
@@ -84,30 +83,6 @@ func (t *Terminal) bell() {
 	case <-time.After(time.Millisecond * 300):
 		t.config.Title = title
 		t.onConfigure()
-	}
-}
-
-func (t *Terminal) handleOSC(code string) {
-	if len(code) > 2 && code[1] == ';' {
-		switch code[0] {
-		case '0':
-			t.config.Title = code[2:]
-			t.onConfigure()
-		}
-	} else {
-		log.Println("Unrecognised OSC:", code)
-	}
-}
-
-func (t *Terminal) handleEscape(code string) {
-	switch code {
-	case "2J":
-		t.content.SetText("")
-	case "K":
-		t.content.SetText("")
-		// TODO clear from the cursor to end line
-	default:
-		log.Println("Unrecognised Escape:", code)
 	}
 }
 
