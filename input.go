@@ -13,11 +13,11 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 	case fyne.KeyEnter, fyne.KeyReturn:
 		_, _ = t.pty.Write([]byte{'\n'})
 	case fyne.KeyBackspace:
-		_, _ = t.pty.Write([]byte{8})
+		_, _ = t.pty.Write([]byte{asciiBackspace})
 	case fyne.KeyUp:
-		_, _ = t.pty.Write([]byte{0x1b, '[', 'A'})
+		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'A'})
 	case fyne.KeyDown:
-		_, _ = t.pty.Write([]byte{0x1b, '[', 'B'})
+		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'B'})
 	}
 }
 

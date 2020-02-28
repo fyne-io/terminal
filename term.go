@@ -5,9 +5,7 @@ import (
 	"math"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
-	"time"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
@@ -70,22 +68,6 @@ func (t *Terminal) Resize(s fyne.Size) {
 		X: uint16(float32(s.Width) * scale), Y: uint16(float32(s.Height) * scale)})
 }
 
-func (t *Terminal) bell() {
-	add := "*BELL* "
-	title := t.config.Title
-	if strings.Index(title, add) == 0 { // don't ring twice at once
-		return
-	}
-
-	t.config.Title = add + title
-	t.onConfigure()
-	select {
-	case <-time.After(time.Millisecond * 300):
-		t.config.Title = title
-		t.onConfigure()
-	}
-}
-
 func (t *Terminal) onConfigure() {
 	t.listenerLock.Lock()
 	for _, l := range t.listeners {
@@ -138,63 +120,6 @@ func (t *Terminal) run() {
 
 		t.handleOutput(buf[:num])
 	}
-}
-
-func (t *Terminal) handleOutput(buf []byte) {
-	out := ""
-	esc := -5
-	code := ""
-	for i, r := range buf {
-		if r == 0x1b {
-			esc = i
-			continue
-		}
-		if esc == i-1 {
-			if r == '[' {
-				continue
-			} else if r == ']' {
-				// TODO only up to BEL or ST
-				t.handleOSC(string(buf[2 : len(buf)-1]))
-				break
-			} else {
-				esc = -5
-			}
-		}
-		if esc != -5 {
-			if (r >= '0' && r <= '9') || r == ';' || r == '=' {
-				code += string(r)
-			} else {
-				code += string(r)
-
-				t.handleEscape(code)
-				code = ""
-				esc = -5
-			}
-			continue
-		}
-
-		switch r {
-		case 8: // Backspace
-			runes := []rune(t.content.Text())
-			if len(runes) == 0 {
-				continue
-			}
-			t.content.SetText(string(runes[:len(runes)-1]))
-			continue
-		case '\r':
-			continue
-		case 7: // Bell
-			go t.bell()
-			continue
-		case '\t': // TODO remove silly approximation
-			out += "    "
-		default:
-			out += string(r)
-		}
-		esc = -5
-		code = ""
-	}
-	t.content.SetText(t.content.Text() + out)
 }
 
 // Run starts the terminal by loading a shell and starting to process the input/output
