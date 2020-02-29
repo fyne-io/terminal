@@ -8,6 +8,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 	out := ""
 	esc := -5
 	osc := false
+	vt100 := rune(0)
 	code := ""
 	for i, r := range []rune(string(buf)) {
 		if r == asciiEscape {
@@ -20,6 +21,9 @@ func (t *Terminal) handleOutput(buf []byte) {
 			} else if r == ']' {
 				osc = true
 				continue
+			} else if r == '(' || r == ')' {
+				vt100 = r
+				continue
 			} else {
 				esc = -5
 			}
@@ -31,6 +35,10 @@ func (t *Terminal) handleOutput(buf []byte) {
 				osc = false
 				continue
 			}
+		} else if vt100 != 0 {
+			t.handleVT100(string([]rune{vt100, r}))
+			vt100 = 0
+			continue
 		} else if esc != -5 {
 			if (r >= '0' && r <= '9') || r == ';' || r == '=' || r == '?' {
 				code += string(r)

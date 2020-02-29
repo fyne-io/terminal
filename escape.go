@@ -23,3 +23,7 @@ func (t *Terminal) clearScreen() {
 	t.cursorCol = 0
 	t.cursorRow = 0
 }
+
+func (t *Terminal) handleVT100(code string) {
+	log.Println("Unhandled VT100:", code)
+}
