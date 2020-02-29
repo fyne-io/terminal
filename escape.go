@@ -4,6 +4,10 @@ import "log"
 
 func (t *Terminal) handleEscape(code string) {
 	switch code {
+	case "H", ";H":
+		t.cursorCol = 0
+		t.cursorRow = 0
+		t.cursorMoved()
 	case "2J":
 		t.clearScreen()
 	case "K":
