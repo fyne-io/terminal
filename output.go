@@ -1,7 +1,10 @@
 package terminal
 
 import (
+	"image/color"
 	"time"
+
+	"fyne.io/fyne/widget"
 )
 
 func (t *Terminal) handleOutput(buf []byte) {
@@ -64,14 +67,23 @@ func (t *Terminal) handleOutput(buf []byte) {
 			continue
 		case '\n':
 			row := t.content.Row(t.cursorRow)
-			row = append(row, []rune(out)...)
+			// TODO use styles here too
+			for i, r := range out {
+				i += t.cursorCol
+				if i >= len(row) {
+					row = append(row, widget.TextGridCell{Rune: r})
+				} else {
+					row[i].Rune = r
+				}
+			}
 			t.content.SetRow(t.cursorRow, row)
 
+			// TODO this needs to apply to styles too, how do we do this?
 			if t.cursorRow == int(t.config.Rows-1) {
 				for i = 0; i < t.cursorRow; i++ {
 					t.content.SetRow(i, t.content.Row(i+1))
 				}
-				t.content.SetRow(i, []rune{})
+				t.content.SetRow(i, []widget.TextGridCell{})
 			} else {
 				t.cursorRow++
 			}
@@ -88,6 +100,10 @@ func (t *Terminal) handleOutput(buf []byte) {
 		case '\t': // TODO remove silly approximation
 			out += "    "
 		default:
+			if currentFG != nil {
+				// TODO not if we discard out
+				t.setCellStyle(t.cursorRow, t.cursorCol+len(out), currentFG)
+			}
 			out += string(r)
 		}
 		esc = -5
@@ -99,10 +115,37 @@ func (t *Terminal) handleOutput(buf []byte) {
 		return
 	}
 	row := t.content.Row(t.cursorRow)
-	row = append(row, []rune(out)...)
+	for i, r := range out {
+		i += t.cursorCol
+		if i >= len(row) {
+			row = append(row, widget.TextGridCell{Rune: r})
+		} else {
+			row[i].Rune = r
+		}
+	}
 	t.content.SetRow(t.cursorRow, row)
 	t.cursorCol += len(out)
 	t.Refresh()
+}
+
+func (t *Terminal) setCellStyle(row, col int, fgStyle color.Color) {
+	if row < 0 {
+		return
+	}
+	for len(t.content.Content) <= row {
+		t.content.Content = append(t.content.Content, []widget.TextGridCell{})
+	}
+
+	line := t.content.Row(row)
+	if col < 0 {
+		return
+	}
+
+	for len(line) <= col {
+		line = append(line, widget.TextGridCell{})
+	}
+	t.content.SetRow(row, line)
+	line[col].TextColor = fgStyle
 }
 
 func (t *Terminal) ringBell() {
