@@ -22,7 +22,11 @@ func setupListener(t *terminal.Terminal, w fyne.Window) {
 		for {
 			config := <-listen
 
-			w.SetTitle(termTitle + ": " + config.Title)
+			if config.Title == "" {
+				w.SetTitle(termTitle)
+			} else {
+				w.SetTitle(termTitle + ": " + config.Title)
+			}
 		}
 	}()
 	t.AddListener(listen)

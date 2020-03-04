@@ -113,7 +113,9 @@ func (t *Terminal) run() {
 		num, err := t.pty.Read(buf)
 		if err != nil {
 			// this is the pre-go 1.13 way to check for the read failing (terminal closed)
-			if err, ok := err.(*os.PathError); ok && err.Err.Error() == "input/output error" {
+			if err.Error() == "EOF" {
+				break // term exit on macOS
+			} else if err, ok := err.(*os.PathError); ok && err.Err.Error() == "input/output error" {
 				break // broken pipe, terminal exit
 			}
 
