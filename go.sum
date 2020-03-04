@@ -1,5 +1,5 @@
-fyne.io/fyne v1.2.4-0.20200302154258-a1e26ef951f6 h1:xIllRcR1Wua8vCkqY1KvLsc1UfYNyWIlvRY6qjqpKXM=
-fyne.io/fyne v1.2.4-0.20200302154258-a1e26ef951f6/go.mod h1:5nHgSQyRojVlrXE7qrNeRfVNXD8OUDaRt/Dudk5D0us=
+fyne.io/fyne v1.2.1-0.20200304180127-bc298b8dc3f3 h1:IYq4KcnC5+C6R+zB6Y1qL+JGvcO1nBQnFqEFeeDm6nY=
+fyne.io/fyne v1.2.1-0.20200304180127-bc298b8dc3f3/go.mod h1:5nHgSQyRojVlrXE7qrNeRfVNXD8OUDaRt/Dudk5D0us=
 github.com/Kodeworks/golang-image-ico v0.0.0-20141118225523-73f0f4cfade9/go.mod h1:7uhhqiBaR4CpN0k9rMjOtjpcfGd6DG2m04zQxKnWQ0I=
 github.com/akavel/rsrc v0.8.0/go.mod h1:uLoCtb9J+EyAqh+26kdrTgmzRBFPGOolLWKpdxkKq+c=
 github.com/creack/pty v1.1.9 h1:uDmaGzcdjhF4i/plgjmEsriH11Y0o7RKapEf/LDaM3w=
