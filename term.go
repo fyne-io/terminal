@@ -83,8 +83,11 @@ func (t *Terminal) onConfigure() {
 }
 
 func (t *Terminal) open() error {
-	// Create shell command.
-	c := exec.Command("bash")
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "bash"
+	}
+	c := exec.Command(shell)
 
 	// Start the command with a pty.
 	handle, err := pty.Start(c)
