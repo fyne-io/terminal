@@ -60,6 +60,10 @@ func (t *Terminal) Resize(s fyne.Size) {
 	t.config.Rows = uint16(math.Floor(float64(s.Height) / float64(cellSize.Height)))
 	t.onConfigure()
 
+	t.updatePTYSize()
+}
+
+func (t *Terminal) updatePTYSize() {
 	scale := float32(1.0)
 	c := fyne.CurrentApp().Driver().CanvasForObject(t)
 	if c != nil {
@@ -67,7 +71,7 @@ func (t *Terminal) Resize(s fyne.Size) {
 	}
 	_ = pty.Setsize(t.pty, &pty.Winsize{
 		Rows: t.config.Rows, Cols: t.config.Columns,
-		X: uint16(float32(s.Width) * scale), Y: uint16(float32(s.Height) * scale)})
+		X: uint16(float32(t.Size().Width) * scale), Y: uint16(float32(t.Size().Height) * scale)})
 }
 
 func (t *Terminal) onConfigure() {
@@ -95,6 +99,8 @@ func (t *Terminal) open() error {
 		return err
 	}
 	t.pty = handle
+
+	t.updatePTYSize()
 	return nil
 }
 
