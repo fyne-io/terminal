@@ -37,4 +37,3 @@ func (t *Terminal) FocusLost() {
 func (t *Terminal) Focused() bool {
 	return t.focused
 }
-
