@@ -102,7 +102,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 		default:
 			if currentFG != nil {
 				// TODO not if we discard out
-				t.setCellStyle(t.cursorRow, t.cursorCol+len(out), currentFG)
+				t.setCellStyle(t.cursorRow, t.cursorCol+len(out), currentFG, currentBG)
 			}
 			out += string(r)
 		}
@@ -128,7 +128,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 	t.Refresh()
 }
 
-func (t *Terminal) setCellStyle(row, col int, fgStyle color.Color) {
+func (t *Terminal) setCellStyle(row, col int, fgStyle, bgStyle color.Color) {
 	if row < 0 {
 		return
 	}
@@ -145,7 +145,7 @@ func (t *Terminal) setCellStyle(row, col int, fgStyle color.Color) {
 		line = append(line, widget.TextGridCell{})
 	}
 	t.content.SetRow(row, line)
-	line[col].TextColor = fgStyle
+	t.content.SetStyle(row, col, &widget.CustomTextGridStyle{FGColor: fgStyle, BGColor: bgStyle})
 }
 
 func (t *Terminal) ringBell() {
