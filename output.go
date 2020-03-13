@@ -8,7 +8,6 @@ import (
 )
 
 func (t *Terminal) handleOutput(buf []byte) {
-	out := ""
 	esc := -5
 	osc := false
 	vt100 := rune(0)
@@ -33,21 +32,20 @@ func (t *Terminal) handleOutput(buf []byte) {
 		}
 		if osc {
 			if r == asciiBell || r == 0 {
-				t.handleOSC(out)
-				out = ""
+				t.handleOSC(code)
+				code = ""
 				osc = false
-				continue
+			} else {
+				code += string(r)
 			}
+			continue
 		} else if vt100 != 0 {
 			t.handleVT100(string([]rune{vt100, r}))
 			vt100 = 0
 			continue
 		} else if esc != -5 {
-			if (r >= '0' && r <= '9') || r == ';' || r == '=' || r == '?' {
-				code += string(r)
-			} else {
-				code += string(r)
-
+			code += string(r)
+			if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' {
 				t.handleEscape(code)
 				code = ""
 				esc = -5
@@ -65,20 +63,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 			t.cursorCol--
 			t.cursorMoved()
 			continue
-		case '\n':
-			row := t.content.Row(t.cursorRow)
-			// TODO use styles here too
-			for i, r := range out {
-				i += t.cursorCol
-				if i >= len(row) {
-					row = append(row, widget.TextGridCell{Rune: r})
-				} else {
-					row[i].Rune = r
-				}
-			}
-			t.content.SetRow(t.cursorRow, row)
-
-			// TODO this needs to apply to styles too, how do we do this?
+		case '\n': // line feed
 			if t.cursorRow == int(t.config.Rows-1) {
 				for i = 0; i < t.cursorRow; i++ {
 					t.content.SetRow(i, t.content.Row(i+1))
@@ -88,43 +73,42 @@ func (t *Terminal) handleOutput(buf []byte) {
 				t.cursorRow++
 			}
 
-			out = ""
 			t.cursorCol = 0
 			continue
-		case '\r':
+		case '\r': // carriage return
 			t.cursorCol = 0
 			continue
 		case asciiBell:
 			go t.ringBell()
 			continue
-		case '\t': // TODO remove silly approximation
-			out += "    "
 		default:
-			if currentFG != nil {
-				// TODO not if we discard out
-				t.setCellStyle(t.cursorRow, t.cursorCol+len(out), currentFG, currentBG)
+			if len(t.content.Content)-1 < t.cursorRow {
+				t.content.Content = append(t.content.Content, []widget.TextGridCell{})
 			}
-			out += string(r)
+
+			if r == '\t' { // TODO handle tab
+				r = ' '
+			}
+			newcell := widget.TextGridCell{
+				Rune:  r,
+				Style: &widget.CustomTextGridStyle{FGColor: currentFG, BGColor: currentBG},
+			}
+
+			if len(t.content.Content[t.cursorRow])-1 < t.cursorCol {
+				t.content.Content[t.cursorRow] = append(t.content.Content[t.cursorRow], newcell)
+			} else {
+				t.content.Content[t.cursorRow][t.cursorCol] = newcell
+			}
+			t.cursorCol++
 		}
 		esc = -5
 		code = ""
 	}
 
-	if osc {
-		t.handleOSC(out)
+	if osc { // it could end at the buffer end
+		t.handleOSC(code)
 		return
 	}
-	row := t.content.Row(t.cursorRow)
-	for i, r := range out {
-		i += t.cursorCol
-		if i >= len(row) {
-			row = append(row, widget.TextGridCell{Rune: r})
-		} else {
-			row[i].Rune = r
-		}
-	}
-	t.content.SetRow(t.cursorRow, row)
-	t.cursorCol += len(out)
 	t.Refresh()
 }
 

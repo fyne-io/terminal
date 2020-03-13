@@ -66,7 +66,7 @@ func (t *Terminal) handleEscape(code string) {
 				case "7": // reverse
 					currentBG, currentFG = theme.TextColor(), theme.ButtonColor() //currentFG, currentBG
 				case "27": // reverse off
-					currentBG, currentFG = nil, nil //currentFG, currentBG
+					currentBG, currentFG = nil, nil//currentFG, currentBG
 				case "30":
 					if bright {
 						currentFG = &color.RGBA{85, 85, 85, 255}
