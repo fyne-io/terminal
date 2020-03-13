@@ -91,7 +91,10 @@ func (t *Terminal) open() error {
 	if shell == "" {
 		shell = "bash"
 	}
+	env := os.Environ()
+	env = append(env, "TERM=xterm-256color")
 	c := exec.Command(shell)
+	c.Env = env
 
 	// Start the command with a pty.
 	handle, err := pty.Start(c)
