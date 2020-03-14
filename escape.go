@@ -13,10 +13,10 @@ var currentFG, currentBG color.Color
 
 func (t *Terminal) handleEscape(code string) {
 	switch code { // exact matches
-	case "H", ";H":
-		t.cursorCol = 0
-		t.cursorRow = 0
-		t.cursorMoved()
+	case "H", "f":
+		t.moveCursor(0, 0)
+	case "J":
+		t.clearScreenFromCursor()
 	case "2J":
 		t.clearScreen()
 	case "K":
@@ -28,18 +28,24 @@ func (t *Terminal) handleEscape(code string) {
 	default: // check mode (last letter) then match
 		message := code[:len(code)-1]
 		switch code[len(code)-1:] {
-		case "H":
+		case "A":
+			rows, _ := strconv.Atoi(message)
+			t.moveCursor(t.cursorRow-rows, t.cursorCol)
+		case "B":
+			rows, _ := strconv.Atoi(message)
+			t.moveCursor(t.cursorRow+rows, t.cursorCol)
+		case "C":
+			cols, _ := strconv.Atoi(message)
+			t.moveCursor(t.cursorRow, t.cursorCol-cols)
+		case "D":
+			cols, _ := strconv.Atoi(message)
+			t.moveCursor(t.cursorRow, t.cursorCol+cols)
+		case "H", "f":
 			parts := strings.Split(message, ";")
 			row, _ := strconv.Atoi(parts[0])
 			col, _ := strconv.Atoi(parts[1])
 
-			if row < len(t.content.Content) {
-				t.cursorRow = row
-			}
-			line := t.content.Row(t.cursorRow)
-			if col < len(line) {
-				t.cursorCol = col
-			}
+			t.moveCursor(row, col)
 		case "m":
 			if message == "" || message == "0" {
 				currentBG = nil
@@ -153,4 +159,25 @@ func (t *Terminal) clearScreen() {
 
 func (t *Terminal) handleVT100(code string) {
 	log.Println("Unhandled VT100:", code)
+}
+
+func (t *Terminal) moveCursor(row, col int) {
+	if col < 0 {
+		col = 0
+	} else if col >= int(t.config.Columns) {
+		col = int(t.config.Columns) - 1
+	}
+
+	if row < 0 {
+		row = 0
+	} else if row >= int(t.config.Rows) {
+		row = int(t.config.Rows) - 1
+	}
+
+	t.cursorCol = col
+	t.cursorRow = row
+
+	if t.cursorMoved != nil {
+		t.cursorMoved()
+	}
 }

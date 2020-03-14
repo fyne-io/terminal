@@ -26,11 +26,54 @@ func TestEraseLine(t *testing.T) {
 
 func TestCursorMove(t *testing.T) {
 	term := NewTerminal()
+	term.config.Columns = 5
+	term.config.Rows = 2
 	term.handleOutput([]byte("Hello"))
 	assert.Equal(t, 0, term.cursorRow)
 	assert.Equal(t, 5, term.cursorCol)
 
-	term.handleEscape("0;2H")
+	term.handleEscape("0;3H")
 	assert.Equal(t, 0, term.cursorRow)
-	assert.Equal(t, 2, term.cursorCol)
+	assert.Equal(t, 3, term.cursorCol)
+
+	term.handleEscape("2C")
+	assert.Equal(t, 0, term.cursorRow)
+	assert.Equal(t, 1, term.cursorCol)
+
+	term.handleEscape("2D")
+	assert.Equal(t, 0, term.cursorRow)
+	assert.Equal(t, 3, term.cursorCol)
+
+	term.handleEscape("1B")
+	assert.Equal(t, 1, term.cursorRow)
+	assert.Equal(t, 3, term.cursorCol)
+
+	term.handleEscape("1A")
+	assert.Equal(t, 0, term.cursorRow)
+	assert.Equal(t, 3, term.cursorCol)
+}
+
+func TestCursorMove_Overflow(t *testing.T) {
+	term := NewTerminal()
+	term.config.Columns = 2
+	term.config.Rows = 2
+	term.handleEscape("2;2H")
+	assert.Equal(t, 1, term.cursorRow)
+	assert.Equal(t, 1, term.cursorCol)
+
+	term.handleEscape("2C")
+	assert.Equal(t, 1, term.cursorRow)
+	assert.Equal(t, 0, term.cursorCol)
+
+	term.handleEscape("5D")
+	assert.Equal(t, 1, term.cursorRow)
+	assert.Equal(t, 1, term.cursorCol)
+
+	term.handleEscape("5A")
+	assert.Equal(t, 0, term.cursorRow)
+	assert.Equal(t, 1, term.cursorCol)
+
+	term.handleEscape("4B")
+	assert.Equal(t, 1, term.cursorRow)
+	assert.Equal(t, 1, term.cursorCol)
 }
