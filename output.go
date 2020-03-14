@@ -1,7 +1,6 @@
 package terminal
 
 import (
-	"image/color"
 	"time"
 
 	"fyne.io/fyne/widget"
@@ -60,8 +59,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 				continue
 			}
 			t.content.SetRow(t.cursorRow, row[:len(row)-1])
-			t.cursorCol--
-			t.cursorMoved()
+			t.moveCursor(t.cursorRow, t.cursorCol-1)
 			continue
 		case '\n': // line feed
 			if t.cursorRow == int(t.config.Rows-1) {
@@ -70,13 +68,11 @@ func (t *Terminal) handleOutput(buf []byte) {
 				}
 				t.content.SetRow(i, []widget.TextGridCell{})
 			} else {
-				t.cursorRow++
+				t.moveCursor(t.cursorRow+1, t.cursorCol)
 			}
-
-			t.cursorCol = 0
 			continue
 		case '\r': // carriage return
-			t.cursorCol = 0
+			t.moveCursor(t.cursorRow, 0)
 			continue
 		case asciiBell:
 			go t.ringBell()
@@ -110,26 +106,6 @@ func (t *Terminal) handleOutput(buf []byte) {
 		return
 	}
 	t.Refresh()
-}
-
-func (t *Terminal) setCellStyle(row, col int, fgStyle, bgStyle color.Color) {
-	if row < 0 {
-		return
-	}
-	for len(t.content.Content) <= row {
-		t.content.Content = append(t.content.Content, []widget.TextGridCell{})
-	}
-
-	line := t.content.Row(row)
-	if col < 0 {
-		return
-	}
-
-	for len(line) <= col {
-		line = append(line, widget.TextGridCell{})
-	}
-	t.content.SetRow(row, line)
-	t.content.SetStyle(row, col, &widget.CustomTextGridStyle{FGColor: fgStyle, BGColor: bgStyle})
 }
 
 func (t *Terminal) ringBell() {
