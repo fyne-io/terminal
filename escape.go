@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne/theme"
+	"fyne.io/fyne/widget"
 )
 
 var currentFG, currentBG color.Color
@@ -152,9 +153,17 @@ func (t *Terminal) handleEscape(code string) {
 }
 
 func (t *Terminal) clearScreen() {
-	t.content.SetText("")
-	t.cursorCol = 0
-	t.cursorRow = 0
+	t.moveCursor(0, 0)
+	t.clearScreenFromCursor()
+}
+
+func (t *Terminal) clearScreenFromCursor() {
+	row := t.content.Row(t.cursorRow)
+	t.content.SetRow(t.cursorRow, row[:t.cursorCol])
+
+	for i := t.cursorRow; i < len(t.content.Content); i++ {
+		t.content.SetRow(i, []widget.TextGridCell{})
+	}
 }
 
 func (t *Terminal) handleVT100(code string) {

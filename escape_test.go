@@ -8,7 +8,9 @@ import (
 
 func TestClearScreen(t *testing.T) {
 	term := NewTerminal()
-	term.content.SetText("Hello")
+	term.config.Columns = 5
+	term.config.Rows = 2
+	term.handleOutput([]byte("Hello"))
 	assert.Equal(t, "Hello", term.content.Text())
 
 	term.handleEscape("2J")
@@ -17,11 +19,14 @@ func TestClearScreen(t *testing.T) {
 
 func TestEraseLine(t *testing.T) {
 	term := NewTerminal()
-	term.content.SetText("Hello")
+	term.config.Columns = 5
+	term.config.Rows = 2
+	term.handleOutput([]byte("Hello"))
 	assert.Equal(t, "Hello", term.content.Text())
 
+	term.moveCursor(0, 2)
 	term.handleEscape("K")
-	assert.Equal(t, "", term.content.Text())
+	assert.Equal(t, "He", term.content.Text())
 }
 
 func TestCursorMove(t *testing.T) {
