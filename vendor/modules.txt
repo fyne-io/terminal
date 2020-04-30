@@ -1,4 +1,4 @@
-# fyne.io/fyne v1.2.5-0.20200430111230-e13bb796de8e
+# fyne.io/fyne v1.2.5-0.20200430220014-6dfcc767a591
 fyne.io/fyne
 fyne.io/fyne/app
 fyne.io/fyne/canvas
@@ -20,7 +20,7 @@ fyne.io/fyne/theme
 fyne.io/fyne/widget
 # github.com/creack/pty v1.1.9
 github.com/creack/pty
-# github.com/davecgh/go-spew v1.1.0
+# github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
