@@ -55,10 +55,10 @@ func (t *Terminal) handleOutput(buf []byte) {
 		switch r {
 		case asciiBackspace:
 			row := t.content.Row(t.cursorRow)
-			if len(row) == 0 {
+			if len(row.Cells) == 0 {
 				continue
 			}
-			t.content.SetRow(t.cursorRow, row[:len(row)-1])
+			t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:len(row.Cells)-1]})
 			t.moveCursor(t.cursorRow, t.cursorCol-1)
 			continue
 		case '\n': // line feed
@@ -66,7 +66,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 				for i = 0; i < t.cursorRow; i++ {
 					t.content.SetRow(i, t.content.Row(i+1))
 				}
-				t.content.SetRow(i, []widget.TextGridCell{})
+				t.content.SetRow(i, widget.TextGridRow{})
 			} else {
 				t.moveCursor(t.cursorRow+1, t.cursorCol)
 			}
@@ -78,22 +78,28 @@ func (t *Terminal) handleOutput(buf []byte) {
 			go t.ringBell()
 			continue
 		default:
-			if len(t.content.Content)-1 < t.cursorRow {
-				t.content.Content = append(t.content.Content, []widget.TextGridCell{})
+			if t.cursorCol >= int(t.config.Columns) || t.cursorRow >= int(t.config.Rows) {
+				break // TODO handle wrap?
+			}
+			if len(t.content.Rows)-1 < int(t.cursorRow) {
+				t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
 			}
 
 			if r == '\t' { // TODO handle tab
 				r = ' '
 			}
-			newcell := widget.TextGridCell{
-				Rune:  r,
-				Style: &widget.CustomTextGridStyle{FGColor: currentFG, BGColor: currentBG},
-			}
 
-			if len(t.content.Content[t.cursorRow])-1 < t.cursorCol {
-				t.content.Content[t.cursorRow] = append(t.content.Content[t.cursorRow], newcell)
+			cellStyle := &widget.CustomTextGridStyle{FGColor: currentFG, BGColor: currentBG}
+
+			if len(t.content.Rows[t.cursorRow].Cells)-1 < int(t.cursorCol) {
+				newcell := widget.TextGridCell{
+					Rune:  r,
+					Style: cellStyle,
+				}
+				t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newcell)
 			} else {
-				t.content.Content[t.cursorRow][t.cursorCol] = newcell
+				t.content.Rows[t.cursorRow].Cells[t.cursorCol].Rune = r
+				t.content.Rows[t.cursorRow].Cells[t.cursorCol].Style = cellStyle
 			}
 			t.cursorCol++
 		}

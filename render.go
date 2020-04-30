@@ -22,7 +22,7 @@ func (r *render) Layout(s fyne.Size) {
 }
 
 func (r *render) MinSize() fyne.Size {
-	return r.term.content.MinSize()
+	return fyne.NewSize(0, 0) // don't get propped open by the text cells
 }
 
 func (r *render) Refresh() {

@@ -22,10 +22,10 @@ func (t *Terminal) handleEscape(code string) {
 		t.clearScreen()
 	case "K":
 		row := t.content.Row(t.cursorRow)
-		if t.cursorCol > len(row) {
+		if t.cursorCol >= len(row.Cells) {
 			return
 		}
-		t.content.SetRow(t.cursorRow, row[:t.cursorCol])
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:t.cursorCol]})
 	default: // check mode (last letter) then match
 		message := code[:len(code)-1]
 		switch code[len(code)-1:] {
@@ -159,10 +159,10 @@ func (t *Terminal) clearScreen() {
 
 func (t *Terminal) clearScreenFromCursor() {
 	row := t.content.Row(t.cursorRow)
-	t.content.SetRow(t.cursorRow, row[:t.cursorCol])
+	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:t.cursorCol]})
 
-	for i := t.cursorRow; i < len(t.content.Content); i++ {
-		t.content.SetRow(i, []widget.TextGridCell{})
+	for i := t.cursorRow; i < len(t.content.Rows); i++ {
+		t.content.SetRow(i, widget.TextGridRow{})
 	}
 }
 

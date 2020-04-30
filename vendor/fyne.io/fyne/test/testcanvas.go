@@ -26,9 +26,10 @@ type testCanvas struct {
 	size  fyne.Size
 	scale float32
 
-	content, overlay fyne.CanvasObject
-	focused          fyne.Focusable
-	padded           bool
+	content  fyne.CanvasObject
+	overlays *internal.OverlayStack
+	focused  fyne.Focusable
+	padded   bool
 
 	onTypedRune func(rune)
 	onTypedKey  func(*fyne.KeyEvent)
@@ -53,12 +54,18 @@ func (c *testCanvas) SetContent(content fyne.CanvasObject) {
 	c.Resize(content.MinSize().Add(padding))
 }
 
+// Deprecated
 func (c *testCanvas) Overlay() fyne.CanvasObject {
-	return c.overlay
+	panic("deprecated method should not be used")
 }
 
-func (c *testCanvas) SetOverlay(overlay fyne.CanvasObject) {
-	c.overlay = overlay
+func (c *testCanvas) Overlays() fyne.OverlayStack {
+	return c.overlays
+}
+
+// Deprecated
+func (c *testCanvas) SetOverlay(_ fyne.CanvasObject) {
+	panic("deprecated method should not be used")
 }
 
 func (c *testCanvas) Refresh(fyne.CanvasObject) {
@@ -99,6 +106,10 @@ func (c *testCanvas) Resize(size fyne.Size) {
 	c.size = size
 	if c.content == nil {
 		return
+	}
+
+	for _, overlay := range c.overlays.List() {
+		overlay.Resize(size)
 	}
 
 	if c.padded {
@@ -160,10 +171,47 @@ func (c *testCanvas) Capture() image.Image {
 	return img
 }
 
+// LaidOutObjects returns all fyne.CanvasObject starting at the given fyne.CanvasObject which is laid out previously.
+func LaidOutObjects(o fyne.CanvasObject) (objects []fyne.CanvasObject) {
+	if o != nil {
+		objects = layoutAndCollect(objects, o, o.MinSize().Max(o.Size()))
+	}
+	return objects
+}
+
+func layoutAndCollect(objects []fyne.CanvasObject, o fyne.CanvasObject, size fyne.Size) []fyne.CanvasObject {
+	objects = append(objects, o)
+	switch c := o.(type) {
+	case fyne.Widget:
+		r := c.CreateRenderer()
+		r.Layout(size)
+		for _, child := range r.Objects() {
+			objects = layoutAndCollect(objects, child, child.Size())
+		}
+	case *fyne.Container:
+		if c.Layout != nil {
+			c.Layout.Layout(c.Objects, size)
+		}
+		for _, child := range c.Objects {
+			objects = layoutAndCollect(objects, child, child.Size())
+		}
+	}
+	return objects
+}
+
+func (c *testCanvas) objectTrees() []fyne.CanvasObject {
+	trees := make([]fyne.CanvasObject, 0, len(c.Overlays().List())+1)
+	if c.content != nil {
+		trees = append(trees, c.content)
+	}
+	trees = append(trees, c.Overlays().List()...)
+	return trees
+}
+
 // NewCanvas returns a single use in-memory canvas used for testing
 func NewCanvas() WindowlessCanvas {
 	padding := fyne.NewSize(10, 10)
-	return &testCanvas{size: padding, padded: true, scale: 1.0}
+	return &testCanvas{size: padding, padded: true, scale: 1.0, overlays: &internal.OverlayStack{}}
 }
 
 // NewCanvasWithPainter allows creation of an in-memory canvas with a specific painter.

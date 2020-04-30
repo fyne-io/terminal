@@ -6,21 +6,22 @@ import (
 	"strconv"
 	"time"
 
-	"fyne.io/fyne/internal"
-	"fyne.io/fyne/widget"
-	"golang.org/x/mobile/app"
-	"golang.org/x/mobile/event/key"
-	"golang.org/x/mobile/event/lifecycle"
-	"golang.org/x/mobile/event/paint"
-	"golang.org/x/mobile/event/size"
-	"golang.org/x/mobile/event/touch"
-	"golang.org/x/mobile/gl"
-
 	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/internal"
 	"fyne.io/fyne/internal/driver"
 	"fyne.io/fyne/internal/painter"
 	pgl "fyne.io/fyne/internal/painter/gl"
 	"fyne.io/fyne/theme"
+	"fyne.io/fyne/widget"
+
+	"github.com/fyne-io/mobile/app"
+	"github.com/fyne-io/mobile/event/key"
+	"github.com/fyne-io/mobile/event/lifecycle"
+	"github.com/fyne-io/mobile/event/paint"
+	"github.com/fyne-io/mobile/event/size"
+	"github.com/fyne-io/mobile/event/touch"
+	"github.com/fyne-io/mobile/gl"
 )
 
 const tapSecondaryDelay = 300 * time.Millisecond
@@ -30,7 +31,7 @@ type mobileDriver struct {
 	glctx gl.Context
 
 	windows []fyne.Window
-	device  fyne.Device
+	device  *device
 }
 
 // Declare conformity with Driver
@@ -41,10 +42,10 @@ func init() {
 }
 
 func (d *mobileDriver) CreateWindow(title string) fyne.Window {
-	canvas := NewCanvas().(*mobileCanvas) // silence lint
-	ret := &window{title: title, canvas: canvas, isChild: len(d.windows) > 0}
-	canvas.painter = pgl.NewPainter(canvas, ret)
-
+	c := NewCanvas().(*mobileCanvas) // silence lint
+	ret := &window{title: title, canvas: c, isChild: len(d.windows) > 0}
+	c.content = &canvas.Rectangle{FillColor: theme.BackgroundColor()}
+	c.painter = pgl.NewPainter(c, ret)
 	d.windows = append(d.windows, ret)
 	return ret
 }
@@ -76,18 +77,13 @@ func (d *mobileDriver) CanvasForObject(fyne.CanvasObject) fyne.Canvas {
 }
 
 func (d *mobileDriver) AbsolutePositionForObject(co fyne.CanvasObject) fyne.Position {
-	var pos fyne.Position
-	c := fyne.CurrentApp().Driver().CanvasForObject(co).(*mobileCanvas)
+	c := d.CanvasForObject(co)
+	if c == nil {
+		return fyne.NewPos(0, 0)
+	}
 
-	c.walkTree(func(o fyne.CanvasObject, p fyne.Position, _ fyne.Position, _ fyne.Size) bool {
-		if o == co {
-			pos = p
-			return true
-		}
-		return false
-	}, nil)
-
-	return pos
+	mc := c.(*mobileCanvas)
+	return driver.AbsolutePositionForObject(co, mc.objectTrees())
 }
 
 func (d *mobileDriver) Quit() {
@@ -128,7 +124,14 @@ func (d *mobileDriver) Run() {
 				currentSize = e
 				currentOrientation = e.Orientation
 				currentDPI = e.PixelsPerPt * 72
+
+				dev := d.device
+				dev.insetTop = e.InsetTopPx
+				dev.insetBottom = e.InsetBottomPx
+				dev.insetLeft = e.InsetLeftPx
+				dev.insetRight = e.InsetRightPx
 				canvas.SetScale(0) // value is ignored
+
 				// make sure that we paint on the next frame
 				canvas.Content().Refresh()
 			case paint.Event:
@@ -234,7 +237,7 @@ func (d *mobileDriver) tapUpCanvas(canvas *mobileCanvas, x, y float32, tapID tou
 
 	canvas.tapUp(pos, int(tapID), func(wid fyne.Tappable, ev *fyne.PointEvent) {
 		go wid.Tapped(ev)
-	}, func(wid fyne.Tappable, ev *fyne.PointEvent) {
+	}, func(wid fyne.SecondaryTappable, ev *fyne.PointEvent) {
 		go wid.TappedSecondary(ev)
 	}, func(wid fyne.Draggable, ev *fyne.DragEvent) {
 		go wid.DragEnd()
@@ -330,6 +333,7 @@ var keyCodeMap = map[key.Code]fyne.KeyName{
 	key.CodeLeftSquareBracket:  fyne.KeyLeftBracket,
 	key.CodeBackslash:          fyne.KeyBackslash,
 	key.CodeRightSquareBracket: fyne.KeyRightBracket,
+	key.CodeGraveAccent:        fyne.KeyBackTick,
 }
 
 func keyToName(code key.Code) fyne.KeyName {

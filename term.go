@@ -18,7 +18,7 @@ import (
 // Use Terminal.OnConfigure hook to register for changes.
 type Config struct {
 	Title         string
-	Rows, Columns uint16
+	Rows, Columns uint
 }
 
 // Terminal is a terminal widget that loads a shell and handles input/output.
@@ -56,8 +56,8 @@ func (t *Terminal) Resize(s fyne.Size) {
 
 	cellSize := t.guessCellSize()
 
-	t.config.Columns = uint16(math.Floor(float64(s.Width) / float64(cellSize.Width)))
-	t.config.Rows = uint16(math.Floor(float64(s.Height) / float64(cellSize.Height)))
+	t.config.Columns = uint(math.Floor(float64(s.Width) / float64(cellSize.Width)))
+	t.config.Rows = uint(math.Floor(float64(s.Height) / float64(cellSize.Height)))
 	t.onConfigure()
 
 	t.updatePTYSize()
@@ -70,7 +70,7 @@ func (t *Terminal) updatePTYSize() {
 		scale = c.Scale()
 	}
 	_ = pty.Setsize(t.pty, &pty.Winsize{
-		Rows: t.config.Rows, Cols: t.config.Columns,
+		Rows: uint16(t.config.Rows), Cols: uint16(t.config.Columns),
 		X: uint16(float32(t.Size().Width) * scale), Y: uint16(float32(t.Size().Height) * scale)})
 }
 

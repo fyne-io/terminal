@@ -29,6 +29,10 @@ type CanvasObject interface {
 // This should be implemented by buttons etc that wish to handle pointer interactions.
 type Tappable interface {
 	Tapped(*PointEvent)
+}
+
+// SecondaryTappable describes a CanvasObject that can be right-clicked or long-tapped.
+type SecondaryTappable interface {
 	TappedSecondary(*PointEvent)
 }
 
@@ -65,7 +69,7 @@ type Draggable interface {
 type Focusable interface {
 	FocusGained()
 	FocusLost()
-	Focused() bool
+	Focused() bool // Deprecated: this is an internal detail, canvas tracks current focused object
 
 	TypedRune(rune)
 	TypedKey(*KeyEvent)
