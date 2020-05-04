@@ -20,8 +20,8 @@ func TestTerminal_Resize(t *testing.T) {
 	term := NewTerminal()
 	term.Resize(fyne.NewSize(45, 45))
 
-	assert.Equal(t, uint16(3), term.config.Columns)
-	assert.Equal(t, uint16(2), term.config.Rows)
+	assert.Equal(t, uint(3), term.config.Columns)
+	assert.Equal(t, uint(2), term.config.Rows)
 }
 
 func TestTerminal_AddListener(t *testing.T) {
