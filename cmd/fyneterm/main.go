@@ -54,10 +54,10 @@ func main() {
 	setupListener(t, w)
 	w.SetContent(fyne.NewContainerWithLayout(layout.NewMaxLayout(), bg, img, t))
 	w.Canvas().AddShortcut(&desktop.CustomShortcut{
-		KeyName: fyne.KeyD,
+		KeyName:  fyne.KeyD,
 		Modifier: desktop.ControlModifier,
-	}, func (_ fyne.Shortcut) {
-		t.Close()
+	}, func(_ fyne.Shortcut) {
+		t.Exit()
 	})
 
 	cellSize := guessCellSize()

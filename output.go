@@ -104,7 +104,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 			if r == '\t' { // TODO handle tab
 				r = ' '
 			}
-	
+
 			cellStyle := &widget.CustomTextGridStyle{FGColor: currentFG, BGColor: currentBG}
 
 			for len(t.content.Rows[t.cursorRow].Cells)-1 < t.cursorCol {
@@ -123,7 +123,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 
 	// record progress for next chunk of buffer
 	if state.esc != noEscape {
-		state.esc = -1-(len(state.code))
+		state.esc = -1 - (len(state.code))
 		previous = state
 	}
 }

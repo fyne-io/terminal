@@ -107,8 +107,14 @@ func (t *Terminal) open() error {
 	return nil
 }
 
-func (t *Terminal) Close() {
-	t.pty.Write([]byte("exit\n"))
+// Exit requests that this terminal exits.
+// If there are embedded shells it will exit the child one only.
+func (t *Terminal) Exit() {
+	_, _ = t.pty.Write([]byte("exit\n"))
+}
+
+func (t *Terminal) close() error {
+	return t.pty.Close()
 }
 
 // don't call often - should we cache?
@@ -151,7 +157,7 @@ func (t *Terminal) Run() error {
 
 	t.run()
 
-	return t.pty.Close()
+	return t.close()
 }
 
 // NewTerminal sets up a new terminal instance with the bash shell
