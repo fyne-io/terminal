@@ -41,11 +41,11 @@ func TestCursorMove(t *testing.T) {
 	assert.Equal(t, 0, term.cursorRow)
 	assert.Equal(t, 3, term.cursorCol)
 
-	term.handleEscape("2C")
+	term.handleEscape("2D")
 	assert.Equal(t, 0, term.cursorRow)
 	assert.Equal(t, 1, term.cursorCol)
 
-	term.handleEscape("2D")
+	term.handleEscape("2C")
 	assert.Equal(t, 0, term.cursorRow)
 	assert.Equal(t, 3, term.cursorCol)
 
@@ -66,11 +66,11 @@ func TestCursorMove_Overflow(t *testing.T) {
 	assert.Equal(t, 1, term.cursorRow)
 	assert.Equal(t, 1, term.cursorCol)
 
-	term.handleEscape("2C")
+	term.handleEscape("2D")
 	assert.Equal(t, 1, term.cursorRow)
 	assert.Equal(t, 0, term.cursorCol)
 
-	term.handleEscape("5D")
+	term.handleEscape("5C")
 	assert.Equal(t, 1, term.cursorRow)
 	assert.Equal(t, 1, term.cursorCol)
 

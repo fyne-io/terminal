@@ -37,10 +37,10 @@ func (t *Terminal) handleEscape(code string) {
 			t.moveCursor(t.cursorRow+rows, t.cursorCol)
 		case "C":
 			cols, _ := strconv.Atoi(message)
-			t.moveCursor(t.cursorRow, t.cursorCol-cols)
+			t.moveCursor(t.cursorRow, t.cursorCol+cols)
 		case "D":
 			cols, _ := strconv.Atoi(message)
-			t.moveCursor(t.cursorRow, t.cursorCol+cols)
+			t.moveCursor(t.cursorRow, t.cursorCol-cols)
 		case "H", "f":
 			parts := strings.Split(message, ";")
 			row, _ := strconv.Atoi(parts[0])
