@@ -81,7 +81,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 			if t.cursorCol >= int(t.config.Columns) || t.cursorRow >= int(t.config.Rows) {
 				break // TODO handle wrap?
 			}
-			if len(t.content.Rows)-1 < int(t.cursorRow) {
+			for len(t.content.Rows)-1 < t.cursorRow {
 				t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
 			}
 
@@ -91,12 +91,12 @@ func (t *Terminal) handleOutput(buf []byte) {
 
 			cellStyle := &widget.CustomTextGridStyle{FGColor: currentFG, BGColor: currentBG}
 
-			if len(t.content.Rows[t.cursorRow].Cells)-1 < int(t.cursorCol) {
-				newcell := widget.TextGridCell{
+			if len(t.content.Rows[t.cursorRow].Cells)-1 < t.cursorCol {
+				newCell := widget.TextGridCell{
 					Rune:  r,
 					Style: cellStyle,
 				}
-				t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newcell)
+				t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newCell)
 			} else {
 				t.content.Rows[t.cursorRow].Cells[t.cursorCol].Rune = r
 				t.content.Rows[t.cursorRow].Cells[t.cursorCol].Style = cellStyle
