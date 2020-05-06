@@ -120,7 +120,8 @@ func (t *Terminal) guessCellSize() fyne.Size {
 }
 
 func (t *Terminal) run() {
-	buf := make([]byte, 1024)
+	bufLen := 4069
+	buf := make([]byte, bufLen)
 	for {
 		num, err := t.pty.Read(buf)
 		if err != nil {
@@ -135,6 +136,9 @@ func (t *Terminal) run() {
 		}
 
 		t.handleOutput(buf[:num])
+		if num < bufLen {
+			t.Refresh()
+		}
 	}
 }
 

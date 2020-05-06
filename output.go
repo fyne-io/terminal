@@ -6,48 +6,64 @@ import (
 	"fyne.io/fyne/widget"
 )
 
+const noEscape = 5000
+
+var previous *parseState
+
+type parseState struct {
+	code  string
+	esc   int
+	osc   bool
+	vt100 rune
+}
+
 func (t *Terminal) handleOutput(buf []byte) {
-	esc := -5
-	osc := false
-	vt100 := rune(0)
-	code := ""
+	state := &parseState{}
+	if previous != nil {
+		state = previous
+		previous = nil
+	} else {
+		state.esc = noEscape
+	}
+
 	for i, r := range []rune(string(buf)) {
 		if r == asciiEscape {
-			esc = i
+			state.esc = i
 			continue
 		}
-		if esc == i-1 {
+		if state.esc == i-1 {
 			if r == '[' {
 				continue
 			} else if r == ']' {
-				osc = true
+				state.osc = true
+				state.esc = noEscape
 				continue
 			} else if r == '(' || r == ')' {
-				vt100 = r
+				state.vt100 = r
 				continue
 			} else {
-				esc = -5
+				state.esc = noEscape
 			}
 		}
-		if osc {
+		if state.osc {
 			if r == asciiBell || r == 0 {
-				t.handleOSC(code)
-				code = ""
-				osc = false
+				t.handleOSC(state.code)
+				state.code = ""
+				state.osc = false
 			} else {
-				code += string(r)
+				state.code += string(r)
 			}
 			continue
-		} else if vt100 != 0 {
-			t.handleVT100(string([]rune{vt100, r}))
-			vt100 = 0
+		} else if state.vt100 != 0 {
+			t.handleVT100(string([]rune{state.vt100, r}))
+			state.vt100 = 0
 			continue
-		} else if esc != -5 {
-			code += string(r)
+		} else if state.esc != noEscape {
+			state.code += string(r)
 			if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' {
-				t.handleEscape(code)
-				code = ""
-				esc = -5
+				t.handleEscape(state.code)
+				state.code = ""
+				state.esc = noEscape
 			}
 			continue
 		}
@@ -88,30 +104,28 @@ func (t *Terminal) handleOutput(buf []byte) {
 			if r == '\t' { // TODO handle tab
 				r = ' '
 			}
-
+	
 			cellStyle := &widget.CustomTextGridStyle{FGColor: currentFG, BGColor: currentBG}
 
-			if len(t.content.Rows[t.cursorRow].Cells)-1 < t.cursorCol {
+			for len(t.content.Rows[t.cursorRow].Cells)-1 < t.cursorCol {
 				newCell := widget.TextGridCell{
-					Rune:  r,
+					Rune:  ' ',
 					Style: cellStyle,
 				}
 				t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newCell)
-			} else {
-				t.content.Rows[t.cursorRow].Cells[t.cursorCol].Rune = r
-				t.content.Rows[t.cursorRow].Cells[t.cursorCol].Style = cellStyle
 			}
+
+			t.content.Rows[t.cursorRow].Cells[t.cursorCol].Rune = r
+			t.content.Rows[t.cursorRow].Cells[t.cursorCol].Style = cellStyle
 			t.cursorCol++
 		}
-		esc = -5
-		code = ""
 	}
 
-	if osc { // it could end at the buffer end
-		t.handleOSC(code)
-		return
+	// record progress for next chunk of buffer
+	if state.esc != noEscape {
+		state.esc = -1-(len(state.code))
+		previous = state
 	}
-	t.Refresh()
 }
 
 func (t *Terminal) ringBell() {
