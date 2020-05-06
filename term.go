@@ -107,8 +107,8 @@ func (t *Terminal) open() error {
 	return nil
 }
 
-func (t *Terminal) close() error {
-	return t.pty.Close()
+func (t *Terminal) Close() {
+	t.pty.Write([]byte("exit\n"))
 }
 
 // don't call often - should we cache?
@@ -147,7 +147,7 @@ func (t *Terminal) Run() error {
 
 	t.run()
 
-	return t.close()
+	return t.pty.Close()
 }
 
 // NewTerminal sets up a new terminal instance with the bash shell
