@@ -36,4 +36,5 @@ func TestTerminal_AddListener(t *testing.T) {
 	case <-time.After(time.Millisecond * 100):
 		t.Error("Failed waiting for configure callback")
 	}
+	close(listen)
 }
