@@ -50,7 +50,11 @@ func (t *Terminal) RemoveListener(listener chan Config) {
 
 	for i, l := range t.listeners {
 		if l == listener {
-			t.listeners = append(t.listeners[:i], t.listeners[i:]...)
+			if i < len(t.listeners)-1 {
+				t.listeners = append(t.listeners[:i], t.listeners[i+1:]...)
+			} else {
+				t.listeners = t.listeners[:i]
+			}
 			close(l)
 			return
 		}
