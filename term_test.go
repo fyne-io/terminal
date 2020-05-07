@@ -26,14 +26,14 @@ func TestTerminal_Resize(t *testing.T) {
 
 func TestTerminal_AddListener(t *testing.T) {
 	term := NewTerminal()
-	listen := make(chan Config)
+	listen := make(chan Config, 1)
 	term.AddListener(listen)
 	assert.Equal(t, 1, len(term.listeners))
 
 	go term.onConfigure()
 	select {
 	case <-listen: // passed
-	case <-time.After(time.Millisecond * 500):
+	case <-time.After(time.Millisecond * 100):
 		t.Error("Failed waiting for configure callback")
 	}
 	term.RemoveListener(listen)
