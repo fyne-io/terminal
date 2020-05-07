@@ -38,8 +38,23 @@ type Terminal struct {
 // AddListener registers a new outgoing channel that will have our Config sent each time it changes.
 func (t *Terminal) AddListener(listener chan Config) {
 	t.listenerLock.Lock()
+	defer t.listenerLock.Unlock()
+
 	t.listeners = append(t.listeners, listener)
-	t.listenerLock.Unlock()
+}
+
+// RemoveListener de-registers a Config channel and closes it
+func (t *Terminal) RemoveListener(listener chan Config) {
+	t.listenerLock.Lock()
+	defer t.listenerLock.Unlock()
+
+	for i, l := range t.listeners {
+		if l == listener {
+			t.listeners = append(t.listeners[:i], t.listeners[i:]...)
+			close(l)
+			return
+		}
+	}
 }
 
 // Resize is called when this terminal widget has been resized.
