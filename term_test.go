@@ -33,8 +33,9 @@ func TestTerminal_AddListener(t *testing.T) {
 	go term.onConfigure()
 	select {
 	case <-listen: // passed
-	case <-time.After(time.Millisecond * 100):
+	case <-time.After(time.Millisecond * 500):
 		t.Error("Failed waiting for configure callback")
 	}
 	term.RemoveListener(listen)
+	assert.Equal(t, 0, len(term.listeners))
 }
