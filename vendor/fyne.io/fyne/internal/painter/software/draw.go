@@ -1,19 +1,18 @@
 package software
 
 import (
+	"fmt"
 	"image"
-	"image/draw"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/internal"
+	"fyne.io/fyne/internal/cache"
 	"fyne.io/fyne/internal/painter"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
 
 	"github.com/goki/freetype"
 	"github.com/goki/freetype/truetype"
-	"github.com/nfnt/resize"
+	"golang.org/x/image/draw"
 	"golang.org/x/image/font"
 )
 
@@ -22,7 +21,7 @@ type gradient interface {
 	Size() fyne.Size
 }
 
-func drawGradient(c fyne.Canvas, g gradient, pos fyne.Position, frame fyne.Size, base *image.RGBA) {
+func drawGradient(c fyne.Canvas, g gradient, pos fyne.Position, base *image.NRGBA) {
 	bounds := g.Size()
 	width := internal.ScaleInt(c, bounds.Width)
 	height := internal.ScaleInt(c, bounds.Height)
@@ -30,42 +29,48 @@ func drawGradient(c fyne.Canvas, g gradient, pos fyne.Position, frame fyne.Size,
 	drawTex(c, pos, width, height, base, tex)
 }
 
-func drawImage(c fyne.Canvas, img *canvas.Image, pos fyne.Position, frame fyne.Size, base *image.RGBA) {
+func drawImage(c fyne.Canvas, img *canvas.Image, pos fyne.Position, base *image.NRGBA) {
 	bounds := img.Size()
 	width := internal.ScaleInt(c, bounds.Width)
 	height := internal.ScaleInt(c, bounds.Height)
-	tex := painter.PaintImage(img, c, width, height)
+	scaledX, scaledY := internal.ScaleInt(c, pos.X), internal.ScaleInt(c, pos.Y)
 
-	if img.FillMode == canvas.ImageFillStretch {
-		width = internal.ScaleInt(c, img.Size().Width)
-		height = internal.ScaleInt(c, img.Size().Height)
-		tex = resize.Resize(uint(width), uint(height), tex, resize.Lanczos3)
-	} else if img.FillMode == canvas.ImageFillContain {
+	tmpImg := painter.PaintImage(img, c, width, height)
+
+	if img.FillMode == canvas.ImageFillContain {
 		imgAspect := painter.GetAspect(img)
 		objAspect := float32(width) / float32(height)
 
 		if objAspect > imgAspect {
 			newWidth := int(float32(height) * imgAspect)
-			pos.X += (width - newWidth) / 2
+			scaledX += (width - newWidth) / 2
 			width = internal.ScaleInt(c, newWidth)
 		} else if objAspect < imgAspect {
 			newHeight := int(float32(width) / imgAspect)
-			pos.Y += (height - newHeight) / 2
+			scaledY += (height - newHeight) / 2
 			height = internal.ScaleInt(c, newHeight)
 		}
-		tex = resize.Resize(uint(width), uint(height), tex, resize.Lanczos3)
 	}
 
-	drawTex(c, pos, width, height, base, tex)
+	outBounds := image.Rect(scaledX, scaledY, scaledX+width, scaledY+height)
+	switch img.ScaleMode {
+	case canvas.ImageScalePixels:
+		draw.NearestNeighbor.Scale(base, outBounds, tmpImg, tmpImg.Bounds(), draw.Over, nil)
+	default:
+		if img.ScaleMode != canvas.ImageScaleSmooth {
+			fyne.LogError(fmt.Sprintf("Invalid canvas.ImageScale value (%d), using canvas.ImageScaleSmooth as default value", img.ScaleMode), nil)
+		}
+		draw.CatmullRom.Scale(base, outBounds, tmpImg, tmpImg.Bounds(), draw.Over, nil)
+	}
 }
 
-func drawTex(c fyne.Canvas, pos fyne.Position, width int, height int, base *image.RGBA, tex image.Image) {
+func drawTex(c fyne.Canvas, pos fyne.Position, width int, height int, base *image.NRGBA, tex image.Image) {
 	scaledX, scaledY := internal.ScaleInt(c, pos.X), internal.ScaleInt(c, pos.Y)
 	outBounds := image.Rect(scaledX, scaledY, scaledX+width, scaledY+height)
 	draw.Draw(base, outBounds, tex, image.ZP, draw.Over)
 }
 
-func drawText(c fyne.Canvas, text *canvas.Text, pos fyne.Position, frame fyne.Size, base *image.RGBA) {
+func drawText(c fyne.Canvas, text *canvas.Text, pos fyne.Position, base *image.NRGBA) {
 	bounds := text.MinSize()
 	width := internal.ScaleInt(c, bounds.Width)
 	height := internal.ScaleInt(c, bounds.Height)
@@ -74,9 +79,8 @@ func drawText(c fyne.Canvas, text *canvas.Text, pos fyne.Position, frame fyne.Si
 	var opts truetype.Options
 	fontSize := float64(text.TextSize) * float64(c.Scale())
 	opts.Size = fontSize
-	opts.DPI = 78.0
-	f, _ := truetype.Parse(theme.TextFont().Content())
-	face := truetype.NewFace(f, &opts)
+	opts.DPI = painter.TextDPI
+	face := painter.CachedFontFace(text.TextStyle, &opts)
 
 	d := font.Drawer{}
 	d.Dst = txtImg
@@ -85,12 +89,25 @@ func drawText(c fyne.Canvas, text *canvas.Text, pos fyne.Position, frame fyne.Si
 	d.Dot = freetype.Pt(0, height-face.Metrics().Descent.Ceil())
 	d.DrawString(text.Text)
 
-	scaledX, scaledY := internal.ScaleInt(c, pos.X), internal.ScaleInt(c, pos.Y)
+	size := text.Size()
+	offsetX := 0
+	offsetY := 0
+	switch text.Alignment {
+	case fyne.TextAlignTrailing:
+		offsetX = size.Width - bounds.Width
+	case fyne.TextAlignCenter:
+		offsetX = (size.Width - bounds.Width) / 2
+	}
+	if size.Height > bounds.Height {
+		offsetY = (size.Height - bounds.Height) / 2
+	}
+	scaledX := internal.ScaleInt(c, pos.X+offsetX)
+	scaledY := internal.ScaleInt(c, pos.Y+offsetY)
 	imgBounds := image.Rect(scaledX, scaledY, scaledX+width, scaledY+height)
 	draw.Draw(base, imgBounds, txtImg, image.ZP, draw.Over)
 }
 
-func drawRectangle(c fyne.Canvas, rect *canvas.Rectangle, pos fyne.Position, frame fyne.Size, base *image.RGBA) {
+func drawRectangle(c fyne.Canvas, rect *canvas.Rectangle, pos fyne.Position, base *image.NRGBA) {
 	scaledWidth := internal.ScaleInt(c, rect.Size().Width)
 	scaledHeight := internal.ScaleInt(c, rect.Size().Height)
 	scaledX, scaledY := internal.ScaleInt(c, pos.X), internal.ScaleInt(c, pos.Y)
@@ -98,10 +115,10 @@ func drawRectangle(c fyne.Canvas, rect *canvas.Rectangle, pos fyne.Position, fra
 	draw.Draw(base, bounds, image.NewUniform(rect.FillColor), image.ZP, draw.Over)
 }
 
-func drawWidget(c fyne.Canvas, wid fyne.Widget, pos fyne.Position, frame fyne.Size, base *image.RGBA) {
+func drawWidget(c fyne.Canvas, wid fyne.Widget, pos fyne.Position, base *image.NRGBA) {
 	scaledWidth := internal.ScaleInt(c, wid.Size().Width)
 	scaledHeight := internal.ScaleInt(c, wid.Size().Height)
 	scaledX, scaledY := internal.ScaleInt(c, pos.X), internal.ScaleInt(c, pos.Y)
 	bounds := image.Rect(scaledX, scaledY, scaledX+scaledWidth, scaledY+scaledHeight)
-	draw.Draw(base, bounds, image.NewUniform(widget.Renderer(wid).BackgroundColor()), image.ZP, draw.Over)
+	draw.Draw(base, bounds, image.NewUniform(cache.Renderer(wid).BackgroundColor()), image.ZP, draw.Over)
 }
