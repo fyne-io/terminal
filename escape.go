@@ -171,6 +171,9 @@ func (t *Terminal) handleVT100(code string) {
 }
 
 func (t *Terminal) moveCursor(row, col int) {
+	if t.config.Columns == 0 || t.config.Rows == 0 {
+		return
+	}
 	if col < 0 {
 		col = 0
 	} else if col >= int(t.config.Columns) {
