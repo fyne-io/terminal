@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/layout"
+	"fyne.io/fyne/theme"
 
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
@@ -45,7 +46,7 @@ func main() {
 	w := a.NewWindow(termTitle)
 	w.SetPadded(false)
 
-	bg := canvas.NewRectangle(&color.RGBA{8, 8, 8, 255})
+	bg := canvas.NewRectangle(theme.BackgroundColor())
 	img := canvas.NewImageFromResource(data.FyneScene)
 	img.FillMode = canvas.ImageFillContain
 	img.Translucency = 0.85
