@@ -19,7 +19,7 @@ fyne.io/fyne/storage
 fyne.io/fyne/test
 fyne.io/fyne/theme
 fyne.io/fyne/widget
-# github.com/creack/pty v1.1.9
+# github.com/creack/pty v1.1.11
 github.com/creack/pty
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
