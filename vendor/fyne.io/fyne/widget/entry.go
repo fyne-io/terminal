@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/driver/desktop"
+	"fyne.io/fyne/driver/mobile"
 	"fyne.io/fyne/internal/widget"
 	"fyne.io/fyne/theme"
 )
@@ -26,6 +27,7 @@ var _ fyne.Tappable = (*Entry)(nil)
 var _ fyne.Widget = (*Entry)(nil)
 var _ desktop.Mouseable = (*Entry)(nil)
 var _ desktop.Keyable = (*Entry)(nil)
+var _ mobile.Keyboardable = (*Entry)(nil)
 
 // Entry widget allows simple text to be input when focused.
 type Entry struct {
@@ -56,7 +58,7 @@ type Entry struct {
 
 	// selecting indicates whether the cursor has moved since it was at the selection start location
 	selecting bool
-	popUp     *widget.PopUpMenu
+	popUp     *PopUpMenu
 	// TODO: Add OnSelectChanged
 
 	// ActionItem is a small item which is displayed at the outer right of the entry (like a password revealer)
@@ -96,7 +98,12 @@ func (e *Entry) CreateRenderer() fyne.WidgetRenderer {
 
 	e.propertyLock.Lock()
 	defer e.propertyLock.Unlock()
-	objects := []fyne.CanvasObject{line, e.placeholderProvider(), e.textProvider(), cursor}
+	provider := e.textProvider()
+	placeholder := e.placeholderProvider()
+	if provider.len() != 0 {
+		placeholder.Hide()
+	}
+	objects := []fyne.CanvasObject{line, placeholder, provider, cursor}
 
 	if e.Password && e.ActionItem == nil {
 		// An entry widget has been created via struct setting manually
@@ -141,7 +148,7 @@ func (e *Entry) DoubleTapped(_ *fyne.PointEvent) {
 	}
 
 	e.setFieldsAndRefresh(func() {
-		if e.selectKeyDown == false {
+		if !e.selectKeyDown {
 			e.selectRow = e.CursorRow
 			e.selectColumn = start
 		}
@@ -239,7 +246,7 @@ func (e *Entry) KeyDown(key *fyne.KeyEvent) {
 	// Note: selection start is where the highlight started (if the user moves the selection up or left then
 	// the selectRow/Column will not match SelectionStart)
 	if key.Name == desktop.KeyShiftLeft || key.Name == desktop.KeyShiftRight {
-		if e.selecting == false {
+		if !e.selecting {
 			e.selectRow = e.CursorRow
 			e.selectColumn = e.CursorColumn
 		}
@@ -278,7 +285,7 @@ func (e *Entry) MouseDown(m *desktop.MouseEvent) {
 	if e.selectKeyDown {
 		e.selecting = true
 	}
-	if e.selecting && e.selectKeyDown == false && m.Button == desktop.LeftMouseButton {
+	if e.selecting && !e.selectKeyDown && m.Button == desktop.LeftMouseButton {
 		e.selecting = false
 	}
 	e.propertyLock.Unlock()
@@ -295,7 +302,7 @@ func (e *Entry) MouseUp(_ *desktop.MouseEvent) {
 
 	e.propertyLock.Lock()
 	defer e.propertyLock.Unlock()
-	if start == -1 && e.selecting && e.selectKeyDown == false {
+	if start == -1 && e.selecting && !e.selectKeyDown {
 		e.selecting = false
 	}
 }
@@ -591,6 +598,19 @@ func (e *Entry) TypedShortcut(shortcut fyne.Shortcut) {
 	e.shortcut.TypedShortcut(shortcut)
 }
 
+// Keyboard implements the Keyboardable interface
+// Implements: mobile.Keyboardable
+func (e *Entry) Keyboard() mobile.KeyboardType {
+	e.propertyLock.RLock()
+	defer e.propertyLock.RUnlock()
+
+	if e.MultiLine {
+		return mobile.DefaultKeyboard
+	}
+
+	return mobile.SingleLineKeyboard
+}
+
 // concealed tells the rendering textProvider if we are a concealed field
 func (e *Entry) concealed() bool {
 	return e.Password
@@ -760,6 +780,9 @@ func (e *Entry) rowColFromTextPos(pos int) (row int, col int) {
 
 // selectAll selects all text in entry
 func (e *Entry) selectAll() {
+	if e.textProvider().len() == 0 {
+		return
+	}
 	e.setFieldsAndRefresh(func() {
 		e.selectRow = 0
 		e.selectColumn = 0
@@ -776,7 +799,7 @@ func (e *Entry) selectAll() {
 // returns true if the keypress has been fully handled
 func (e *Entry) selectingKeyHandler(key *fyne.KeyEvent) bool {
 
-	if e.selectKeyDown && e.selecting == false {
+	if e.selectKeyDown && !e.selecting {
 		switch key.Name {
 		case fyne.KeyUp, fyne.KeyDown,
 			fyne.KeyLeft, fyne.KeyRight,
@@ -786,7 +809,7 @@ func (e *Entry) selectingKeyHandler(key *fyne.KeyEvent) bool {
 		}
 	}
 
-	if e.selecting == false {
+	if !e.selecting {
 		return false
 	}
 
@@ -801,7 +824,7 @@ func (e *Entry) selectingKeyHandler(key *fyne.KeyEvent) bool {
 		return false
 	}
 
-	if e.selectKeyDown == false {
+	if !e.selectKeyDown {
 		switch key.Name {
 		case fyne.KeyLeft:
 			// seek to the start of the selection -- return handled
@@ -991,7 +1014,7 @@ func (r *entryRenderer) MinSize() fyne.Size {
 		minSize = r.entry.text.MinSize()
 	}
 
-	if r.entry.MultiLine == true {
+	if r.entry.MultiLine {
 		// ensure multiline height is at least charMinSize * multilineRows
 		minSize.Height = fyne.Max(minSize.Height, r.entry.text.charMinSize().Height*multiLineRows)
 	}
@@ -1019,11 +1042,11 @@ func (r *entryRenderer) Refresh() {
 	r.entry.propertyLock.RUnlock()
 
 	if content != string(provider.buffer) {
-		provider.setText(content)
+		r.entry.SetText(content)
 		return
 	}
 
-	if provider.len() == 0 && r.entry.Visible() {
+	if provider.len() == 0 {
 		placeholder.Show()
 	} else if placeholder.Visible() {
 		placeholder.Hide()

@@ -167,6 +167,16 @@ func (c *glCanvas) Focus(obj fyne.Focusable) {
 	c.RLock()
 	focused := c.focused
 	c.RUnlock()
+
+	if focused == obj || obj == nil {
+		return
+	}
+
+	if dis, ok := obj.(fyne.Disableable); ok && dis.Disabled() {
+		c.Unfocus()
+		return
+	}
+
 	if focused != nil {
 		focused.FocusLost()
 	}
@@ -174,23 +184,18 @@ func (c *glCanvas) Focus(obj fyne.Focusable) {
 	c.Lock()
 	c.focused = obj
 	c.Unlock()
-	if obj != nil {
-		obj.FocusGained()
-	}
+	obj.FocusGained()
 }
 
 func (c *glCanvas) Unfocus() {
-	c.RLock()
+	c.Lock()
 	focused := c.focused
-	c.RUnlock()
+	c.focused = nil
+	c.Unlock()
 
 	if focused != nil {
 		focused.FocusLost()
 	}
-
-	c.Lock()
-	c.focused = nil
-	c.Unlock()
 }
 
 func (c *glCanvas) Focused() fyne.Focusable {
@@ -223,21 +228,6 @@ func (c *glCanvas) Resize(size fyne.Size) {
 		c.menu.Resize(fyne.NewSize(size.Width, c.menu.MinSize().Height))
 	}
 	c.RUnlock()
-
-	// make sure that primitives that are size specific are repainted
-	c.refreshRasters()
-}
-
-func (c *glCanvas) refreshRasters() {
-	c.walkTrees(nil, func(node *renderCacheNode) {
-		if !node.obj.Visible() {
-			return
-		}
-
-		if rast, ok := node.obj.(*canvas.Raster); ok {
-			canvas.Refresh(rast)
-		}
-	})
 }
 
 func (c *glCanvas) Size() fyne.Size {
@@ -371,8 +361,9 @@ func (c *glCanvas) ensureMinSize() bool {
 	}
 	c.walkTrees(nil, ensureMinSize)
 
+	min := c.MinSize()
 	c.RLock()
-	shouldResize := windowNeedsMinSizeUpdate && (c.size.Width < c.MinSize().Width || c.size.Height < c.MinSize().Height)
+	shouldResize := windowNeedsMinSizeUpdate && (c.size.Width < min.Width || c.size.Height < min.Height)
 	c.RUnlock()
 	if shouldResize {
 		c.Resize(c.Size().Union(c.MinSize()))
