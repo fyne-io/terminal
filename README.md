@@ -10,3 +10,12 @@
 A Linux terminal emulator using the Fyne toolkit.
 
 <img alt="screenshot" src="screenshot.png" width="929" />
+
+# Installing
+
+Just use the go get command (you'll need a Go and C compiler installed first):
+
+```
+$ go get github.com/fyne-io/terminal/cmd/fyneterm
+```
+
