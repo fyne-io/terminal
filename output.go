@@ -115,8 +115,10 @@ func (t *Terminal) handleOutput(buf []byte) {
 				t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newCell)
 			}
 
-			t.content.Rows[t.cursorRow].Cells[t.cursorCol].Rune = r
-			t.content.Rows[t.cursorRow].Cells[t.cursorCol].Style = cellStyle
+			cell := t.content.Rows[t.cursorRow].Cells[t.cursorCol]
+			cell.Rune = r
+			cell.Style = cellStyle
+			t.content.SetCell(t.cursorRow, t.cursorCol, cell)
 			t.cursorCol++
 		}
 	}

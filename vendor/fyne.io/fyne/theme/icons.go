@@ -10,21 +10,10 @@ import (
 	"fyne.io/fyne"
 )
 
-// ThemedResource is a resource wrapper that will return an appropriate resource
+// ThemedResource is a resource wrapper that will return a version of the resource with the main color changed
 // for the currently selected theme.
 type ThemedResource struct {
 	source fyne.Resource
-}
-
-// Name returns the underlying resource name (used for caching)
-func (res *ThemedResource) Name() string {
-	return res.source.Name()
-}
-
-// Content returns the underlying content of the correct resource for the current theme
-func (res *ThemedResource) Content() []byte {
-	clr := fyne.CurrentApp().Settings().Theme().IconColor()
-	return colorizeResource(res.source, clr)
 }
 
 // NewThemedResource creates a resource that adapts to the current theme setting.
@@ -40,6 +29,105 @@ func NewThemedResource(src, ignored fyne.Resource) *ThemedResource {
 	return &ThemedResource{
 		source: src,
 	}
+}
+
+// Name returns the underlying resource name (used for caching).
+func (res *ThemedResource) Name() string {
+	return res.source.Name()
+}
+
+// Content returns the underlying content of the resource adapted to the current text color.
+func (res *ThemedResource) Content() []byte {
+	clr := current().TextColor()
+	return colorizeResource(res.source, clr)
+}
+
+// Error resturns a different resource for indicating an error.
+func (res *ThemedResource) Error() *ErrorThemedResource {
+	return NewErrorThemedResource(res)
+}
+
+// InvertedThemedResource is a resource wrapper that will return a version of the resource with the main color changed
+// for use over highlighted elements.
+type InvertedThemedResource struct {
+	source fyne.Resource
+}
+
+// NewInvertedThemedResource creates a resource that adapts to the current theme for use over highlighted elements.
+func NewInvertedThemedResource(orig fyne.Resource) *InvertedThemedResource {
+	res := &InvertedThemedResource{source: orig}
+	return res
+}
+
+// Name returns the underlying resource name (used for caching).
+func (res *InvertedThemedResource) Name() string {
+	return "inverted-" + res.source.Name()
+}
+
+// Content returns the underlying content of the resource adapted to the current background color.
+func (res *InvertedThemedResource) Content() []byte {
+	clr := current().BackgroundColor()
+	return colorizeResource(res.source, clr)
+}
+
+// Original returns the underlying resource that this inverted themed resource was adapted from
+func (res *InvertedThemedResource) Original() fyne.Resource {
+	return res.source
+}
+
+// ErrorThemedResource is a resource wrapper that will return a version of the resource with the main color changed
+// to indicate an error.
+type ErrorThemedResource struct {
+	source fyne.Resource
+}
+
+// NewErrorThemedResource creates a resource that adapts to the error color for the current theme.
+func NewErrorThemedResource(orig fyne.Resource) *ErrorThemedResource {
+	res := &ErrorThemedResource{source: orig}
+	return res
+}
+
+// Name returns the underlying resource name (used for caching).
+func (res *ErrorThemedResource) Name() string {
+	return "error-" + res.source.Name()
+}
+
+// Content returns the underlying content of the resource adapted to the current background color.
+func (res *ErrorThemedResource) Content() []byte {
+	clr := &color.NRGBA{0xf4, 0x43, 0x36, 0xff} // TODO: Should be current().ErrorColor() in the future
+	return colorizeResource(res.source, clr)
+}
+
+// Original returns the underlying resource that this error themed resource was adapted from
+func (res *ErrorThemedResource) Original() fyne.Resource {
+	return res.source
+}
+
+// PrimaryThemedResource is a resource wrapper that will return a version of the resource with the main color changed
+// to the theme primary color.
+type PrimaryThemedResource struct {
+	source fyne.Resource
+}
+
+// NewPrimaryThemedResource creates a resource that adapts to the primary color for the current theme.
+func NewPrimaryThemedResource(orig fyne.Resource) *PrimaryThemedResource {
+	res := &PrimaryThemedResource{source: orig}
+	return res
+}
+
+// Name returns the underlying resource name (used for caching).
+func (res *PrimaryThemedResource) Name() string {
+	return "primary-" + res.source.Name()
+}
+
+// Content returns the underlying content of the resource adapted to the current background color.
+func (res *PrimaryThemedResource) Content() []byte {
+	return colorizeResource(res.source, PrimaryColor())
+}
+
+// Original returns the underlying resource that this primary themed resource was adapted from
+func (res *PrimaryThemedResource) Original() fyne.Resource {
+	return res.source
 }
 
 // DisabledResource is a resource wrapper that will return an appropriate resource colorized by
@@ -73,7 +161,7 @@ func colorizeResource(res fyne.Resource, clr color.Color) []byte {
 		fyne.LogError("could not load SVG, falling back to static content:", err)
 		return res.Content()
 	}
-	if err := s.replaceFillColor(rdr, clr); err != nil {
+	if err := s.replaceFillColor(clr); err != nil {
 		fyne.LogError("could not replace fill color, falling back to static content:", err)
 		return res.Content()
 	}
@@ -88,15 +176,16 @@ func colorizeResource(res fyne.Resource, clr color.Color) []byte {
 var (
 	cancel, confirm, delete, search, searchReplace, menu, menuExpand                *ThemedResource
 	checked, unchecked, radioButton, radioButtonChecked                             *ThemedResource
+	colorAchromatic, colorChromatic, colorPalette                                   *ThemedResource
 	contentAdd, contentRemove, contentCut, contentCopy, contentPaste                *ThemedResource
-	contentRedo, contentUndo, info, question, warning                               *ThemedResource
+	contentRedo, contentUndo, info, question, warning, errori                       *ThemedResource
 	document, documentCreate, documentPrint, documentSave                           *ThemedResource
 	mailAttachment, mailCompose, mailForward, mailReply, mailReplyAll, mailSend     *ThemedResource
 	mediaFastForward, mediaFastRewind, mediaPause, mediaPlay                        *ThemedResource
 	mediaRecord, mediaReplay, mediaSkipNext, mediaSkipPrevious                      *ThemedResource
 	arrowBack, arrowDown, arrowForward, arrowUp, arrowDropDown, arrowDropUp         *ThemedResource
 	file, fileApplication, fileAudio, fileImage, fileText, fileVideo                *ThemedResource
-	folder, folderNew, folderOpen, help, home, settings, storage                    *ThemedResource
+	folder, folderNew, folderOpen, help, history, home, settings, storage           *ThemedResource
 	viewFullScreen, viewRefresh, viewZoomFit, viewZoomIn, viewZoomOut               *ThemedResource
 	visibility, visibilityOff, volumeDown, volumeMute, volumeUp, download, computer *ThemedResource
 )
@@ -123,6 +212,10 @@ func init() {
 	contentRedo = NewThemedResource(contentredoIconRes, nil)
 	contentUndo = NewThemedResource(contentundoIconRes, nil)
 
+	colorAchromatic = NewThemedResource(colorachromaticIconRes, nil)
+	colorChromatic = NewThemedResource(colorchromaticIconRes, nil)
+	colorPalette = NewThemedResource(colorpaletteIconRes, nil)
+
 	document = NewThemedResource(documentIconRes, nil)
 	documentCreate = NewThemedResource(documentcreateIconRes, nil)
 	documentPrint = NewThemedResource(documentprintIconRes, nil)
@@ -131,6 +224,7 @@ func init() {
 	info = NewThemedResource(infoIconRes, nil)
 	question = NewThemedResource(questionIconRes, nil)
 	warning = NewThemedResource(warningIconRes, nil)
+	errori = NewThemedResource(errorIconRes, nil)
 
 	mailAttachment = NewThemedResource(mailattachmentIconRes, nil)
 	mailCompose = NewThemedResource(mailcomposeIconRes, nil)
@@ -165,6 +259,7 @@ func init() {
 	folderNew = NewThemedResource(foldernewIconRes, nil)
 	folderOpen = NewThemedResource(folderopenIconRes, nil)
 	help = NewThemedResource(helpIconRes, nil)
+	history = NewThemedResource(historyIconRes, nil)
 	home = NewThemedResource(homeIconRes, nil)
 	settings = NewThemedResource(settingsIconRes, nil)
 
@@ -286,6 +381,21 @@ func ContentUndoIcon() fyne.Resource {
 	return contentUndo
 }
 
+// ColorAchromaticIcon returns a resource containing the standard achromatic color icon for the current theme
+func ColorAchromaticIcon() fyne.Resource {
+	return colorAchromatic
+}
+
+// ColorChromaticIcon returns a resource containing the standard chromatic color icon for the current theme
+func ColorChromaticIcon() fyne.Resource {
+	return colorChromatic
+}
+
+// ColorPaletteIcon returns a resource containing the standard color palette icon for the current theme
+func ColorPaletteIcon() fyne.Resource {
+	return colorPalette
+}
+
 // DocumentIcon returns a resource containing the standard document icon for the current theme
 func DocumentIcon() fyne.Resource {
 	return document
@@ -319,6 +429,11 @@ func QuestionIcon() fyne.Resource {
 // WarningIcon returns a resource containing the standard dialog warning icon for the current theme
 func WarningIcon() fyne.Resource {
 	return warning
+}
+
+// ErrorIcon returns a resource containing the standard dialog error icon for the current theme
+func ErrorIcon() fyne.Resource {
+	return errori
 }
 
 // FileIcon returns a resource containing the appropriate file icon for the current theme
@@ -369,6 +484,11 @@ func FolderOpenIcon() fyne.Resource {
 // HelpIcon returns a resource containing the standard help icon for the current theme
 func HelpIcon() fyne.Resource {
 	return help
+}
+
+// HistoryIcon returns a resource containing the standard history icon for the current theme
+func HistoryIcon() fyne.Resource {
+	return history
 }
 
 // HomeIcon returns a resource containing the standard home folder icon for the current theme

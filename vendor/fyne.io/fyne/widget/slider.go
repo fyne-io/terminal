@@ -122,6 +122,22 @@ func (s *Slider) updateValue(ratio float64) {
 	s.clampValueToRange()
 }
 
+// SetValue updates the value of the slider and clamps the value to be within the range.
+func (s *Slider) SetValue(value float64) {
+	if s.Value == value {
+		return
+	}
+
+	s.Value = value
+	s.clampValueToRange()
+
+	if s.OnChanged != nil {
+		s.OnChanged(s.Value)
+	}
+
+	s.Refresh()
+}
+
 // MinSize returns the size that this widget should not shrink below
 func (s *Slider) MinSize() fyne.Size {
 	s.ExtendBaseWidget(s)
@@ -131,7 +147,7 @@ func (s *Slider) MinSize() fyne.Size {
 // CreateRenderer links this widget to its renderer.
 func (s *Slider) CreateRenderer() fyne.WidgetRenderer {
 	s.ExtendBaseWidget(s)
-	track := canvas.NewRectangle(theme.ButtonColor())
+	track := canvas.NewRectangle(theme.ShadowColor())
 	active := canvas.NewRectangle(theme.TextColor())
 	thumb := &canvas.Circle{
 		FillColor:   theme.TextColor(),
@@ -159,7 +175,7 @@ type sliderRenderer struct {
 
 // Refresh updates the widget state for drawing.
 func (s *sliderRenderer) Refresh() {
-	s.track.FillColor = theme.ButtonColor()
+	s.track.FillColor = theme.ShadowColor()
 	s.thumb.FillColor = theme.TextColor()
 	s.active.FillColor = theme.TextColor()
 
@@ -194,7 +210,7 @@ func (s *sliderRenderer) Layout(size fyne.Size) {
 	switch s.slider.Orientation {
 	case Vertical:
 		activePos = fyne.NewPos(trackPos.X, activeOffset)
-		activeSize = fyne.NewSize(trackWidth, trackSize.Height-activeOffset-endPad)
+		activeSize = fyne.NewSize(trackWidth, trackSize.Height-activeOffset+endPad)
 
 		thumbPos = fyne.NewPos(
 			trackPos.X-(diameter-trackSize.Width)/2, activeOffset-((diameter-theme.Padding())/2))
@@ -232,7 +248,12 @@ func (s *sliderRenderer) getOffset() int {
 	w := s.slider
 	size := s.track.Size()
 	if w.Value == w.Min || w.Min == w.Max {
-		return endPad
+		switch w.Orientation {
+		case Vertical:
+			return size.Height + endPad
+		case Horizontal:
+			return endPad
+		}
 	}
 	ratio := (w.Value - w.Min) / (w.Max - w.Min)
 
