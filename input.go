@@ -12,6 +12,8 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 	switch e.Name {
 	case fyne.KeyEnter, fyne.KeyReturn:
 		_, _ = t.pty.Write([]byte{'\n'})
+	case fyne.KeyEscape:
+		_, _ = t.pty.Write([]byte{asciiEscape})
 	case fyne.KeyBackspace:
 		_, _ = t.pty.Write([]byte{asciiBackspace})
 	case fyne.KeyUp:
