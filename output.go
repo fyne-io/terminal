@@ -3,7 +3,7 @@ package terminal
 import (
 	"time"
 
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2/widget"
 )
 
 const noEscape = 5000

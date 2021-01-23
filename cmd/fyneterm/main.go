@@ -3,12 +3,12 @@ package main
 import (
 	"image/color"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/app"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/theme"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"

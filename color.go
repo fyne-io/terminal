@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"fyne.io/fyne/theme"
+	"fyne.io/fyne/v2/theme"
 )
 
 var currentFG, currentBG color.Color

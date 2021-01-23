@@ -3,8 +3,8 @@ package terminal
 import (
 	"image/color"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 )
 
 var (
@@ -45,7 +45,7 @@ func (r *render) Destroy() {
 
 func (r *render) moveCursor() {
 	cell := r.term.guessCellSize()
-	r.cursor.Move(fyne.NewPos(cell.Width*r.term.cursorCol, cell.Height*r.term.cursorRow))
+	r.cursor.Move(fyne.NewPos(cell.Width*float32(r.term.cursorCol), cell.Height*float32(r.term.cursorRow)))
 }
 
 func (r *render) refreshCursor() {

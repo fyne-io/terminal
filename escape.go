@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2/widget"
 )
 
 func (t *Terminal) handleEscape(code string) {

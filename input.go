@@ -1,6 +1,6 @@
 package terminal
 
-import "fyne.io/fyne"
+import "fyne.io/fyne/v2"
 
 // TypedRune is called when the user types a visible character
 func (t *Terminal) TypedRune(r rune) {
