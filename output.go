@@ -41,6 +41,16 @@ func (t *Terminal) handleOutput(buf []byte) {
 			} else if r == '(' || r == ')' {
 				state.vt100 = r
 				continue
+			} else if r == '7' {
+				t.savedRow = t.cursorRow
+				t.savedCol = t.cursorCol
+				state.esc = noEscape
+				continue
+			} else if r == '8' {
+				t.cursorRow = t.savedRow
+				t.cursorCol = t.savedCol
+				state.esc = noEscape
+				continue
 			} else {
 				state.esc = noEscape
 			}
