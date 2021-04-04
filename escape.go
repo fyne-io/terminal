@@ -74,6 +74,9 @@ func (t *Terminal) clearScreenFromCursor() {
 }
 
 func (t *Terminal) handleVT100(code string) {
+	if code == "(A" || code == ")A" || code == "(B" || code == ")B" {
+		return // keycode handling A = en_GB, B = en_US
+	}
 	log.Println("Unhandled VT100:", code)
 }
 
