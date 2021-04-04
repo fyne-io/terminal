@@ -51,11 +51,13 @@ type window struct {
 	viewLock   sync.RWMutex
 	createLock sync.Once
 	decorate   bool
+	closing    bool
 	fixedSize  bool
 
 	cursor       desktop.Cursor
 	customCursor *glfw.Cursor
 	canvas       *glCanvas
+	driver       *gLDriver
 	title        string
 	icon         fyne.Resource
 	mainmenu     *fyne.MainMenu
@@ -273,7 +275,7 @@ func (w *window) fitContent() {
 		return
 	}
 
-	if w.viewport == nil {
+	if w.isClosing() {
 		return
 	}
 
@@ -405,7 +407,7 @@ func (w *window) doShow() {
 }
 
 func (w *window) Hide() {
-	if w.viewport == nil {
+	if w.isClosing() {
 		return
 	}
 
@@ -423,10 +425,11 @@ func (w *window) Hide() {
 }
 
 func (w *window) Close() {
-	if w.viewport == nil {
+	if w.isClosing() {
 		return
 	}
 
+	w.closing = true
 	w.viewport.SetShouldClose(true)
 
 	w.canvas.walkTrees(nil, func(node *renderCacheNode) {
@@ -444,12 +447,12 @@ func (w *window) Close() {
 
 func (w *window) ShowAndRun() {
 	w.Show()
-	fyne.CurrentApp().Driver().Run()
+	w.driver.Run()
 }
 
 // Clipboard returns the system clipboard
 func (w *window) Clipboard() fyne.Clipboard {
-	if w.viewport == nil {
+	if w.view() == nil {
 		return nil
 	}
 
@@ -699,6 +702,11 @@ func (w *window) mouseOut() {
 }
 
 func (w *window) mouseClicked(_ *glfw.Window, btn glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
+	if w.mousePos.IsZero() { // window may not be focused (darwin mostly) and so position callbacks not happening
+		xpos, ypos := w.viewport.GetCursorPos()
+		w.mousePos = fyne.NewPos(internal.UnscaleInt(w.canvas, int(xpos)), internal.UnscaleInt(w.canvas, int(ypos)))
+	}
+
 	co, pos, _ := w.findObjectAtPositionMatching(w.canvas, w.mousePos, func(object fyne.CanvasObject) bool {
 		switch object.(type) {
 		case fyne.Tappable, fyne.SecondaryTappable, fyne.DoubleTappable, fyne.Focusable, desktop.Mouseable, desktop.Hoverable:
@@ -1121,10 +1129,19 @@ func (w *window) keyPressed(_ *glfw.Window, key glfw.Key, scancode int, action g
 
 	if shortcut != nil {
 		if focused, ok := w.canvas.Focused().(fyne.Shortcutable); ok {
-			w.queueEvent(func() { focused.TypedShortcut(shortcut) })
+			shouldRunShortcut := true
+			type selectableText interface {
+				fyne.Disableable
+				SelectedText() string
+			}
+			if selectableTextWid, ok := focused.(selectableText); ok && selectableTextWid.Disabled() {
+				shouldRunShortcut = shortcut.ShortcutName() == "Copy"
+			}
+			if shouldRunShortcut {
+				w.queueEvent(func() { focused.TypedShortcut(shortcut) })
+			}
 			return
 		}
-
 		w.queueEvent(func() { w.canvas.shortcut.TypedShortcut(shortcut) })
 		return
 	}
@@ -1172,10 +1189,14 @@ func (w *window) focused(_ *glfw.Window, isFocused bool) {
 		w.canvas.FocusGained()
 	} else {
 		w.canvas.FocusLost()
+		w.mousePos = fyne.Position{}
 	}
 }
 
 func (w *window) RunWithContext(f func()) {
+	if w.isClosing() {
+		return
+	}
 	w.viewport.MakeContextCurrent()
 
 	f()
@@ -1190,7 +1211,7 @@ func (w *window) RescaleContext() {
 }
 
 func (w *window) rescaleOnMain() {
-	if w.viewport == nil {
+	if w.isClosing() {
 		return
 	}
 	w.fitContent()
@@ -1260,7 +1281,7 @@ func (d *gLDriver) createWindow(title string, decorate bool) fyne.Window {
 	runOnMain(func() {
 		d.initGLFW()
 
-		ret = &window{title: title, decorate: decorate}
+		ret = &window{title: title, decorate: decorate, driver: d}
 		// This channel will be closed when the window is closed.
 		ret.eventQueue = make(chan func(), 1024)
 		go ret.runEventQueue()
@@ -1303,7 +1324,7 @@ func (w *window) create() {
 
 		win, err := glfw.CreateWindow(pixWidth, pixHeight, w.title, nil, nil)
 		if err != nil {
-			fyne.LogError("window creation error", err)
+			w.driver.initFailed("window creation error", err)
 			return
 		}
 
@@ -1354,7 +1375,7 @@ func (w *window) create() {
 }
 
 func (w *window) doShowAgain() {
-	if w.viewport == nil {
+	if w.isClosing() {
 		return
 	}
 
@@ -1372,10 +1393,17 @@ func (w *window) doShowAgain() {
 	})
 }
 
+func (w *window) isClosing() bool {
+	return w.closing || w.viewport == nil
+}
+
 func (w *window) view() *glfw.Window {
 	w.viewLock.RLock()
 	defer w.viewLock.RUnlock()
 
+	if w.closing {
+		return nil
+	}
 	return w.viewport
 }
 

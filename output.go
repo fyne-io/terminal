@@ -116,9 +116,11 @@ func (t *Terminal) handleOutput(buf []byte) {
 			}
 
 			cell := t.content.Rows[t.cursorRow].Cells[t.cursorCol]
-			cell.Rune = r
-			cell.Style = cellStyle
-			t.content.SetCell(t.cursorRow, t.cursorCol, cell)
+			if cell.Rune != r || cell.Style.TextColor() != cellStyle.FGColor || cell.Style.BackgroundColor() != cellStyle.BGColor {
+				cell.Rune = r
+				cell.Style = cellStyle
+				t.content.SetCell(t.cursorRow, t.cursorCol, cell)
+			}
 			t.cursorCol++
 		}
 	}
