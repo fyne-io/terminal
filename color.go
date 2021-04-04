@@ -21,7 +21,7 @@ func (t *Terminal) handleColorEscape(message string) {
 	bright := false
 
 	mode := modes[0]
-	if mode == "1" {
+	if mode == "1" || mode == "01" {
 		bright = true
 		if len(modes) <= 1 {
 			return
@@ -37,11 +37,33 @@ func (t *Terminal) handleColorEscape(message string) {
 
 func (t *Terminal) handleColorMode(mode string, bright bool) {
 	switch mode {
-	case "1": // ignore, handled above
+	case "0", "00":
+		currentBG, currentFG = nil, nil
+	case "1", "01": // ignore, handled above
 	case "7": // reverse
-		currentBG, currentFG = theme.TextColor(), theme.ButtonColor() //currentFG, currentBG
+		bg := currentBG
+		if currentFG == nil {
+			currentBG = theme.TextColor()
+		} else {
+			currentBG = currentFG
+		}
+		if bg == nil {
+			currentFG = theme.DisabledButtonColor()
+		} else {
+			currentFG = bg
+		}
 	case "27": // reverse off
-		currentBG, currentFG = nil, nil //currentFG, currentBG
+		bg := currentBG
+		if currentFG == theme.TextColor() {
+			currentBG = nil
+		} else {
+			currentBG = currentFG
+		}
+		if bg == theme.DisabledButtonColor() {
+			currentFG = nil
+		} else {
+			currentFG = bg
+		}
 	case "30":
 		if bright {
 			currentFG = &color.RGBA{85, 85, 85, 255}
