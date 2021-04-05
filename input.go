@@ -1,6 +1,9 @@
 package terminal
 
-import "fyne.io/fyne/v2"
+import (
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
+)
 
 // TypedRune is called when the user types a visible character
 func (t *Terminal) TypedRune(r rune) {
@@ -20,6 +23,10 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'A'})
 	case fyne.KeyDown:
 		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'B'})
+	case fyne.KeyLeft:
+		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'D'})
+	case fyne.KeyRight:
+		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'C'})
 	}
 }
 
@@ -27,6 +34,19 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 func (t *Terminal) FocusGained() {
 	t.focused = true
 	t.Refresh()
+}
+
+func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
+	if _, ok := s.(*fyne.ShortcutCopy); ok {
+		_, _ = t.pty.Write([]byte{0x3})
+	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
+		switch  ds.KeyName {
+		case fyne.KeyC:
+			_, _ = t.pty.Write([]byte{0x3})
+		case fyne.KeyD:
+			t.Exit()
+		}
+	}
 }
 
 // FocusLost tells the terminal it no longer has focus

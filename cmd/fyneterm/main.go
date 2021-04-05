@@ -8,10 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
-
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
 )
@@ -57,12 +54,6 @@ func main() {
 	t := terminal.NewTerminal()
 	setupListener(t, w)
 	w.SetContent(fyne.NewContainerWithLayout(layout.NewMaxLayout(), bg, img, t))
-	w.Canvas().AddShortcut(&desktop.CustomShortcut{
-		KeyName:  fyne.KeyD,
-		Modifier: desktop.ControlModifier,
-	}, func(_ fyne.Shortcut) {
-		t.Exit()
-	})
 
 	cellSize := guessCellSize()
 	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
