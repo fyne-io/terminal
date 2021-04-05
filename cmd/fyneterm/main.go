@@ -1,3 +1,5 @@
+//go:generate fyne bundle -o bundled.go Icon.png
+
 package main
 
 import (
@@ -43,6 +45,7 @@ func guessCellSize() fyne.Size {
 
 func main() {
 	a := app.New()
+	a.SetIcon(resourceIconPng)
 	w := a.NewWindow(termTitle)
 	w.SetPadded(false)
 
