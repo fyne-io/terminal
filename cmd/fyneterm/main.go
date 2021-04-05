@@ -49,10 +49,10 @@ func main() {
 	w := a.NewWindow(termTitle)
 	w.SetPadded(false)
 
-	bg := canvas.NewRectangle(theme.BackgroundColor())
+	bg := canvas.NewRectangle(color.Gray{Y: 0x16})
 	img := canvas.NewImageFromResource(data.FyneScene)
 	img.FillMode = canvas.ImageFillContain
-	img.Translucency = 0.85
+	img.Translucency = 0.95
 
 	t := terminal.NewTerminal()
 	setupListener(t, w)
