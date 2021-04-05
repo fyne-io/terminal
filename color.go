@@ -40,6 +40,7 @@ func (t *Terminal) handleColorMode(mode string, bright bool) {
 	case "0", "00":
 		currentBG, currentFG = nil, nil
 	case "1", "01": // ignore, handled above
+	case "4", "24": // italic
 	case "7": // reverse
 		bg := currentBG
 		if currentFG == nil {

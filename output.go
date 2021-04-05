@@ -51,6 +51,9 @@ func (t *Terminal) handleOutput(buf []byte) {
 				t.cursorCol = t.savedCol
 				state.esc = noEscape
 				continue
+			} else if r == '=' || r == '>' {
+				state.esc = noEscape
+				continue
 			} else {
 				state.esc = noEscape
 			}
