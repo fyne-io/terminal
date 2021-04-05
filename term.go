@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -171,6 +172,9 @@ func (t *Terminal) run() {
 
 // Run starts the terminal by loading a shell and starting to process the input/output
 func (t *Terminal) Run() error {
+	for t.config.Columns == 0 { // don't load the TTY until our output is configured
+		time.Sleep(time.Millisecond*50)
+	}
 	err := t.open()
 	if err != nil {
 		return err

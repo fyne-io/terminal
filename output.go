@@ -84,7 +84,6 @@ func (t *Terminal) handleOutput(buf []byte) {
 			if len(row.Cells) == 0 {
 				continue
 			}
-			t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:len(row.Cells)-1]})
 			t.moveCursor(t.cursorRow, t.cursorCol-1)
 			continue
 		case '\n': // line feed

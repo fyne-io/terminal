@@ -10,6 +10,14 @@ import (
 
 func (t *Terminal) handleEscape(code string) {
 	switch code { // exact matches
+	case "A":
+		t.moveCursor(t.cursorRow-1, t.cursorCol)
+	case "B":
+		t.moveCursor(t.cursorRow+1, t.cursorCol)
+	case "C":
+		t.moveCursor(t.cursorRow, t.cursorCol+1)
+	case "D":
+		t.moveCursor(t.cursorRow, t.cursorCol-1)
 	case "H":
 		t.moveCursor(t.homeRow, t.homeCol)
 	case "f":
@@ -40,16 +48,22 @@ func (t *Terminal) handleEscape(code string) {
 		case "D":
 			cols, _ := strconv.Atoi(message)
 			t.moveCursor(t.cursorRow, t.cursorCol-cols)
+		case "d":
+			row, _ := strconv.Atoi(message)
+			t.moveCursor(row-1, t.cursorCol)
+		case "G":
+			col, _ := strconv.Atoi(message)
+			t.moveCursor(t.cursorRow, col-1)
 		case "H", "f":
 			parts := strings.Split(message, ";")
 			row, _ := strconv.Atoi(parts[0])
 			col, _ := strconv.Atoi(parts[1])
 
 			if part == "H" {
-				t.homeRow = row
-				t.homeCol = col
+				t.homeRow = row-1
+				t.homeCol = col-1
 			} else {
-				t.moveCursor(row, col)
+				t.moveCursor(row-1, col-1)
 			}
 		case "m":
 			t.handleColorEscape(message)
