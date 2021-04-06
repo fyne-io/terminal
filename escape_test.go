@@ -37,7 +37,7 @@ func TestCursorMove(t *testing.T) {
 	assert.Equal(t, 0, term.cursorRow)
 	assert.Equal(t, 5, term.cursorCol)
 
-	term.handleEscape("0;3H")
+	term.handleEscape("1;4H")
 	assert.Equal(t, 0, term.cursorRow)
 	assert.Equal(t, 3, term.cursorCol)
 
