@@ -26,7 +26,6 @@ func (t *Terminal) handleColorEscape(message string) {
 		if len(modes) <= 1 {
 			return
 		}
-		mode = modes[1]
 	} else if len(modes) >= 2 && modes[1] == "1" {
 		bright = true
 	}
@@ -44,7 +43,7 @@ func (t *Terminal) handleColorMode(mode string, bright bool) {
 	case "7": // reverse
 		bg := currentBG
 		if currentFG == nil {
-			currentBG = theme.TextColor()
+			currentBG = theme.ForegroundColor()
 		} else {
 			currentBG = currentFG
 		}
@@ -55,7 +54,7 @@ func (t *Terminal) handleColorMode(mode string, bright bool) {
 		}
 	case "27": // reverse off
 		bg := currentBG
-		if currentFG == theme.TextColor() {
+		if currentFG == theme.ForegroundColor() {
 			currentBG = nil
 		} else {
 			currentBG = currentFG

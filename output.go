@@ -148,9 +148,7 @@ func (t *Terminal) ringBell() {
 	t.bell = true
 	t.Refresh()
 
-	select {
-	case <-time.After(time.Millisecond * 300):
-		t.bell = false
-		t.Refresh()
-	}
+	time.Sleep(time.Millisecond * 300)
+	t.bell = false
+	t.Refresh()
 }
