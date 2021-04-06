@@ -2,6 +2,8 @@ fyne.io/fyne/v2 v2.0.2-0.20210404191103-9cccee4558bd h1:2hEXn0hTjlH2njPGYb2oKhCd
 fyne.io/fyne/v2 v2.0.2-0.20210404191103-9cccee4558bd/go.mod h1:OsfBirD+2z1l0Wtu7Tuvr1/0Arl+lcN91l07YBNijvw=
 fyne.io/fyne/v2 v2.0.2-0.20210404200136-3ea95aaf56de h1:Biic3DRyNCKbbyET6RHw6HowFc16TYqbFgiXHdiDrT4=
 fyne.io/fyne/v2 v2.0.2-0.20210404200136-3ea95aaf56de/go.mod h1:RpSGlKCVFtKExfZQTDcnV3vEISkQaEBAd8P/lxtMD4g=
+fyne.io/fyne/v2 v2.0.2-0.20210406104531-e33c72cf48d4 h1:mk2twVNqwKq5/0OHcZAV7AwRCwSMR1DjToCxc4cvMLw=
+fyne.io/fyne/v2 v2.0.2-0.20210406104531-e33c72cf48d4/go.mod h1:RpSGlKCVFtKExfZQTDcnV3vEISkQaEBAd8P/lxtMD4g=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Kodeworks/golang-image-ico v0.0.0-20141118225523-73f0f4cfade9/go.mod h1:7uhhqiBaR4CpN0k9rMjOtjpcfGd6DG2m04zQxKnWQ0I=
 github.com/akavel/rsrc v0.8.0/go.mod h1:uLoCtb9J+EyAqh+26kdrTgmzRBFPGOolLWKpdxkKq+c=
