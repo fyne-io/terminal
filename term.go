@@ -33,7 +33,6 @@ type Terminal struct {
 	pty                  *os.File
 	focused, bell        bool
 	cursorRow, cursorCol int
-	homeRow, homeCol     int
 	savedRow, savedCol   int
 	cursorMoved          func()
 }

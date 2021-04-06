@@ -18,9 +18,7 @@ func (t *Terminal) handleEscape(code string) {
 		t.moveCursor(t.cursorRow, t.cursorCol+1)
 	case "D":
 		t.moveCursor(t.cursorRow, t.cursorCol-1)
-	case "H":
-		t.moveCursor(t.homeRow, t.homeCol)
-	case "f":
+	case "H", "f":
 		t.moveCursor(0, 0)
 	case "J":
 		t.clearScreenFromCursor()
@@ -32,6 +30,11 @@ func (t *Terminal) handleEscape(code string) {
 			return
 		}
 		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:t.cursorCol]})
+	case "s":
+		t.savedRow = t.cursorRow
+		t.savedCol = t.cursorCol
+	case "u":
+		t.moveCursor(t.savedRow, t.savedCol)
 	default: // check mode (last letter) then match
 		message := code[:len(code)-1]
 		part := code[len(code)-1:]
@@ -59,12 +62,7 @@ func (t *Terminal) handleEscape(code string) {
 			row, _ := strconv.Atoi(parts[0])
 			col, _ := strconv.Atoi(parts[1])
 
-			if part == "H" {
-				t.homeRow = row-1
-				t.homeCol = col-1
-			} else {
-				t.moveCursor(row-1, col-1)
-			}
+			t.moveCursor(row-1, col-1)
 		case "m":
 			t.handleColorEscape(message)
 		default:
