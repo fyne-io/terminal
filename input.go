@@ -36,16 +36,18 @@ func (t *Terminal) FocusGained() {
 	t.Refresh()
 }
 
+// TypedShortcut handles key combinations, we pass them on to the tty.
 func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
-	if _, ok := s.(*fyne.ShortcutCopy); ok {
+	// we need to override the default cut/copy/paste and do it ourselves
+	if _, ok := s.(*fyne.ShortcutCut); ok {
+		_, _ = t.pty.Write([]byte{0x18})
+	} else if _, ok := s.(*fyne.ShortcutCopy); ok {
 		_, _ = t.pty.Write([]byte{0x3})
+	} else if _, ok := s.(*fyne.ShortcutPaste); ok {
+		_, _ = t.pty.Write([]byte{0x16})
 	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
-		switch ds.KeyName {
-		case fyne.KeyC:
-			_, _ = t.pty.Write([]byte{0x3})
-		case fyne.KeyD:
-			t.Exit()
-		}
+		off := ds.KeyName[0] - 'A' + 1
+		_, _ = t.pty.Write([]byte{off})
 	}
 }
 
