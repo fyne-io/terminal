@@ -40,7 +40,7 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	if _, ok := s.(*fyne.ShortcutCopy); ok {
 		_, _ = t.pty.Write([]byte{0x3})
 	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
-		switch  ds.KeyName {
+		switch ds.KeyName {
 		case fyne.KeyC:
 			_, _ = t.pty.Write([]byte{0x3})
 		case fyne.KeyD:
