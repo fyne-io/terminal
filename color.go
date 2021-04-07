@@ -3,6 +3,7 @@ package terminal
 import (
 	"image/color"
 	"log"
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2/theme"
@@ -28,6 +29,15 @@ func (t *Terminal) handleColorEscape(message string) {
 		}
 	} else if len(modes) >= 2 && modes[1] == "1" {
 		bright = true
+	}
+	if (mode == "38" || mode == "48") && len(modes) >= 2 {
+		if modes[1] == "5" && len(modes) >= 3 {
+			t.handleColorModeMap(mode, modes[2])
+			modes = modes[3:]
+		} else if modes[1] == "2" && len(modes) >= 5 {
+			t.handleColorModeRGB(mode, modes[2], modes[3], modes[4])
+			modes = modes[5:]
+		}
 	}
 	for _, mode := range modes {
 		t.handleColorMode(mode, bright)
@@ -134,5 +144,22 @@ func (t *Terminal) handleColorMode(mode string, bright bool) {
 		currentBG = nil
 	default:
 		log.Println("Unsupported graphics mode", mode)
+	}
+}
+
+func (t *Terminal) handleColorModeMap(mode, id string) {
+	log.Println("Unsupported grahics map id", id)
+}
+
+func (t *Terminal) handleColorModeRGB(mode, rs, gs, bs string) {
+	r, _ := strconv.Atoi(rs)
+	g, _ := strconv.Atoi(gs)
+	b, _ := strconv.Atoi(bs)
+	c := &color.RGBA{uint8(r), uint8(g), uint8(b), 255}
+
+	if mode == "38" {
+		currentFG = c
+	} else if mode == "48" {
+		currentBG = c
 	}
 }
