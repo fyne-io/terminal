@@ -34,35 +34,26 @@ func (t *Terminal) handleOutput(buf []byte) {
 		if state.esc == i-1 {
 			if r == '[' {
 				continue
-			} else if r == ']' {
+			}
+			switch r {
+			case ']':
 				state.osc = true
-				state.esc = noEscape
-				continue
-			} else if r == '(' || r == ')' {
+			case '(', ')':
 				state.vt100 = r
-				continue
-			} else if r == '7' {
+			case '7':
 				t.savedRow = t.cursorRow
 				t.savedCol = t.cursorCol
-				state.esc = noEscape
-				continue
-			} else if r == '8' {
+			case '8':
 				t.cursorRow = t.savedRow
 				t.cursorCol = t.savedCol
-				state.esc = noEscape
-				continue
-			} else if r == 'D' {
+			case 'D':
 				t.scrollDown()
-				continue
-			} else if r == 'M' {
+			case 'M':
 				t.scrollUp()
-				continue
-			} else if r == '=' || r == '>' {
-				state.esc = noEscape
-				continue
-			} else {
-				state.esc = noEscape
+			case '=', '>':
 			}
+			state.esc = noEscape
+			continue
 		}
 		if state.osc {
 			if r == asciiBell || r == 0 {
