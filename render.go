@@ -13,8 +13,7 @@ var (
 )
 
 type render struct {
-	term   *Terminal
-	cursor *canvas.Rectangle
+	term *Terminal
 }
 
 func (r *render) Layout(s fyne.Size) {
@@ -27,7 +26,7 @@ func (r *render) MinSize() fyne.Size {
 
 func (r *render) Refresh() {
 	r.moveCursor()
-	r.refreshCursor()
+	r.term.refreshCursor()
 
 	r.term.content.Refresh()
 }
@@ -37,7 +36,7 @@ func (r *render) BackgroundColor() color.Color {
 }
 
 func (r *render) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{r.term.content, r.cursor}
+	return []fyne.CanvasObject{r.term.content, r.term.cursor}
 }
 
 func (r *render) Destroy() {
@@ -45,25 +44,25 @@ func (r *render) Destroy() {
 
 func (r *render) moveCursor() {
 	cell := r.term.guessCellSize()
-	r.cursor.Move(fyne.NewPos(cell.Width*float32(r.term.cursorCol), cell.Height*float32(r.term.cursorRow)))
+	r.term.cursor.Move(fyne.NewPos(cell.Width*float32(r.term.cursorCol), cell.Height*float32(r.term.cursorRow)))
 }
 
-func (r *render) refreshCursor() {
-	r.cursor.Hidden = !r.term.focused
-	if r.term.bell {
-		r.cursor.FillColor = cursorBellColor
+func (t *Terminal) refreshCursor() {
+	t.cursor.Hidden = !t.focused || t.cursorHidden
+	if t.bell {
+		t.cursor.FillColor = cursorBellColor
 	} else {
-		r.cursor.FillColor = cursorColor
+		t.cursor.FillColor = cursorColor
 	}
-	r.cursor.Refresh()
+	t.cursor.Refresh()
 }
 
 // CreateRenderer requests a new renderer for this terminal (just a wrapper around the TextGrid)
 func (t *Terminal) CreateRenderer() fyne.WidgetRenderer {
-	cur := canvas.NewRectangle(cursorColor)
-	cur.Resize(fyne.NewSize(2, t.guessCellSize().Height))
+	t.cursor = canvas.NewRectangle(cursorColor)
+	t.cursor.Resize(fyne.NewSize(2, t.guessCellSize().Height))
 
-	r := &render{term: t, cursor: cur}
+	r := &render{term: t}
 	t.cursorMoved = r.moveCursor
 	return r
 }

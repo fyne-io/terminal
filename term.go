@@ -34,6 +34,8 @@ type Terminal struct {
 	focused, bell        bool
 	cursorRow, cursorCol int
 	savedRow, savedCol   int
+	cursor               *canvas.Rectangle
+	cursorHidden         bool
 	cursorMoved          func()
 }
 

@@ -20,6 +20,12 @@ func (t *Terminal) handleEscape(code string) {
 		t.moveCursor(t.cursorRow, t.cursorCol-1)
 	case "H", "f":
 		t.moveCursor(0, 0)
+	case "?25h":
+		t.cursorHidden = false
+		t.refreshCursor()
+	case "?25l":
+		t.cursorHidden = true
+		t.refreshCursor()
 	case "J":
 		t.clearScreenFromCursor()
 	case "2J":
