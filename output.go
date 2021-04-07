@@ -51,6 +51,12 @@ func (t *Terminal) handleOutput(buf []byte) {
 				t.cursorCol = t.savedCol
 				state.esc = noEscape
 				continue
+			} else if r == 'D' {
+				t.scrollDown()
+				continue
+			} else if r == 'M' {
+				t.scrollUp()
+				continue
 			} else if r == '=' || r == '>' {
 				state.esc = noEscape
 				continue
@@ -90,11 +96,8 @@ func (t *Terminal) handleOutput(buf []byte) {
 			t.moveCursor(t.cursorRow, t.cursorCol-1)
 			continue
 		case '\n': // line feed
-			if t.cursorRow == int(t.config.Rows-1) {
-				for i = 0; i < t.cursorRow; i++ {
-					t.content.SetRow(i, t.content.Row(i+1))
-				}
-				t.content.SetRow(i, widget.TextGridRow{})
+			if t.cursorRow == t.scrollBottom {
+				t.scrollDown()
 			} else {
 				t.moveCursor(t.cursorRow+1, t.cursorCol)
 			}
@@ -151,4 +154,18 @@ func (t *Terminal) ringBell() {
 	time.Sleep(time.Millisecond * 300)
 	t.bell = false
 	t.Refresh()
+}
+
+func (t *Terminal) scrollUp() {
+	for i := t.scrollBottom; i > t.scrollTop; i-- {
+		t.content.SetRow(i, t.content.Row(i-1))
+	}
+	t.content.SetRow(t.scrollTop, widget.TextGridRow{})
+}
+
+func (t *Terminal) scrollDown() {
+	for i := t.scrollTop; i < t.scrollBottom; i++ {
+		t.content.SetRow(i, t.content.Row(i+1))
+	}
+	t.content.SetRow(t.scrollBottom, widget.TextGridRow{})
 }

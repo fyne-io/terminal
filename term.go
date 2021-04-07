@@ -30,13 +30,14 @@ type Terminal struct {
 	listenerLock sync.Mutex
 	listeners    []chan Config
 
-	pty                  *os.File
-	focused, bell        bool
-	cursorRow, cursorCol int
-	savedRow, savedCol   int
-	cursor               *canvas.Rectangle
-	cursorHidden         bool
-	cursorMoved          func()
+	pty                     *os.File
+	focused, bell           bool
+	cursorRow, cursorCol    int
+	savedRow, savedCol      int
+	scrollTop, scrollBottom int
+	cursor                  *canvas.Rectangle
+	cursorHidden            bool
+	cursorMoved             func()
 }
 
 // AddListener registers a new outgoing channel that will have our Config sent each time it changes.
@@ -81,6 +82,9 @@ func (t *Terminal) Resize(s fyne.Size) {
 
 	t.config.Columns = uint(math.Floor(float64(s.Width) / float64(cellSize.Width)))
 	t.config.Rows = uint(math.Floor(float64(s.Height) / float64(cellSize.Height)))
+	if t.scrollBottom == 0 {
+		t.scrollBottom = int(t.config.Rows)-1
+	}
 	t.onConfigure()
 
 	t.updatePTYSize()

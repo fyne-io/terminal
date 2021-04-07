@@ -71,6 +71,35 @@ func (t *Terminal) handleEscape(code string) {
 			t.moveCursor(row-1, col-1)
 		case "m":
 			t.handleColorEscape(message)
+		case "r":
+			parts := strings.Split(message, ";")
+			start := 0
+			end := int(t.config.Rows)
+			if len(parts) == 2 {
+				if parts[0] != "" {
+					start, _ = strconv.Atoi(parts[0])
+					start--
+				}
+				if parts[1] != "" {
+					end, _ = strconv.Atoi(parts[1])
+					end--
+				}
+			}
+
+			t.scrollTop = start
+			t.scrollBottom = end
+		case "L":
+			rows, _ := strconv.Atoi(message)
+			if rows == 0 {
+				rows = 1
+			}
+			i := t.scrollBottom
+			for ; i > t.cursorRow-rows; i-- {
+				t.content.SetRow(i, t.content.Row(i-rows))
+			}
+			for ; i >= t.cursorRow; i-- {
+				t.content.SetRow(i, widget.TextGridRow{})
+			}
 		default:
 			log.Println("Unrecognised Escape:", code)
 		}
