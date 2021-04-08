@@ -23,3 +23,27 @@ Just use the go get command (you'll need a Go and C compiler installed first):
 $ go get github.com/fyne-io/terminal/cmd/fyneterm
 ```
 
+# Library
+
+You can also use this project as a library to create your own
+terminal based applications, using the import path "github.com/fyne-io/terminal".
+
+For example to open a terminal to an SSH connection that you have created:
+
+```go
+	// session is an *fynessh.Session from golang.org/x/crypto/fynessh
+    // win is a fyne.Window created to hold the content
+	in, _ := session.StdinPipe()
+	out, _ := session.StdoutPipe()
+
+	go session.Run("$SHELL || bash")
+
+	t := terminal.NewTerminal()
+	w.SetContent(t)
+
+	go func() {
+		_ = t.RunWithConnection(in, out)
+		a.Quit()
+	}()
+	w.ShowAndRun()
+```

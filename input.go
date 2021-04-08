@@ -9,7 +9,7 @@ import (
 
 // TypedRune is called when the user types a visible character
 func (t *Terminal) TypedRune(r rune) {
-	_, _ = t.pty.WriteString(string(r))
+	_, _ = t.in.Write([]byte{byte(r)})
 }
 
 // TypedKey will be called if a non-printable keyboard event occurs
@@ -21,24 +21,24 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 	switch e.Name {
 	case fyne.KeyEnter, fyne.KeyReturn:
 		if t.bufferMode {
-			_, _ = t.pty.Write([]byte{'\r'})
+			_, _ = t.in.Write([]byte{'\r'})
 		} else {
-			_, _ = t.pty.Write([]byte{'\n'})
+			_, _ = t.in.Write([]byte{'\n'})
 		}
 	case fyne.KeyTab:
-		_, _ = t.pty.Write([]byte{'\t'})
+		_, _ = t.in.Write([]byte{'\t'})
 	case fyne.KeyEscape:
-		_, _ = t.pty.Write([]byte{asciiEscape})
+		_, _ = t.in.Write([]byte{asciiEscape})
 	case fyne.KeyBackspace:
-		_, _ = t.pty.Write([]byte{asciiBackspace})
+		_, _ = t.in.Write([]byte{asciiBackspace})
 	case fyne.KeyUp:
-		_, _ = t.pty.Write([]byte{asciiEscape, cursorPrefix, 'A'})
+		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'A'})
 	case fyne.KeyDown:
-		_, _ = t.pty.Write([]byte{asciiEscape, cursorPrefix, 'B'})
+		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'B'})
 	case fyne.KeyLeft:
-		_, _ = t.pty.Write([]byte{asciiEscape, cursorPrefix, 'D'})
+		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'D'})
 	case fyne.KeyRight:
-		_, _ = t.pty.Write([]byte{asciiEscape, cursorPrefix, 'C'})
+		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'C'})
 	}
 }
 
@@ -52,18 +52,18 @@ func (t *Terminal) FocusGained() {
 func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	// we need to override the default cut/copy/paste and do it ourselves
 	if _, ok := s.(*fyne.ShortcutCut); ok {
-		_, _ = t.pty.Write([]byte{0x18})
+		_, _ = t.in.Write([]byte{0x18})
 	} else if _, ok := s.(*fyne.ShortcutCopy); ok {
-		_, _ = t.pty.Write([]byte{0x3})
+		_, _ = t.in.Write([]byte{0x3})
 	} else if _, ok := s.(*fyne.ShortcutPaste); ok {
-		_, _ = t.pty.Write([]byte{0x16})
+		_, _ = t.in.Write([]byte{0x16})
 	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
 		if strings.Contains(string(ds.KeyName), "Control") { // TODO https://github.com/fyne-io/fyne/issues/2148
 			return
 		}
 
 		off := ds.KeyName[0] - 'A' + 1
-		_, _ = t.pty.Write([]byte{off})
+		_, _ = t.in.Write([]byte{off})
 	}
 }
 

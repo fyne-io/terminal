@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"image/color"
+	"io"
 	"math"
 	"os"
 	"os/exec"
@@ -30,7 +31,10 @@ type Terminal struct {
 	listenerLock sync.Mutex
 	listeners    []chan Config
 
-	pty                      *os.File
+	pty *os.File
+	in  io.WriteCloser
+	out io.Reader
+
 	focused, bell            bool
 	cursorRow, cursorCol     int
 	savedRow, savedCol       int
@@ -91,6 +95,9 @@ func (t *Terminal) Resize(s fyne.Size) {
 }
 
 func (t *Terminal) updatePTYSize() {
+	if t.pty == nil { // SSH or other direct connection?
+		return
+	}
 	scale := float32(1.0)
 	c := fyne.CurrentApp().Driver().CanvasForObject(t)
 	if c != nil {
@@ -134,7 +141,8 @@ func (t *Terminal) open() error {
 	if err != nil {
 		return err
 	}
-	t.pty = handle
+	t.in = handle
+	t.out = handle
 
 	t.updatePTYSize()
 	return nil
@@ -143,10 +151,15 @@ func (t *Terminal) open() error {
 // Exit requests that this terminal exits.
 // If there are embedded shells it will exit the child one only.
 func (t *Terminal) Exit() {
-	_, _ = t.pty.Write([]byte("exit\n"))
+	_, _ = t.in.Write([]byte("exit\n"))
 }
 
 func (t *Terminal) close() error {
+	_ = t.in.Close() // we may already be closed
+	if t.pty == nil {
+		return nil
+	}
+
 	return t.pty.Close()
 }
 
@@ -162,7 +175,7 @@ func (t *Terminal) run() {
 	bufLen := 4069
 	buf := make([]byte, bufLen)
 	for {
-		num, err := t.pty.Read(buf)
+		num, err := t.out.Read(buf)
 		if err != nil {
 			// this is the pre-go 1.13 way to check for the read failing (terminal closed)
 			if err.Error() == "EOF" {
@@ -181,8 +194,8 @@ func (t *Terminal) run() {
 	}
 }
 
-// Run starts the terminal by loading a shell and starting to process the input/output
-func (t *Terminal) Run() error {
+// RunLocalShell starts the terminal by loading a shell and starting to process the input/output.
+func (t *Terminal) RunLocalShell() error {
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
 		time.Sleep(time.Millisecond * 50)
 	}
@@ -190,6 +203,19 @@ func (t *Terminal) Run() error {
 	if err != nil {
 		return err
 	}
+
+	t.run()
+
+	return t.close()
+}
+
+// RunWithConnection starts the terminal by connecting to an external resource like an SSH connection.
+func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
+	for t.config.Columns == 0 { // don't load the TTY until our output is configured
+		time.Sleep(time.Millisecond * 50)
+	}
+	t.in = in
+	t.out = out
 
 	t.run()
 

@@ -61,7 +61,7 @@ func main() {
 	w.Canvas().Focus(t)
 
 	go func() {
-		err := t.Run()
+		err := t.RunLocalShell()
 		if err != nil {
 			fyne.LogError("Failure in terminal", err)
 		}
