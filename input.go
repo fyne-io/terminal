@@ -58,7 +58,7 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	} else if _, ok := s.(*fyne.ShortcutPaste); ok {
 		_, _ = t.pty.Write([]byte{0x16})
 	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
-		if strings.Index(string(ds.KeyName), "Control") != -1 { // TODO fix in Fyne
+		if strings.Contains(string(ds.KeyName), "Control") { // TODO https://github.com/fyne-io/fyne/issues/2148
 			return
 		}
 
