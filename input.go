@@ -12,21 +12,31 @@ func (t *Terminal) TypedRune(r rune) {
 
 // TypedKey will be called if a non-printable keyboard event occurs
 func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
+	cursorPrefix := byte('[')
+	if t.bufferMode {
+		cursorPrefix = 'O'
+	}
 	switch e.Name {
 	case fyne.KeyEnter, fyne.KeyReturn:
-		_, _ = t.pty.Write([]byte{'\n'})
+		if t.bufferMode {
+			_, _ = t.pty.Write([]byte{'\r'})
+		} else {
+			_, _ = t.pty.Write([]byte{'\n'})
+		}
+	case fyne.KeyTab:
+		_, _ = t.pty.Write([]byte{'\t'})
 	case fyne.KeyEscape:
 		_, _ = t.pty.Write([]byte{asciiEscape})
 	case fyne.KeyBackspace:
 		_, _ = t.pty.Write([]byte{asciiBackspace})
 	case fyne.KeyUp:
-		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'A'})
+		_, _ = t.pty.Write([]byte{asciiEscape, cursorPrefix, 'A'})
 	case fyne.KeyDown:
-		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'B'})
+		_, _ = t.pty.Write([]byte{asciiEscape, cursorPrefix, 'B'})
 	case fyne.KeyLeft:
-		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'D'})
+		_, _ = t.pty.Write([]byte{asciiEscape, cursorPrefix, 'D'})
 	case fyne.KeyRight:
-		_, _ = t.pty.Write([]byte{asciiEscape, '[', 'C'})
+		_, _ = t.pty.Write([]byte{asciiEscape, cursorPrefix, 'C'})
 	}
 }
 

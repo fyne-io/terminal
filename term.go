@@ -30,14 +30,14 @@ type Terminal struct {
 	listenerLock sync.Mutex
 	listeners    []chan Config
 
-	pty                     *os.File
-	focused, bell           bool
-	cursorRow, cursorCol    int
-	savedRow, savedCol      int
-	scrollTop, scrollBottom int
-	cursor                  *canvas.Rectangle
-	cursorHidden            bool
-	cursorMoved             func()
+	pty                      *os.File
+	focused, bell            bool
+	cursorRow, cursorCol     int
+	savedRow, savedCol       int
+	scrollTop, scrollBottom  int
+	cursor                   *canvas.Rectangle
+	cursorHidden, bufferMode bool // buffer mode is an xterm extension that impacts control keys
+	cursorMoved              func()
 }
 
 // AddListener registers a new outgoing channel that will have our Config sent each time it changes.
