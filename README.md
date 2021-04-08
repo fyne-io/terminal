@@ -32,7 +32,7 @@ For example to open a terminal to an SSH connection that you have created:
 
 ```go
 	// session is an *fynessh.Session from golang.org/x/crypto/fynessh
-    // win is a fyne.Window created to hold the content
+	// win is a fyne.Window created to hold the content
 	in, _ := session.StdinPipe()
 	out, _ := session.StdoutPipe()
 
