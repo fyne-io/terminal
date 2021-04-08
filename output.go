@@ -36,6 +36,10 @@ func (t *Terminal) handleOutput(buf []byte) {
 				continue
 			}
 			switch r {
+			case '\\':
+				t.handleOSC(state.code)
+				state.code = ""
+				state.osc = false
 			case ']':
 				state.osc = true
 			case '(', ')':

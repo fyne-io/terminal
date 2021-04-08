@@ -118,6 +118,12 @@ func (t *Terminal) open() error {
 	if shell == "" {
 		shell = "bash"
 	}
+
+	home, err := os.UserHomeDir()
+	if err == nil {
+		os.Chdir(home)
+	}
+
 	env := os.Environ()
 	env = append(env, "TERM=xterm-256color")
 	c := exec.Command(shell)
