@@ -71,6 +71,11 @@ func (t *Terminal) handleEscape(code string) {
 			t.moveCursor(row-1, col-1)
 		case "m":
 			t.handleColorEscape(message)
+		case "P":
+			dels, _ := strconv.Atoi(message)
+			for i := 0; i < dels-1; i++ {
+				_, _ = t.pty.Write([]byte{asciiBackspace})
+			}
 		case "r":
 			parts := strings.Split(message, ";")
 			start := 0
