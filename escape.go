@@ -141,9 +141,17 @@ func (t *Terminal) clearScreen() {
 
 func (t *Terminal) clearScreenFromCursor() {
 	row := t.content.Row(t.cursorRow)
-	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:t.cursorCol]})
+	from := t.cursorCol
+	if t.cursorCol >= len(row.Cells) {
+		from = len(row.Cells) - 1
+	}
+	if from > 0 {
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:from]})
+	} else {
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{})
+	}
 
-	for i := t.cursorRow; i < len(t.content.Rows); i++ {
+	for i := t.cursorRow + 1; i < len(t.content.Rows); i++ {
 		t.content.SetRow(i, widget.TextGridRow{})
 	}
 }
@@ -151,7 +159,10 @@ func (t *Terminal) clearScreenFromCursor() {
 func (t *Terminal) clearScreenToCursor() {
 	row := t.content.Row(t.cursorRow)
 	cells := make([]widget.TextGridCell, t.cursorCol)
-	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: append(cells, row.Cells[t.cursorCol:]...)})
+	if t.cursorCol < len(row.Cells) {
+		cells = append(cells, row.Cells[t.cursorCol:]...)
+	}
+	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
 
 	for i := 0; i < t.cursorRow-1; i++ {
 		t.content.SetRow(i, widget.TextGridRow{})
