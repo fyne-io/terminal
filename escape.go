@@ -28,6 +28,8 @@ func (t *Terminal) handleEscape(code string) {
 		t.refreshCursor()
 	case "J":
 		t.clearScreenFromCursor()
+	case "1J":
+		t.clearScreenToCursor()
 	case "2J":
 		t.clearScreen()
 	case "K":
@@ -36,6 +38,20 @@ func (t *Terminal) handleEscape(code string) {
 			return
 		}
 		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:t.cursorCol]})
+	case "1K":
+		row := t.content.Row(t.cursorRow)
+		if t.cursorCol >= len(row.Cells) {
+			return
+		}
+		cells := make([]widget.TextGridCell, t.cursorCol)
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: append(cells, row.Cells[t.cursorCol:]...)})
+	case "2K":
+		row := t.content.Row(t.cursorRow)
+		if t.cursorCol >= len(row.Cells) {
+			return
+		}
+		cells := make([]widget.TextGridCell, len(row.Cells))
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
 	case "s":
 		t.savedRow = t.cursorRow
 		t.savedCol = t.cursorCol
@@ -121,6 +137,16 @@ func (t *Terminal) clearScreenFromCursor() {
 	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:t.cursorCol]})
 
 	for i := t.cursorRow; i < len(t.content.Rows); i++ {
+		t.content.SetRow(i, widget.TextGridRow{})
+	}
+}
+
+func (t *Terminal) clearScreenToCursor() {
+	row := t.content.Row(t.cursorRow)
+	cells := make([]widget.TextGridCell, t.cursorCol)
+	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: append(cells, row.Cells[t.cursorCol:]...)})
+
+	for i := 0; i < t.cursorRow-1; i++ {
 		t.content.SetRow(i, widget.TextGridRow{})
 	}
 }
