@@ -26,13 +26,13 @@ func (t *Terminal) handleEscape(code string) {
 	case "?25l":
 		t.cursorHidden = true
 		t.refreshCursor()
-	case "J":
+	case "J", "0J":
 		t.clearScreenFromCursor()
 	case "1J":
 		t.clearScreenToCursor()
 	case "2J":
 		t.clearScreen()
-	case "K":
+	case "K", "0K":
 		row := t.content.Row(t.cursorRow)
 		if t.cursorCol >= len(row.Cells) {
 			return
@@ -82,7 +82,10 @@ func (t *Terminal) handleEscape(code string) {
 		case "H", "f":
 			parts := strings.Split(message, ";")
 			row, _ := strconv.Atoi(parts[0])
-			col, _ := strconv.Atoi(parts[1])
+			col := 1
+			if len(parts) == 2 {
+				col, _ = strconv.Atoi(parts[1])
+			}
 
 			t.moveCursor(row-1, col-1)
 		case "m":
