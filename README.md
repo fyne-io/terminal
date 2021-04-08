@@ -23,6 +23,16 @@ Just use the go get command (you'll need a Go and C compiler installed first):
 $ go get github.com/fyne-io/terminal/cmd/fyneterm
 ```
 
+# TODO
+
+There are lots of great things that could be added to this app.
+Already planned is:
+
+* Tabs
+* Scrollback
+* Tab completion
+* Windows support
+
 # Library
 
 You can also use this project as a library to create your own
