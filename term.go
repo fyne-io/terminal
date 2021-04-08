@@ -44,6 +44,11 @@ type Terminal struct {
 	cursorMoved              func()
 }
 
+// AcceptsTab indicates that this widget will use the Tab key (avoids loss of focus).
+func (t *Terminal) AcceptsTab() bool {
+	return true
+}
+
 // AddListener registers a new outgoing channel that will have our Config sent each time it changes.
 func (t *Terminal) AddListener(listener chan Config) {
 	t.listenerLock.Lock()

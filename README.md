@@ -30,8 +30,8 @@ Already planned is:
 
 * Tabs
 * Scrollback
-* Tab completion
 * Windows support
+* Copy and Paste
 
 # Library
 
