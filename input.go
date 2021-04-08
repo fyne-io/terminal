@@ -1,6 +1,8 @@
 package terminal
 
 import (
+	"strings"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 )
@@ -56,6 +58,10 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	} else if _, ok := s.(*fyne.ShortcutPaste); ok {
 		_, _ = t.pty.Write([]byte{0x16})
 	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
+		if strings.Index(string(ds.KeyName), "Control") != -1 { // TODO fix in Fyne
+			return
+		}
+
 		off := ds.KeyName[0] - 'A' + 1
 		_, _ = t.pty.Write([]byte{off})
 	}
