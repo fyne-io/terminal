@@ -7,7 +7,7 @@ import (
 )
 
 func TestClearScreen(t *testing.T) {
-	term := NewTerminal()
+	term := New()
 	term.config.Columns = 5
 	term.config.Rows = 2
 	term.handleOutput([]byte("Hello"))
@@ -18,7 +18,7 @@ func TestClearScreen(t *testing.T) {
 }
 
 func TestEraseLine(t *testing.T) {
-	term := NewTerminal()
+	term := New()
 	term.config.Columns = 5
 	term.config.Rows = 2
 	term.handleOutput([]byte("Hello"))
@@ -30,7 +30,7 @@ func TestEraseLine(t *testing.T) {
 }
 
 func TestCursorMove(t *testing.T) {
-	term := NewTerminal()
+	term := New()
 	term.config.Columns = 5
 	term.config.Rows = 2
 	term.handleOutput([]byte("Hello"))
@@ -59,7 +59,7 @@ func TestCursorMove(t *testing.T) {
 }
 
 func TestCursorMove_Overflow(t *testing.T) {
-	term := NewTerminal()
+	term := New()
 	term.config.Columns = 2
 	term.config.Rows = 2
 	term.handleEscape("2;2H")

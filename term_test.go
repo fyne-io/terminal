@@ -11,13 +11,13 @@ import (
 )
 
 func TestNewTerminal(t *testing.T) {
-	term := NewTerminal()
+	term := New()
 	assert.NotNil(t, term)
 	assert.NotNil(t, term.content)
 }
 
 func TestTerminal_Resize(t *testing.T) {
-	term := NewTerminal()
+	term := New()
 	term.Resize(fyne.NewSize(45, 45))
 
 	assert.Equal(t, uint(4), term.config.Columns)
@@ -25,7 +25,7 @@ func TestTerminal_Resize(t *testing.T) {
 }
 
 func TestTerminal_AddListener(t *testing.T) {
-	term := NewTerminal()
+	term := New()
 	listen := make(chan Config, 1)
 	term.AddListener(listen)
 	assert.Equal(t, 1, len(term.listeners))

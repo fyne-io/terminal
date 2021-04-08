@@ -38,7 +38,7 @@ For example to open a terminal to an SSH connection that you have created:
 
 	go session.Run("$SHELL || bash")
 
-	t := terminal.NewTerminal()
+	t := terminal.New()
 	w.SetContent(t)
 
 	go func() {

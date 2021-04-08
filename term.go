@@ -222,8 +222,8 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
 	return t.close()
 }
 
-// NewTerminal sets up a new terminal instance with the bash shell
-func NewTerminal() *Terminal {
+// New sets up a new terminal instance with the bash shell
+func New() *Terminal {
 	t := &Terminal{}
 	t.ExtendBaseWidget(t)
 	t.content = widget.NewTextGrid()

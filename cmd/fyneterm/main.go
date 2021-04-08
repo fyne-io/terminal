@@ -52,7 +52,7 @@ func main() {
 	img.FillMode = canvas.ImageFillContain
 	img.Translucency = 0.95
 
-	t := terminal.NewTerminal()
+	t := terminal.New()
 	setupListener(t, w)
 	w.SetContent(container.NewMax(bg, img, t))
 

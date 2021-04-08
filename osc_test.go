@@ -7,7 +7,7 @@ import (
 )
 
 func TestOSC_Title(t *testing.T) {
-	term := NewTerminal()
+	term := New()
 	assert.Equal(t, "", term.config.Title)
 
 	term.handleOSC("0;Test")
