@@ -8,6 +8,14 @@ import (
 
 const noEscape = 5000
 
+var specialChars = map[rune]func(t *Terminal){
+	asciiBackspace: handleOutputBackspace,
+	'\n':           handleOutputLineFeed,
+	'\r':           handleOutputCarriageReturn,
+	'\t':           handleOutputTab,
+	asciiBell:      handleOutputBell,
+}
+
 var previous *parseState
 
 type parseState struct {
@@ -82,56 +90,10 @@ func (t *Terminal) handleOutput(buf []byte) {
 			continue
 		}
 
-		switch r {
-		case asciiBackspace:
-			row := t.content.Row(t.cursorRow)
-			if len(row.Cells) == 0 {
-				continue
-			}
-			t.moveCursor(t.cursorRow, t.cursorCol-1)
-			continue
-		case '\n': // line feed
-			if t.cursorRow == t.scrollBottom {
-				t.scrollDown()
-			} else {
-				t.moveCursor(t.cursorRow+1, t.cursorCol)
-			}
-			continue
-		case '\r': // carriage return
-			t.moveCursor(t.cursorRow, 0)
-			continue
-		case asciiBell:
-			go t.ringBell()
-			continue
-		default:
-			if t.cursorCol >= int(t.config.Columns) || t.cursorRow >= int(t.config.Rows) {
-				break // TODO handle wrap?
-			}
-			for len(t.content.Rows)-1 < t.cursorRow {
-				t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
-			}
-
-			if r == '\t' { // TODO handle tab
-				r = ' '
-			}
-
-			cellStyle := &widget.CustomTextGridStyle{FGColor: currentFG, BGColor: currentBG}
-
-			for len(t.content.Rows[t.cursorRow].Cells)-1 < t.cursorCol {
-				newCell := widget.TextGridCell{
-					Rune:  ' ',
-					Style: cellStyle,
-				}
-				t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newCell)
-			}
-
-			cell := t.content.Rows[t.cursorRow].Cells[t.cursorCol]
-			if cell.Rune != r || cell.Style.TextColor() != cellStyle.FGColor || cell.Style.BackgroundColor() != cellStyle.BGColor {
-				cell.Rune = r
-				cell.Style = cellStyle
-				t.content.SetCell(t.cursorRow, t.cursorCol, cell)
-			}
-			t.cursorCol++
+		if out, ok := specialChars[r]; ok {
+			out(t)
+		} else {
+			t.handleOutputChar(r)
 		}
 	}
 
@@ -140,6 +102,32 @@ func (t *Terminal) handleOutput(buf []byte) {
 		state.esc = -1 - (len(state.code))
 		previous = state
 	}
+}
+
+func (t *Terminal) handleOutputChar(r rune) {
+	if t.cursorCol >= int(t.config.Columns) || t.cursorRow >= int(t.config.Rows) {
+		return // TODO handle wrap?
+	}
+	for len(t.content.Rows)-1 < t.cursorRow {
+		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
+	}
+
+	cellStyle := &widget.CustomTextGridStyle{FGColor: currentFG, BGColor: currentBG}
+	for len(t.content.Rows[t.cursorRow].Cells)-1 < t.cursorCol {
+		newCell := widget.TextGridCell{
+			Rune:  ' ',
+			Style: cellStyle,
+		}
+		t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newCell)
+	}
+
+	cell := t.content.Rows[t.cursorRow].Cells[t.cursorCol]
+	if cell.Rune != r || cell.Style.TextColor() != cellStyle.FGColor || cell.Style.BackgroundColor() != cellStyle.BGColor {
+		cell.Rune = r
+		cell.Style = cellStyle
+		t.content.SetCell(t.cursorRow, t.cursorCol, cell)
+	}
+	t.cursorCol++
 }
 
 func (t *Terminal) ringBell() {
@@ -165,4 +153,33 @@ func (t *Terminal) scrollDown() {
 	}
 	t.content.Rows[t.scrollBottom] = widget.TextGridRow{}
 	t.content.Refresh()
+}
+
+func handleOutputBackspace(t *Terminal) {
+	row := t.content.Row(t.cursorRow)
+	if len(row.Cells) == 0 {
+		return
+	}
+	t.moveCursor(t.cursorRow, t.cursorCol-1)
+}
+
+func handleOutputBell(t *Terminal) {
+	go t.ringBell()
+}
+
+func handleOutputCarriageReturn(t *Terminal) {
+	t.moveCursor(t.cursorRow, 0)
+}
+
+func handleOutputLineFeed(t *Terminal) {
+	if t.cursorRow == t.scrollBottom {
+		t.scrollDown()
+	} else {
+		t.moveCursor(t.cursorRow+1, t.cursorCol)
+	}
+}
+
+func handleOutputTab(t *Terminal) {
+	// TODO handle tab
+	t.handleOutputChar(' ')
 }

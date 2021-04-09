@@ -8,129 +8,37 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+var escapes = map[rune]func(*Terminal, string){
+	'A': escapeMoveCursorUp,
+	'B': escapeMoveCursorDown,
+	'C': escapeMoveCursorRight,
+	'D': escapeMoveCursorLeft,
+	'd': escapeMoveCursorRow,
+	'H': escapeMoveCursor,
+	'f': escapeMoveCursor,
+	'G': escapeMoveCursorCol,
+	'h': escapePrivateModeOn,
+	'L': escapeInsertLines,
+	'l': escapePrivateModeOff,
+	'm': escapeColorMode,
+	'J': escapeEraseInScreen,
+	'K': escapeEraseInLine,
+	'P': escapeDeleteChars,
+	'r': escapeSetScrollArea,
+	's': escapeSaveCursor,
+	'u': escapeRestoreCursor,
+}
+
 func (t *Terminal) handleEscape(code string) {
-	switch code { // exact matches
-	case "A":
-		t.moveCursor(t.cursorRow-1, t.cursorCol)
-	case "B":
-		t.moveCursor(t.cursorRow+1, t.cursorCol)
-	case "C":
-		t.moveCursor(t.cursorRow, t.cursorCol+1)
-	case "D":
-		t.moveCursor(t.cursorRow, t.cursorCol-1)
-	case "H", "f":
-		t.moveCursor(0, 0)
-	case "?25h":
-		t.cursorHidden = false
-		t.refreshCursor()
-	case "?25l":
-		t.cursorHidden = true
-		t.refreshCursor()
-	case "?1049h":
-		t.bufferMode = true
-	case "?1049l":
-		t.bufferMode = false
-	case "J", "0J":
-		t.clearScreenFromCursor()
-	case "1J":
-		t.clearScreenToCursor()
-	case "2J":
-		t.clearScreen()
-	case "K", "0K":
-		row := t.content.Row(t.cursorRow)
-		if t.cursorCol >= len(row.Cells) {
-			return
-		}
-		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:t.cursorCol]})
-	case "1K":
-		row := t.content.Row(t.cursorRow)
-		if t.cursorCol >= len(row.Cells) {
-			return
-		}
-		cells := make([]widget.TextGridCell, t.cursorCol)
-		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: append(cells, row.Cells[t.cursorCol:]...)})
-	case "2K":
-		row := t.content.Row(t.cursorRow)
-		if t.cursorCol >= len(row.Cells) {
-			return
-		}
-		cells := make([]widget.TextGridCell, len(row.Cells))
-		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
-	case "s":
-		t.savedRow = t.cursorRow
-		t.savedCol = t.cursorCol
-	case "u":
-		t.moveCursor(t.savedRow, t.savedCol)
-	default: // check mode (last letter) then match
-		message := code[:len(code)-1]
-		part := code[len(code)-1:]
-		switch part {
-		case "A":
-			rows, _ := strconv.Atoi(message)
-			t.moveCursor(t.cursorRow-rows, t.cursorCol)
-		case "B":
-			rows, _ := strconv.Atoi(message)
-			t.moveCursor(t.cursorRow+rows, t.cursorCol)
-		case "C":
-			cols, _ := strconv.Atoi(message)
-			t.moveCursor(t.cursorRow, t.cursorCol+cols)
-		case "D":
-			cols, _ := strconv.Atoi(message)
-			t.moveCursor(t.cursorRow, t.cursorCol-cols)
-		case "d":
-			row, _ := strconv.Atoi(message)
-			t.moveCursor(row-1, t.cursorCol)
-		case "G":
-			col, _ := strconv.Atoi(message)
-			t.moveCursor(t.cursorRow, col-1)
-		case "H", "f":
-			parts := strings.Split(message, ";")
-			row, _ := strconv.Atoi(parts[0])
-			col := 1
-			if len(parts) == 2 {
-				col, _ = strconv.Atoi(parts[1])
-			}
+	if code == "" {
+		return
+	}
 
-			t.moveCursor(row-1, col-1)
-		case "m":
-			t.handleColorEscape(message)
-		case "P":
-			dels, _ := strconv.Atoi(message)
-			for i := 0; i < dels-1; i++ {
-				_, _ = t.pty.Write([]byte{asciiBackspace})
-			}
-		case "r":
-			parts := strings.Split(message, ";")
-			start := 0
-			end := int(t.config.Rows)
-			if len(parts) == 2 {
-				if parts[0] != "" {
-					start, _ = strconv.Atoi(parts[0])
-					start--
-				}
-				if parts[1] != "" {
-					end, _ = strconv.Atoi(parts[1])
-					end--
-				}
-			}
-
-			t.scrollTop = start
-			t.scrollBottom = end
-		case "L":
-			rows, _ := strconv.Atoi(message)
-			if rows == 0 {
-				rows = 1
-			}
-			i := t.scrollBottom
-			for ; i > t.cursorRow-rows; i-- {
-				t.content.SetRow(i, t.content.Row(i-rows))
-			}
-			for ; i >= t.cursorRow; i-- {
-				t.content.SetRow(i, widget.TextGridRow{})
-			}
-		default:
-			log.Println("Unrecognised Escape:", code)
-		}
+	runes := []rune(code)
+	if esc, ok := escapes[runes[len(code)-1]]; ok {
+		esc(t, code[:len(code)-1])
+	} else {
+		log.Println("Unrecognised Escape:", code)
 	}
 }
 
@@ -198,4 +106,173 @@ func (t *Terminal) moveCursor(row, col int) {
 	if t.cursorMoved != nil {
 		t.cursorMoved()
 	}
+}
+
+func escapeColorMode(t *Terminal, msg string) {
+	t.handleColorEscape(msg)
+}
+
+func escapeDeleteChars(t *Terminal, msg string) {
+	dels, _ := strconv.Atoi(msg)
+	for i := 0; i < dels-1; i++ {
+		_, _ = t.pty.Write([]byte{asciiBackspace})
+	}
+}
+
+func escapeEraseInLine(t *Terminal, msg string) {
+	mode, _ := strconv.Atoi(msg)
+	switch mode {
+	case 0:
+		row := t.content.Row(t.cursorRow)
+		if t.cursorCol >= len(row.Cells) {
+			return
+		}
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:t.cursorCol]})
+	case 1:
+		row := t.content.Row(t.cursorRow)
+		if t.cursorCol >= len(row.Cells) {
+			return
+		}
+		cells := make([]widget.TextGridCell, t.cursorCol)
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: append(cells, row.Cells[t.cursorCol:]...)})
+	case 2:
+		row := t.content.Row(t.cursorRow)
+		if t.cursorCol >= len(row.Cells) {
+			return
+		}
+		cells := make([]widget.TextGridCell, len(row.Cells))
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
+	}
+}
+
+func escapeEraseInScreen(t *Terminal, msg string) {
+	mode, _ := strconv.Atoi(msg)
+	switch mode {
+	case 0:
+		t.clearScreenFromCursor()
+	case 1:
+		t.clearScreenToCursor()
+	case 2:
+		t.clearScreen()
+	}
+}
+
+func escapeInsertLines(t *Terminal, msg string) {
+	rows, _ := strconv.Atoi(msg)
+	if rows == 0 {
+		rows = 1
+	}
+	i := t.scrollBottom
+	for ; i > t.cursorRow-rows; i-- {
+		t.content.SetRow(i, t.content.Row(i-rows))
+	}
+	for ; i >= t.cursorRow; i-- {
+		t.content.SetRow(i, widget.TextGridRow{})
+	}
+}
+
+func escapeMoveCursorUp(t *Terminal, msg string) {
+	rows, _ := strconv.Atoi(msg)
+	if rows == 0 {
+		rows = 1
+	}
+	t.moveCursor(t.cursorRow-rows, t.cursorCol)
+}
+
+func escapeMoveCursorDown(t *Terminal, msg string) {
+	rows, _ := strconv.Atoi(msg)
+	if rows == 0 {
+		rows = 1
+	}
+	t.moveCursor(t.cursorRow+rows, t.cursorCol)
+}
+
+func escapeMoveCursorRight(t *Terminal, msg string) {
+	cols, _ := strconv.Atoi(msg)
+	if cols == 0 {
+		cols = 1
+	}
+	t.moveCursor(t.cursorRow, t.cursorCol+cols)
+}
+
+func escapeMoveCursorLeft(t *Terminal, msg string) {
+	cols, _ := strconv.Atoi(msg)
+	if cols == 0 {
+		cols = 1
+	}
+	t.moveCursor(t.cursorRow, t.cursorCol-cols)
+}
+
+func escapeMoveCursorRow(t *Terminal, msg string) {
+	row, _ := strconv.Atoi(msg)
+	t.moveCursor(row-1, t.cursorCol)
+}
+
+func escapeMoveCursorCol(t *Terminal, msg string) {
+	col, _ := strconv.Atoi(msg)
+	t.moveCursor(t.cursorRow, col-1)
+}
+
+func escapePrivateMode(t *Terminal, msg string, enable bool) {
+	switch msg {
+	case "?25":
+		t.cursorHidden = !enable
+		t.refreshCursor()
+	case "?1049":
+		t.bufferMode = enable
+	default:
+		log.Println("Unknown private escape code", msg+"[hl]")
+	}
+}
+
+func escapePrivateModeOff(t *Terminal, msg string) {
+	escapePrivateMode(t, msg, false)
+}
+
+func escapePrivateModeOn(t *Terminal, msg string) {
+	escapePrivateMode(t, msg, true)
+}
+
+func escapeMoveCursor(t *Terminal, msg string) {
+	if !strings.Contains(msg, ";") {
+		t.moveCursor(0, 0)
+		return
+	}
+
+	parts := strings.Split(msg, ";")
+	row, _ := strconv.Atoi(parts[0])
+	col := 1
+	if len(parts) == 2 {
+		col, _ = strconv.Atoi(parts[1])
+	}
+
+	t.moveCursor(row-1, col-1)
+}
+
+func escapeRestoreCursor(t *Terminal, _ string) {
+	t.moveCursor(t.savedRow, t.savedCol)
+}
+
+func escapeSaveCursor(t *Terminal, _ string) {
+	t.savedRow = t.cursorRow
+	t.savedCol = t.cursorCol
+}
+
+func escapeSetScrollArea(t *Terminal, msg string) {
+	parts := strings.Split(msg, ";")
+	start := 0
+	end := int(t.config.Rows)
+	if len(parts) == 2 {
+		if parts[0] != "" {
+			start, _ = strconv.Atoi(parts[0])
+			start--
+		}
+		if parts[1] != "" {
+			end, _ = strconv.Atoi(parts[1])
+			end--
+		}
+	}
+
+	t.scrollTop = start
+	t.scrollBottom = end
 }
