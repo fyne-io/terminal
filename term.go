@@ -30,6 +30,7 @@ type Terminal struct {
 	config       Config
 	listenerLock sync.Mutex
 	listeners    []chan Config
+	startDir     string
 
 	pty *os.File
 	in  io.WriteCloser
@@ -99,6 +100,11 @@ func (t *Terminal) Resize(s fyne.Size) {
 	t.updatePTYSize()
 }
 
+// SetStartDir can be called before one of the Run calls to specify the initial directory.
+func (t *Terminal) SetStartDir(path string) {
+	t.startDir = path
+}
+
 func (t *Terminal) updatePTYSize() {
 	if t.pty == nil { // SSH or other direct connection?
 		return
@@ -131,11 +137,7 @@ func (t *Terminal) open() error {
 		shell = "bash"
 	}
 
-	home, err := os.UserHomeDir()
-	if err == nil {
-		os.Chdir(home)
-	}
-
+	os.Chdir(t.startingDir())
 	env := os.Environ()
 	env = append(env, "TERM=xterm-256color")
 	c := exec.Command(shell)
@@ -225,6 +227,17 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
 	t.run()
 
 	return t.close()
+}
+
+func (t *Terminal) startingDir() string {
+	if t.startDir == "" {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			return home
+		}
+	}
+
+	return t.startDir
 }
 
 // New sets up a new terminal instance with the bash shell
