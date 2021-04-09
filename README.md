@@ -30,6 +30,8 @@ Already planned is:
 
 * Tabs
 * Scrollback
+* Background and font/size customisation
+* Split panels
 * Windows support
 * Copy and Paste
 
