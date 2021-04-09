@@ -89,10 +89,11 @@ func (t *Terminal) Resize(s fyne.Size) {
 	t.content.Resize(s)
 
 	cellSize := t.guessCellSize()
+	oldRows := int(t.config.Rows)
 
 	t.config.Columns = uint(math.Floor(float64(s.Width) / float64(cellSize.Width)))
 	t.config.Rows = uint(math.Floor(float64(s.Height) / float64(cellSize.Height)))
-	if t.scrollBottom == 0 {
+	if t.scrollBottom == 0 || t.scrollBottom == oldRows-1 {
 		t.scrollBottom = int(t.config.Rows) - 1
 	}
 	t.onConfigure()
