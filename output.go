@@ -6,14 +6,20 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-const noEscape = 5000
+const (
+	asciiBell      = 7
+	asciiBackspace = 8
+	asciiEscape    = 27
+
+	noEscape = 5000
+)
 
 var specialChars = map[rune]func(t *Terminal){
+	asciiBell:      handleOutputBell,
 	asciiBackspace: handleOutputBackspace,
 	'\n':           handleOutputLineFeed,
 	'\r':           handleOutputCarriageReturn,
 	'\t':           handleOutputTab,
-	asciiBell:      handleOutputBell,
 }
 
 var previous *parseState

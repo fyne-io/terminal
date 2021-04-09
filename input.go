@@ -31,6 +31,8 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 		_, _ = t.in.Write([]byte{asciiEscape})
 	case fyne.KeyBackspace:
 		_, _ = t.in.Write([]byte{asciiBackspace})
+	case fyne.KeyDelete:
+		_, _ = t.in.Write([]byte{asciiEscape, '[', '3', '~'})
 	case fyne.KeyUp:
 		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'A'})
 	case fyne.KeyDown:
