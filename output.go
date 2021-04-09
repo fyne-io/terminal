@@ -153,14 +153,16 @@ func (t *Terminal) ringBell() {
 
 func (t *Terminal) scrollUp() {
 	for i := t.scrollBottom; i > t.scrollTop; i-- {
-		t.content.SetRow(i, t.content.Row(i-1))
+		t.content.Rows[i] = t.content.Row(i - 1)
 	}
-	t.content.SetRow(t.scrollTop, widget.TextGridRow{})
+	t.content.Rows[t.scrollTop] = widget.TextGridRow{}
+	t.content.Refresh()
 }
 
 func (t *Terminal) scrollDown() {
 	for i := t.scrollTop; i < t.scrollBottom; i++ {
-		t.content.SetRow(i, t.content.Row(i+1))
+		t.content.Rows[i] = t.content.Row(i + 1)
 	}
-	t.content.SetRow(t.scrollBottom, widget.TextGridRow{})
+	t.content.Rows[t.scrollBottom] = widget.TextGridRow{}
+	t.content.Refresh()
 }
