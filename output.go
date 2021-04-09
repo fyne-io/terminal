@@ -155,10 +155,10 @@ func (t *Terminal) scrollUp() {
 
 func (t *Terminal) scrollDown() {
 	i := t.scrollTop
-	for ; i < t.scrollBottom && i < len(t.content.Rows)-2; i++ {
+	for ; i < t.scrollBottom && i < len(t.content.Rows)-1; i++ {
 		t.content.Rows[i] = t.content.Row(i + 1)
 	}
-	for ; i < len(t.content.Rows)-1; i++ {
+	for ; i < len(t.content.Rows); i++ {
 		if len(t.content.Rows) > t.scrollBottom {
 			t.content.Rows[t.scrollBottom] = widget.TextGridRow{}
 		} else {
