@@ -116,7 +116,7 @@ func (t *Terminal) updatePTYSize() {
 	}
 	_ = pty.Setsize(t.pty, &pty.Winsize{
 		Rows: uint16(t.config.Rows), Cols: uint16(t.config.Columns),
-		X: uint16(float32(t.Size().Width) * scale), Y: uint16(float32(t.Size().Height) * scale)})
+		X: uint16(t.Size().Width * scale), Y: uint16(t.Size().Height * scale)})
 }
 
 func (t *Terminal) onConfigure() {
@@ -137,7 +137,7 @@ func (t *Terminal) open() error {
 		shell = "bash"
 	}
 
-	os.Chdir(t.startingDir())
+	_ = os.Chdir(t.startingDir())
 	env := os.Environ()
 	env = append(env, "TERM=xterm-256color")
 	c := exec.Command(shell)

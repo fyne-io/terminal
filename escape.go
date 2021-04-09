@@ -113,10 +113,17 @@ func escapeColorMode(t *Terminal, msg string) {
 }
 
 func escapeDeleteChars(t *Terminal, msg string) {
-	dels, _ := strconv.Atoi(msg)
-	for i := 0; i < dels-1; i++ {
-		_, _ = t.pty.Write([]byte{asciiBackspace})
+	i, _ := strconv.Atoi(msg)
+	right := t.cursorCol + i
+
+	row := t.content.Row(t.cursorRow)
+	cells := row.Cells[:t.cursorCol]
+	cells = append(cells, make([]widget.TextGridCell, i)...)
+	if right < len(row.Cells) {
+		cells = append(cells, row.Cells[right:]...)
 	}
+
+	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
 }
 
 func escapeEraseInLine(t *Terminal, msg string) {
@@ -261,7 +268,7 @@ func escapeSaveCursor(t *Terminal, _ string) {
 func escapeSetScrollArea(t *Terminal, msg string) {
 	parts := strings.Split(msg, ";")
 	start := 0
-	end := int(t.config.Rows)
+	end := int(t.config.Rows) - 1
 	if len(parts) == 2 {
 		if parts[0] != "" {
 			start, _ = strconv.Atoi(parts[0])
