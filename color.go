@@ -32,27 +32,15 @@ var (
 	}
 )
 
-var currentFG, currentBG color.Color
-
 func (t *Terminal) handleColorEscape(message string) {
 	if message == "" || message == "0" {
-		currentBG = nil
-		currentFG = nil
+		t.currentBG = nil
+		t.currentFG = nil
 		return
 	}
 
 	modes := strings.Split(message, ";")
-	bright := false
-
 	mode := modes[0]
-	if mode == "1" || mode == "01" {
-		bright = true
-		if len(modes) <= 1 {
-			return
-		}
-	} else if len(modes) >= 2 && modes[1] == "1" {
-		bright = true
-	}
 	if (mode == "38" || mode == "48") && len(modes) >= 2 {
 		if modes[1] == "5" && len(modes) >= 3 {
 			t.handleColorModeMap(mode, modes[2])
@@ -63,64 +51,69 @@ func (t *Terminal) handleColorEscape(message string) {
 		}
 	}
 	for _, mode := range modes {
-		t.handleColorMode(mode, bright)
+		if mode == "" {
+			continue
+		}
+		t.handleColorMode(mode)
 	}
 }
 
-func (t *Terminal) handleColorMode(modeStr string, bright bool) {
+func (t *Terminal) handleColorMode(modeStr string) {
 	mode, err := strconv.Atoi(modeStr)
 	if err != nil {
 		log.Println("Failed to parse color mode", modeStr)
 	}
 	switch mode {
 	case 0:
-		currentBG, currentFG = nil, nil
-	case 1: // ignore, handled above
+		t.currentBG, t.currentFG = nil, nil
+		t.bright = false
+	case 1:
+		t.bright = true
 	case 4, 24: // italic
 	case 7: // reverse
-		bg := currentBG
-		if currentFG == nil {
-			currentBG = theme.ForegroundColor()
+		bg := t.currentBG
+		if t.currentFG == nil {
+			t.currentBG = theme.ForegroundColor()
 		} else {
-			currentBG = currentFG
+			t.currentBG = t.currentFG
 		}
 		if bg == nil {
-			currentFG = theme.DisabledButtonColor()
+			t.currentFG = theme.DisabledButtonColor()
 		} else {
-			currentFG = bg
+			t.currentFG = bg
 		}
 	case 27: // reverse off
-		bg := currentBG
-		if currentFG == theme.ForegroundColor() {
-			currentBG = nil
+		bg := t.currentBG
+		if t.currentFG == theme.ForegroundColor() {
+			t.currentBG = nil
 		} else {
-			currentBG = currentFG
+			t.currentBG = t.currentFG
 		}
 		if bg == theme.DisabledButtonColor() {
-			currentFG = nil
+			t.currentFG = nil
 		} else {
-			currentFG = bg
+			t.currentFG = bg
 		}
 	case 30, 31, 32, 33, 34, 35, 36, 37:
-		if bright {
-			currentFG = brightColors[mode-30]
+		if t.bright {
+			t.currentFG = brightColors[mode-30]
 		} else {
-			currentFG = basicColors[mode-30]
+			t.currentFG = basicColors[mode-30]
 		}
 	case 39:
-		currentFG = nil
+		t.currentFG = nil
 	case 40, 41, 42, 43, 44, 45, 46, 47:
-		if bright {
-			currentBG = brightColors[mode-40]
+		if t.bright {
+			t.currentBG = brightColors[mode-40]
 		} else {
-			currentBG = basicColors[mode-40]
+			t.currentBG = basicColors[mode-40]
 		}
 	case 49:
-		currentBG = nil
+		t.currentBG = nil
 	case 90, 91, 92, 93, 94, 95, 96, 97:
-		currentFG = brightColors[mode-90]
+		t.currentFG = brightColors[mode-90]
 	case 100, 101, 102, 103, 104, 105, 106, 107:
-		currentBG = brightColors[mode-100]
+		t.currentBG = brightColors[mode-100]
 	default:
 		log.Println("Unsupported graphics mode", mode)
 	}
@@ -155,9 +148,9 @@ func (t *Terminal) handleColorModeMap(mode, ids string) {
 	}
 
 	if mode == "38" {
-		currentFG = c
+		t.currentFG = c
 	} else if mode == "48" {
-		currentBG = c
+		t.currentBG = c
 	}
 }
 
@@ -168,8 +161,8 @@ func (t *Terminal) handleColorModeRGB(mode, rs, gs, bs string) {
 	c := &color.RGBA{uint8(r), uint8(g), uint8(b), 255}
 
 	if mode == "38" {
-		currentFG = c
+		t.currentFG = c
 	} else if mode == "48" {
-		currentBG = c
+		t.currentBG = c
 	}
 }

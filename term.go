@@ -36,7 +36,8 @@ type Terminal struct {
 	in  io.WriteCloser
 	out io.Reader
 
-	focused, bell            bool
+	focused, bell, bright    bool
+	currentFG, currentBG     color.Color
 	cursorRow, cursorCol     int
 	savedRow, savedCol       int
 	scrollTop, scrollBottom  int
