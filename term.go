@@ -152,6 +152,7 @@ func (t *Terminal) open() error {
 	}
 	t.in = handle
 	t.out = handle
+	t.pty = handle
 
 	t.updatePTYSize()
 	return nil
