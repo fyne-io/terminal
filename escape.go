@@ -30,6 +30,7 @@ var escapes = map[rune]func(*Terminal, string){
 }
 
 func (t *Terminal) handleEscape(code string) {
+	code = trimLeftZeros(code)
 	if code == "" {
 		return
 	}
@@ -282,4 +283,20 @@ func escapeSetScrollArea(t *Terminal, msg string) {
 
 	t.scrollTop = start
 	t.scrollBottom = end
+}
+
+func trimLeftZeros(s string) string {
+	if s == "" {
+		return s
+	}
+
+	i := 0
+	for _, r := range s {
+		if r > '0' {
+			break
+		}
+		i++
+	}
+
+	return s[i:]
 }

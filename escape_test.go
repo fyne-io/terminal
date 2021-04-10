@@ -82,3 +82,7 @@ func TestCursorMove_Overflow(t *testing.T) {
 	assert.Equal(t, 1, term.cursorRow)
 	assert.Equal(t, 1, term.cursorCol)
 }
+
+func TestTrimLeftZeros(t *testing.T) {
+	assert.Equal(t, "1", trimLeftZeros(string([]byte{0, 0, '1'})))
+}
