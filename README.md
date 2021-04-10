@@ -40,6 +40,28 @@ Already planned is:
 You can also use this project as a library to create your own
 terminal based applications, using the import path "github.com/fyne-io/terminal".
 
+There are two modes, using the default shell (macOS and Linux) or connecting
+to a remote shell.
+
+## Local Shell
+
+To load a terminal widget and launch the current shell (works on macOS and Linux)
+use the `RunLocalShell` method after creating a `Terminal`, as follows:
+
+```go
+	// win is a fyne.Window created to hold the content
+	t := terminal.New()
+	w.SetContent(t)
+
+	go func() {
+		_ = t.RunLocalShell()
+		a.Quit()
+	}()
+	w.ShowAndRun()
+```
+
+## Remote connection
+
 For example to open a terminal to an SSH connection that you have created:
 
 ```go
