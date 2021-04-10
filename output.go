@@ -12,6 +12,7 @@ const (
 	asciiEscape    = 27
 
 	noEscape = 5000
+	tabWidth = 8
 )
 
 var specialChars = map[rune]func(t *Terminal){
@@ -193,6 +194,8 @@ func handleOutputLineFeed(t *Terminal) {
 }
 
 func handleOutputTab(t *Terminal) {
-	// TODO handle tab
-	t.handleOutputChar(' ')
+	end := t.cursorCol - t.cursorCol % tabWidth + tabWidth
+	for t.cursorCol < end {
+		t.handleOutputChar(' ')
+	}
 }
