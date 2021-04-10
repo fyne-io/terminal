@@ -43,7 +43,7 @@ terminal based applications, using the import path "github.com/fyne-io/terminal"
 For example to open a terminal to an SSH connection that you have created:
 
 ```go
-	// session is an *fynessh.Session from golang.org/x/crypto/fynessh
+	// session is an *ssh.Session from golang.org/x/crypto/ssh
 	// win is a fyne.Window created to hold the content
 	in, _ := session.StdinPipe()
 	out, _ := session.StdoutPipe()
