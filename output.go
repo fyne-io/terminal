@@ -194,7 +194,7 @@ func handleOutputLineFeed(t *Terminal) {
 }
 
 func handleOutputTab(t *Terminal) {
-	end := t.cursorCol - t.cursorCol % tabWidth + tabWidth
+	end := t.cursorCol - t.cursorCol%tabWidth + tabWidth
 	for t.cursorCol < end {
 		t.handleOutputChar(' ')
 	}
