@@ -1,19 +1,20 @@
 package terminal
 
 import (
-	"fyne.io/fyne/v2"
-	"github.com/ActiveState/termtest/conpty"
 	"io"
 	"log"
 	"os"
 	"syscall"
+
+	"fyne.io/fyne/v2"
+	"github.com/ActiveState/termtest/conpty"
 )
 
 func (t *Terminal) updatePTYSize() {
 	// TODO windows pty resize
 }
 
-func (t *Terminal)  startPTY() (io.WriteCloser, io.Reader, *os.File, error) {
+func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, *os.File, error) {
 	cpty, err := conpty.New(80, 25)
 	if err != nil {
 		return nil, nil, nil, err

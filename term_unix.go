@@ -25,7 +25,7 @@ func (t *Terminal) updatePTYSize() {
 		X: uint16(t.Size().Width * scale), Y: uint16(t.Size().Height * scale)})
 }
 
-func (t *Terminal)  startPTY() (io.WriteCloser, io.Reader, *os.File, error) {
+func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, *os.File, error) {
 	shell := os.Getenv("SHELL")
 	if shell == "" {
 		shell = "bash"
