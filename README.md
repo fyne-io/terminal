@@ -7,7 +7,7 @@
 
 # Fyne Terminal
 
-A terminal emulator using the Fyne toolkit, supports Linux and Windows.
+A terminal emulator using the Fyne toolkit, supports Linux, macOS, Windows and BSD.
 
 Running on Linux with a custom zsh theme.
 <img alt="screenshot" src="img/linux.png" width="929" />
@@ -39,7 +39,7 @@ There are lots of great things that could be added to this app.
 Already planned is:
 
 * Tabs
-* Scrollback
+* Scroll-back
 * Background and font/size customisation
 * Split panels
 * Windows support

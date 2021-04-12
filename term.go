@@ -5,15 +5,12 @@ import (
 	"io"
 	"math"
 	"os"
-	"os/exec"
 	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/creack/pty"
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -107,20 +104,6 @@ func (t *Terminal) SetStartDir(path string) {
 	t.startDir = path
 }
 
-func (t *Terminal) updatePTYSize() {
-	if t.pty == nil { // SSH or other direct connection?
-		return
-	}
-	scale := float32(1.0)
-	c := fyne.CurrentApp().Driver().CanvasForObject(t)
-	if c != nil {
-		scale = c.Scale()
-	}
-	_ = pty.Setsize(t.pty, &pty.Winsize{
-		Rows: uint16(t.config.Rows), Cols: uint16(t.config.Columns),
-		X: uint16(t.Size().Width * scale), Y: uint16(t.Size().Height * scale)})
-}
-
 func (t *Terminal) onConfigure() {
 	t.listenerLock.Lock()
 	for _, l := range t.listeners {
@@ -134,25 +117,13 @@ func (t *Terminal) onConfigure() {
 }
 
 func (t *Terminal) open() error {
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		shell = "bash"
-	}
-
-	_ = os.Chdir(t.startingDir())
-	env := os.Environ()
-	env = append(env, "TERM=xterm-256color")
-	c := exec.Command(shell)
-	c.Env = env
-
-	// Start the command with a pty.
-	handle, err := pty.Start(c)
+	in, out, pty, err := t.startPTY()
 	if err != nil {
 		return err
 	}
-	t.in = handle
-	t.out = handle
-	t.pty = handle
+	t.in = in
+	t.out = out
+	t.pty = pty
 
 	t.updatePTYSize()
 	return nil

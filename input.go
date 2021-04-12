@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"runtime"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -20,7 +21,7 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 	}
 	switch e.Name {
 	case fyne.KeyEnter, fyne.KeyReturn:
-		if t.bufferMode {
+		if t.bufferMode || runtime.GOOS == "windows" {
 			_, _ = t.in.Write([]byte{'\r'})
 		} else {
 			_, _ = t.in.Write([]byte{'\n'})
