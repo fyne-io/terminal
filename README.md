@@ -15,12 +15,22 @@ Running on Linux with a custom zsh theme.
 Running on macOS with a powerlevel10k zsh theme and classic style.
 <img alt="screenshot" src="img/macos.png" width="912" />
 
-# Installing
+# Installing on command line
 
 Just use the go get command (you'll need a Go and C compiler installed first):
 
 ```
 $ go get github.com/fyne-io/terminal/cmd/fyneterm
+```
+
+# Installing as an app
+
+To get the app installed alongside your other applications (with metadata, icons etc),
+use the `fyne` tool, as illustrated below:
+
+```
+$ go get fyne.io/fyne/v2/cmd/fyne
+$ fyne get github.com/fyne-io/terminal/cmd/fyneterm
 ```
 
 # TODO
