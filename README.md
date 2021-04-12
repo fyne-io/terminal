@@ -16,7 +16,7 @@ Running on macOS with a powerlevel10k zsh theme and classic style.
 <img alt="screenshot" src="img/macos.png" width="912" />
 
 Running on Windows with PowerShell running inside.
-<img alt="screenshot" src="img/macos.png" width="900" />
+<img alt="screenshot" src="img/windows.png" width="900" />
 
 # Installing on command line
 
