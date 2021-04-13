@@ -61,7 +61,10 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	} else if _, ok := s.(*fyne.ShortcutPaste); ok {
 		_, _ = t.in.Write([]byte{0x16})
 	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
-		if strings.Contains(string(ds.KeyName), "Control") { // TODO https://github.com/fyne-io/fyne/issues/2148
+		if strings.Contains(string(ds.KeyName), "Alt") ||
+			strings.Contains(string(ds.KeyName), "Command") ||
+			strings.Contains(string(ds.KeyName), "Control") ||
+			strings.Contains(string(ds.KeyName), "Super") { // TODO https://github.com/fyne-io/fyne/issues/2148
 			return
 		}
 
