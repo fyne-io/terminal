@@ -20,12 +20,12 @@ func (t *Terminal) updatePTYSize() {
 	if c != nil {
 		scale = c.Scale()
 	}
-	_ = pty.Setsize(t.pty, &pty.Winsize{
+	_ = pty.Setsize(t.pty.(*os.File), &pty.Winsize{
 		Rows: uint16(t.config.Rows), Cols: uint16(t.config.Columns),
 		X: uint16(t.Size().Width * scale), Y: uint16(t.Size().Height * scale)})
 }
 
-func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, *os.File, error) {
+func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 	shell := os.Getenv("SHELL")
 	if shell == "" {
 		shell = "bash"

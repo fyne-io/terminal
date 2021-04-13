@@ -29,7 +29,7 @@ type Terminal struct {
 	listeners    []chan Config
 	startDir     string
 
-	pty *os.File
+	pty io.Closer
 	in  io.WriteCloser
 	out io.Reader
 

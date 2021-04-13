@@ -11,10 +11,14 @@ import (
 )
 
 func (t *Terminal) updatePTYSize() {
-	// TODO windows pty resize
+	if t.pty == nil { // during load
+		return
+	}
+	log.Println("Resize", t.config.Columns)
+	t.pty.(*conpty.ConPty).Resize(uint16(t.config.Columns), uint16(t.config.Rows))
 }
 
-func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, *os.File, error) {
+func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 	cpty, err := conpty.New(80, 25)
 	if err != nil {
 		return nil, nil, nil, err
@@ -44,5 +48,5 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, *os.File, error) {
 		fyne.CurrentApp().Quit()
 	}()
 
-	return cpty.InPipe(), cpty.OutPipe(), nil, nil
+	return cpty.InPipe(), cpty.OutPipe(), cpty, nil
 }
