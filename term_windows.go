@@ -6,7 +6,6 @@ import (
 	"os"
 	"syscall"
 
-	"fyne.io/fyne/v2"
 	"github.com/ActiveState/termtest/conpty"
 )
 
@@ -14,8 +13,7 @@ func (t *Terminal) updatePTYSize() {
 	if t.pty == nil { // during load
 		return
 	}
-	log.Println("Resize", t.config.Columns)
-	t.pty.(*conpty.ConPty).Resize(uint16(t.config.Columns), uint16(t.config.Rows))
+	_ = t.pty.(*conpty.ConPty).Resize(uint16(t.config.Columns), uint16(t.config.Rows))
 }
 
 func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
@@ -44,8 +42,10 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 		if err != nil {
 			log.Fatalf("Error waiting for process: %v", err)
 		}
-		cpty.Close()
-		fyne.CurrentApp().Quit()
+		if t.pty != nil {
+			t.pty = nil
+			_ = cpty.Close()
+		}
 	}()
 
 	return cpty.InPipe(), cpty.OutPipe(), cpty, nil
