@@ -5,11 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-)
-
-var (
-	cursorColor     = color.RGBA{R: 255, G: 255, B: 0, A: 128}
-	cursorBellColor = color.RGBA{R: 255, G: 0, B: 0, A: 128}
+	"fyne.io/fyne/v2/theme"
 )
 
 type render struct {
@@ -50,16 +46,16 @@ func (r *render) moveCursor() {
 func (t *Terminal) refreshCursor() {
 	t.cursor.Hidden = !t.focused || t.cursorHidden
 	if t.bell {
-		t.cursor.FillColor = cursorBellColor
+		t.cursor.FillColor = theme.ErrorColor()
 	} else {
-		t.cursor.FillColor = cursorColor
+		t.cursor.FillColor = theme.PrimaryColor()
 	}
 	t.cursor.Refresh()
 }
 
 // CreateRenderer requests a new renderer for this terminal (just a wrapper around the TextGrid)
 func (t *Terminal) CreateRenderer() fyne.WidgetRenderer {
-	t.cursor = canvas.NewRectangle(cursorColor)
+	t.cursor = canvas.NewRectangle(theme.PrimaryColor())
 	t.cursor.Resize(fyne.NewSize(2, t.guessCellSize().Height))
 
 	r := &render{term: t}
