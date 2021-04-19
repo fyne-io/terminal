@@ -132,7 +132,7 @@ func (t *Terminal) open() error {
 // Exit requests that this terminal exits.
 // If there are embedded shells it will exit the child one only.
 func (t *Terminal) Exit() {
-	_, _ = t.in.Write([]byte("exit\n"))
+	_, _ = t.Write([]byte{0x4})
 }
 
 func (t *Terminal) close() error {
