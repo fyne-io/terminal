@@ -203,6 +203,16 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
 	return t.close()
 }
 
+// Write is used to send commands into an open terminal connection.
+// Errors will be returned if the connection is not established, has closed, or there was a problem in transmission.
+func (t *Terminal) Write(b []byte) (int, error) {
+	if t.in == nil {
+		return 0, io.EOF
+	}
+
+	return t.in.Write(b)
+}
+
 func (t *Terminal) startingDir() string {
 	if t.startDir == "" {
 		home, err := os.UserHomeDir()
