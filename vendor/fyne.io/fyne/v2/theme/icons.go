@@ -160,16 +160,6 @@ const (
 	// Since: 2.0
 	IconNameDocumentSave fyne.ThemeIconName = "documentSave"
 
-	// IconNameMoreHorizontal is the name of theme lookup for horizontal more.
-	//
-	// Since 2.0
-	IconNameMoreHorizontal fyne.ThemeIconName = "moreHorizontal"
-
-	// IconNameMoreVertical is the name of theme lookup for vertical more.
-	//
-	// Since 2.0
-	IconNameMoreVertical fyne.ThemeIconName = "moreVertical"
-
 	// IconNameMailAttachment is the name of theme lookup for mail attachment icon.
 	//
 	// Since: 2.0
@@ -448,9 +438,6 @@ var (
 		IconNameDocumentCreate: NewThemedResource(documentcreateIconRes),
 		IconNameDocumentPrint:  NewThemedResource(documentprintIconRes),
 		IconNameDocumentSave:   NewThemedResource(documentsaveIconRes),
-
-		IconNameMoreHorizontal: NewThemedResource(morehorizontalIconRes),
-		IconNameMoreVertical:   NewThemedResource(moreverticalIconRes),
 
 		IconNameInfo:     NewThemedResource(infoIconRes),
 		IconNameQuestion: NewThemedResource(questionIconRes),
@@ -807,16 +794,6 @@ func DocumentSaveIcon() fyne.Resource {
 	return safeIconLookup(IconNameDocumentSave)
 }
 
-// MoreHorizontalIcon returns a resource containing the standard horizontal more icon for the current theme
-func MoreHorizontalIcon() fyne.Resource {
-	return current().Icon(IconNameMoreHorizontal)
-}
-
-// MoreVerticalIcon returns a resource containing the standard vertical more icon for the current theme
-func MoreVerticalIcon() fyne.Resource {
-	return current().Icon(IconNameMoreVertical)
-}
-
 // InfoIcon returns a resource containing the standard dialog info icon for the current theme
 func InfoIcon() fyne.Resource {
 	return safeIconLookup(IconNameInfo)
@@ -1037,12 +1014,12 @@ func ZoomOutIcon() fyne.Resource {
 	return safeIconLookup(IconNameViewZoomOut)
 }
 
-// VisibilityIcon returns a resource containing the standard visibity icon for the current theme
+// VisibilityIcon returns a resource containing the standard visibility icon for the current theme
 func VisibilityIcon() fyne.Resource {
 	return safeIconLookup(IconNameVisibility)
 }
 
-// VisibilityOffIcon returns a resource containing the standard visibity off icon for the current theme
+// VisibilityOffIcon returns a resource containing the standard visibility off icon for the current theme
 func VisibilityOffIcon() fyne.Resource {
 	return safeIconLookup(IconNameVisibilityOff)
 }

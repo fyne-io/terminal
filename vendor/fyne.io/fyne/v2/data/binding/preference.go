@@ -3,21 +3,15 @@
 
 package binding
 
-import (
-	"sync"
-
-	"fyne.io/fyne/v2"
-)
+import "fyne.io/fyne/v2"
 
 const keyTypeMismatchError = "A previous preference binding exists with different type for key: "
 
 type prefBoundBool struct {
 	base
-	key string
-	p   fyne.Preferences
-
-	cacheLock sync.RWMutex
-	cache     bool
+	key   string
+	p     fyne.Preferences
+	cache bool
 }
 
 // BindPreferenceBool returns a bindable bool value that is managed by the application preferences.
@@ -25,9 +19,8 @@ type prefBoundBool struct {
 //
 // Since: 2.0
 func BindPreferenceBool(key string, p fyne.Preferences) Bool {
-	binds := prefBinds.getBindings(p)
-	if binds != nil {
-		if listen := binds.getItem(key); listen != nil {
+	if prefBinds[p] != nil {
+		if listen, ok := prefBinds[p][key]; ok {
 			if l, ok := listen.(Bool); ok {
 				return l
 			}
@@ -36,16 +29,13 @@ func BindPreferenceBool(key string, p fyne.Preferences) Bool {
 	}
 
 	listen := &prefBoundBool{key: key, p: p}
-	binds = prefBinds.ensurePreferencesAttached(p)
-	binds.setItem(key, listen)
+	ensurePreferencesAttached(p)
+	prefBinds[p][key] = listen
 	return listen
 }
 
 func (b *prefBoundBool) Get() (bool, error) {
-	cache := b.p.Bool(b.key)
-	b.cacheLock.Lock()
-	b.cache = cache
-	b.cacheLock.Unlock()
+	b.cache = b.p.Bool(b.key)
 	return b.cache, nil
 }
 
@@ -59,10 +49,7 @@ func (b *prefBoundBool) Set(v bool) error {
 }
 
 func (b *prefBoundBool) checkForChange() {
-	b.cacheLock.RLock()
-	cache := b.cache
-	b.cacheLock.RUnlock()
-	if b.p.Bool(b.key) == cache {
+	if b.p.Bool(b.key) == b.cache {
 		return
 	}
 
@@ -71,11 +58,9 @@ func (b *prefBoundBool) checkForChange() {
 
 type prefBoundFloat struct {
 	base
-	key string
-	p   fyne.Preferences
-
-	cacheLock sync.RWMutex
-	cache     float64
+	key   string
+	p     fyne.Preferences
+	cache float64
 }
 
 // BindPreferenceFloat returns a bindable float64 value that is managed by the application preferences.
@@ -83,9 +68,8 @@ type prefBoundFloat struct {
 //
 // Since: 2.0
 func BindPreferenceFloat(key string, p fyne.Preferences) Float {
-	binds := prefBinds.getBindings(p)
-	if binds != nil {
-		if listen := binds.getItem(key); listen != nil {
+	if prefBinds[p] != nil {
+		if listen, ok := prefBinds[p][key]; ok {
 			if l, ok := listen.(Float); ok {
 				return l
 			}
@@ -94,16 +78,13 @@ func BindPreferenceFloat(key string, p fyne.Preferences) Float {
 	}
 
 	listen := &prefBoundFloat{key: key, p: p}
-	binds = prefBinds.ensurePreferencesAttached(p)
-	binds.setItem(key, listen)
+	ensurePreferencesAttached(p)
+	prefBinds[p][key] = listen
 	return listen
 }
 
 func (b *prefBoundFloat) Get() (float64, error) {
-	cache := b.p.Float(b.key)
-	b.cacheLock.Lock()
-	b.cache = cache
-	b.cacheLock.Unlock()
+	b.cache = b.p.Float(b.key)
 	return b.cache, nil
 }
 
@@ -117,10 +98,7 @@ func (b *prefBoundFloat) Set(v float64) error {
 }
 
 func (b *prefBoundFloat) checkForChange() {
-	b.cacheLock.RLock()
-	cache := b.cache
-	b.cacheLock.RUnlock()
-	if b.p.Float(b.key) == cache {
+	if b.p.Float(b.key) == b.cache {
 		return
 	}
 
@@ -129,11 +107,9 @@ func (b *prefBoundFloat) checkForChange() {
 
 type prefBoundInt struct {
 	base
-	key string
-	p   fyne.Preferences
-
-	cacheLock sync.RWMutex
-	cache     int
+	key   string
+	p     fyne.Preferences
+	cache int
 }
 
 // BindPreferenceInt returns a bindable int value that is managed by the application preferences.
@@ -141,9 +117,8 @@ type prefBoundInt struct {
 //
 // Since: 2.0
 func BindPreferenceInt(key string, p fyne.Preferences) Int {
-	binds := prefBinds.getBindings(p)
-	if binds != nil {
-		if listen := binds.getItem(key); listen != nil {
+	if prefBinds[p] != nil {
+		if listen, ok := prefBinds[p][key]; ok {
 			if l, ok := listen.(Int); ok {
 				return l
 			}
@@ -152,16 +127,13 @@ func BindPreferenceInt(key string, p fyne.Preferences) Int {
 	}
 
 	listen := &prefBoundInt{key: key, p: p}
-	binds = prefBinds.ensurePreferencesAttached(p)
-	binds.setItem(key, listen)
+	ensurePreferencesAttached(p)
+	prefBinds[p][key] = listen
 	return listen
 }
 
 func (b *prefBoundInt) Get() (int, error) {
-	cache := b.p.Int(b.key)
-	b.cacheLock.Lock()
-	b.cache = cache
-	b.cacheLock.Unlock()
+	b.cache = b.p.Int(b.key)
 	return b.cache, nil
 }
 
@@ -175,10 +147,7 @@ func (b *prefBoundInt) Set(v int) error {
 }
 
 func (b *prefBoundInt) checkForChange() {
-	b.cacheLock.RLock()
-	cache := b.cache
-	b.cacheLock.RUnlock()
-	if b.p.Int(b.key) == cache {
+	if b.p.Int(b.key) == b.cache {
 		return
 	}
 
@@ -187,11 +156,9 @@ func (b *prefBoundInt) checkForChange() {
 
 type prefBoundString struct {
 	base
-	key string
-	p   fyne.Preferences
-
-	cacheLock sync.RWMutex
-	cache     string
+	key   string
+	p     fyne.Preferences
+	cache string
 }
 
 // BindPreferenceString returns a bindable string value that is managed by the application preferences.
@@ -199,9 +166,8 @@ type prefBoundString struct {
 //
 // Since: 2.0
 func BindPreferenceString(key string, p fyne.Preferences) String {
-	binds := prefBinds.getBindings(p)
-	if binds != nil {
-		if listen := binds.getItem(key); listen != nil {
+	if prefBinds[p] != nil {
+		if listen, ok := prefBinds[p][key]; ok {
 			if l, ok := listen.(String); ok {
 				return l
 			}
@@ -210,16 +176,13 @@ func BindPreferenceString(key string, p fyne.Preferences) String {
 	}
 
 	listen := &prefBoundString{key: key, p: p}
-	binds = prefBinds.ensurePreferencesAttached(p)
-	binds.setItem(key, listen)
+	ensurePreferencesAttached(p)
+	prefBinds[p][key] = listen
 	return listen
 }
 
 func (b *prefBoundString) Get() (string, error) {
-	cache := b.p.String(b.key)
-	b.cacheLock.Lock()
-	b.cache = cache
-	b.cacheLock.Unlock()
+	b.cache = b.p.String(b.key)
 	return b.cache, nil
 }
 
@@ -233,10 +196,7 @@ func (b *prefBoundString) Set(v string) error {
 }
 
 func (b *prefBoundString) checkForChange() {
-	b.cacheLock.RLock()
-	cache := b.cache
-	b.cacheLock.RUnlock()
-	if b.p.String(b.key) == cache {
+	if b.p.String(b.key) == b.cache {
 		return
 	}
 

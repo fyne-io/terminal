@@ -30,7 +30,6 @@ var _ fyne.Widget = (*Entry)(nil)
 var _ desktop.Mouseable = (*Entry)(nil)
 var _ desktop.Keyable = (*Entry)(nil)
 var _ mobile.Keyboardable = (*Entry)(nil)
-var _ fyne.Tabbable = (*Entry)(nil)
 
 // Entry widget allows simple text to be input when focused.
 type Entry struct {
@@ -114,15 +113,6 @@ func NewPasswordEntry() *Entry {
 	e.ExtendBaseWidget(e)
 	e.ActionItem = newPasswordRevealer(e)
 	return e
-}
-
-// AcceptsTab returns if Entry accepts the Tab key or not.
-//
-// Implements: fyne.Tabbable
-//
-// Since: 2.1
-func (e *Entry) AcceptsTab() bool {
-	return e.MultiLine
 }
 
 // Bind connects the specified data source to this Entry.
@@ -536,7 +526,10 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 	}
 	e.propertyLock.RLock()
 	provider := e.textProvider()
+	onSubmitted := e.OnSubmitted
 	multiLine := e.MultiLine
+	selectDown := e.selectKeyDown
+	text := e.Text
 	e.propertyLock.RUnlock()
 
 	if e.selectKeyDown || e.selecting {
@@ -570,17 +563,78 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 		provider.deleteFromTo(pos, pos+1)
 		e.propertyLock.Unlock()
 	case fyne.KeyReturn, fyne.KeyEnter:
-		e.typedKeyReturn(provider, multiLine)
+		if !multiLine {
+			// Single line doesn't support newline.
+			// Call submitted callback, if any.
+			if onSubmitted != nil {
+				onSubmitted(text)
+			}
+			return
+		} else if selectDown && onSubmitted != nil {
+			// Multiline supports newline, unless shift is held and OnSubmitted is set.
+			onSubmitted(text)
+			return
+		}
+		e.propertyLock.Lock()
+		provider.insertAt(e.cursorTextPos(), []rune("\n"))
+		e.CursorColumn = 0
+		e.CursorRow++
+		e.propertyLock.Unlock()
 	case fyne.KeyTab:
 		e.TypedRune('\t')
 	case fyne.KeyUp:
-		e.typedKeyUp(provider, multiLine)
+		if !multiLine {
+			return
+		}
+
+		e.propertyLock.Lock()
+		if e.CursorRow > 0 {
+			e.CursorRow--
+		}
+
+		rowLength := provider.rowLength(e.CursorRow)
+		if e.CursorColumn > rowLength {
+			e.CursorColumn = rowLength
+		}
+		e.propertyLock.Unlock()
 	case fyne.KeyDown:
-		e.typedKeyDown(provider, multiLine)
+		if !multiLine {
+			return
+		}
+
+		e.propertyLock.Lock()
+		if e.CursorRow < provider.rows()-1 {
+			e.CursorRow++
+		}
+
+		rowLength := provider.rowLength(e.CursorRow)
+		if e.CursorColumn > rowLength {
+			e.CursorColumn = rowLength
+		}
+		e.propertyLock.Unlock()
 	case fyne.KeyLeft:
-		e.typedKeyLeft(provider, multiLine)
+		e.propertyLock.Lock()
+		if e.CursorColumn > 0 {
+			e.CursorColumn--
+		} else if e.MultiLine && e.CursorRow > 0 {
+			e.CursorRow--
+			e.CursorColumn = provider.rowLength(e.CursorRow)
+		}
+		e.propertyLock.Unlock()
 	case fyne.KeyRight:
-		e.typedKeyRight(provider, multiLine)
+		e.propertyLock.Lock()
+		if e.MultiLine {
+			rowLength := provider.rowLength(e.CursorRow)
+			if e.CursorColumn < rowLength {
+				e.CursorColumn++
+			} else if e.CursorRow < provider.rows()-1 {
+				e.CursorRow++
+				e.CursorColumn = 0
+			}
+		} else if e.CursorColumn < provider.len() {
+			e.CursorColumn++
+		}
+		e.propertyLock.Unlock()
 	case fyne.KeyEnd:
 		e.propertyLock.Lock()
 		if e.MultiLine {
@@ -619,67 +673,6 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 	}
 	e.propertyLock.Unlock()
 	e.updateText(provider.String())
-}
-
-func (e *Entry) typedKeyUp(provider *textProvider, multiLine bool) {
-	if !multiLine {
-		return
-	}
-
-	e.propertyLock.Lock()
-	if e.CursorRow > 0 {
-		e.CursorRow--
-	}
-
-	rowLength := provider.rowLength(e.CursorRow)
-	if e.CursorColumn > rowLength {
-		e.CursorColumn = rowLength
-	}
-	e.propertyLock.Unlock()
-}
-
-func (e *Entry) typedKeyDown(provider *textProvider, multiLine bool) {
-	if !multiLine {
-		return
-	}
-
-	e.propertyLock.Lock()
-	if e.CursorRow < provider.rows()-1 {
-		e.CursorRow++
-	}
-
-	rowLength := provider.rowLength(e.CursorRow)
-	if e.CursorColumn > rowLength {
-		e.CursorColumn = rowLength
-	}
-	e.propertyLock.Unlock()
-}
-
-func (e *Entry) typedKeyLeft(provider *textProvider, multiLine bool) {
-	e.propertyLock.Lock()
-	if e.CursorColumn > 0 {
-		e.CursorColumn--
-	} else if e.MultiLine && e.CursorRow > 0 {
-		e.CursorRow--
-		e.CursorColumn = provider.rowLength(e.CursorRow)
-	}
-	e.propertyLock.Unlock()
-}
-
-func (e *Entry) typedKeyRight(provider *textProvider, multiLine bool) {
-	e.propertyLock.Lock()
-	if e.MultiLine {
-		rowLength := provider.rowLength(e.CursorRow)
-		if e.CursorColumn < rowLength {
-			e.CursorColumn++
-		} else if e.CursorRow < provider.rows()-1 {
-			e.CursorRow++
-			e.CursorColumn = 0
-		}
-	} else if e.CursorColumn < provider.len() {
-		e.CursorColumn++
-	}
-	e.propertyLock.Unlock()
 }
 
 // TypedRune receives text input events when the Entry widget is focused.
@@ -1092,32 +1085,6 @@ func (e *Entry) updateText(text string) {
 	if callback != nil {
 		callback(text)
 	}
-}
-
-func (e *Entry) typedKeyReturn(provider *textProvider, multiLine bool) {
-	e.propertyLock.RLock()
-	onSubmitted := e.OnSubmitted
-	selectDown := e.selectKeyDown
-	text := e.Text
-	e.propertyLock.RUnlock()
-
-	if !multiLine {
-		// Single line doesn't support newline.
-		// Call submitted callback, if any.
-		if onSubmitted != nil {
-			onSubmitted(text)
-		}
-		return
-	} else if selectDown && onSubmitted != nil {
-		// Multiline supports newline, unless shift is held and OnSubmitted is set.
-		onSubmitted(text)
-		return
-	}
-	e.propertyLock.Lock()
-	provider.insertAt(e.cursorTextPos(), []rune("\n"))
-	e.CursorColumn = 0
-	e.CursorRow++
-	e.propertyLock.Unlock()
 }
 
 var _ fyne.WidgetRenderer = (*entryRenderer)(nil)

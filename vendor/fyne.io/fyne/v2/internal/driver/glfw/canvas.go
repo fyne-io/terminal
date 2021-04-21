@@ -66,11 +66,8 @@ func (c *glCanvas) Content() fyne.CanvasObject {
 }
 
 func (c *glCanvas) DismissMenu() bool {
-	c.RLock()
-	menu := c.menu
-	c.RUnlock()
-	if menu != nil && menu.(*MenuBar).IsActive() {
-		menu.(*MenuBar).Toggle()
+	if c.menu != nil && c.menu.(*MenuBar).IsActive() {
+		c.menu.(*MenuBar).Toggle()
 		return true
 	}
 	return false
@@ -157,9 +154,7 @@ func (c *glCanvas) Padded() bool {
 }
 
 func (c *glCanvas) PixelCoordinateForPosition(pos fyne.Position) (int, int) {
-	c.RLock()
 	texScale := c.texScale
-	c.RUnlock()
 	multiple := c.Scale() * texScale
 	scaleInt := func(x float32) int {
 		return int(math.Round(float64(x * multiple)))
@@ -248,11 +243,7 @@ func (c *glCanvas) SetPadded(padded bool) {
 }
 
 func (c *glCanvas) reloadScale() {
-	w := c.context.(*window)
-	w.viewLock.RLock()
-	windowVisible := w.visible
-	w.viewLock.RUnlock()
-	if !windowVisible {
+	if !c.context.(*window).visible {
 		return
 	}
 
@@ -271,11 +262,8 @@ func (c *glCanvas) Size() fyne.Size {
 }
 
 func (c *glCanvas) ToggleMenu() {
-	c.RLock()
-	menu := c.menu
-	c.RUnlock()
-	if menu != nil {
-		menu.(*MenuBar).Toggle()
+	if c.menu != nil {
+		c.menu.(*MenuBar).Toggle()
 	}
 }
 
@@ -419,23 +407,19 @@ func (c *glCanvas) menuHeight() float32 {
 }
 
 func (c *glCanvas) objectTrees() []fyne.CanvasObject {
-	c.RLock()
-	content := c.content
-	menu := c.menu
-	c.RUnlock()
 	trees := make([]fyne.CanvasObject, 0, len(c.Overlays().List())+2)
-	trees = append(trees, content)
-	if menu != nil {
-		trees = append(trees, menu)
+	trees = append(trees, c.content)
+	if c.menu != nil {
+		trees = append(trees, c.menu)
 	}
 	trees = append(trees, c.Overlays().List()...)
 	return trees
 }
 
 func (c *glCanvas) overlayChanged() {
-	c.dirtyMutex.Lock()
+	c.Lock()
+	defer c.Unlock()
 	c.dirty = true
-	c.dirtyMutex.Unlock()
 }
 
 func (c *glCanvas) paint(size fyne.Size) {
@@ -484,8 +468,9 @@ func (c *glCanvas) setContent(content fyne.CanvasObject) {
 
 func (c *glCanvas) setDirty(dirty bool) {
 	c.dirtyMutex.Lock()
+	defer c.dirtyMutex.Unlock()
+
 	c.dirty = dirty
-	c.dirtyMutex.Unlock()
 }
 
 func (c *glCanvas) setMenuOverlay(b fyne.CanvasObject) {
@@ -508,15 +493,11 @@ func (c *glCanvas) setupThemeListener() {
 	go func() {
 		for {
 			<-listener
-			c.RLock()
-			menu := c.menu
-			padded := c.padded
-			c.RUnlock()
-			if menu != nil {
-				app.ApplyThemeTo(menu, c) // Ensure our menu gets the theme change message as it's out-of-tree
+			if c.menu != nil {
+				app.ApplyThemeTo(c.menu, c) // Ensure our menu gets the theme change message as it's out-of-tree
 			}
 
-			c.SetPadded(padded) // refresh the padding for potential theme differences
+			c.SetPadded(c.padded) // refresh the padding for potential theme differences
 		}
 	}()
 }

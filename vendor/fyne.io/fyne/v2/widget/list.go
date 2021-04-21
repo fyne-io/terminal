@@ -186,7 +186,7 @@ type listItem struct {
 	BaseWidget
 
 	onTapped          func()
-	background        *canvas.Rectangle
+	statusIndicator   *canvas.Rectangle
 	child             fyne.CanvasObject
 	hovered, selected bool
 }
@@ -205,10 +205,10 @@ func newListItem(child fyne.CanvasObject, tapped func()) *listItem {
 func (li *listItem) CreateRenderer() fyne.WidgetRenderer {
 	li.ExtendBaseWidget(li)
 
-	li.background = canvas.NewRectangle(theme.HoverColor())
-	li.background.Hide()
+	li.statusIndicator = canvas.NewRectangle(theme.HoverColor())
+	li.statusIndicator.Hide()
 
-	objects := []fyne.CanvasObject{li.background, li.child}
+	objects := []fyne.CanvasObject{li.statusIndicator, li.child}
 
 	return &listItemRenderer{widget.NewBaseRenderer(objects), li}
 }
@@ -264,7 +264,10 @@ func (li *listItemRenderer) MinSize() (size fyne.Size) {
 
 // Layout the components of the listItem widget.
 func (li *listItemRenderer) Layout(size fyne.Size) {
-	li.item.background.Resize(size)
+	li.item.statusIndicator.Move(fyne.NewPos(0, 0))
+	s := fyne.NewSize(theme.Padding(), size.Height)
+	li.item.statusIndicator.SetMinSize(s)
+	li.item.statusIndicator.Resize(s)
 
 	li.item.child.Move(fyne.NewPos(theme.Padding()*2, theme.Padding()))
 	li.item.child.Resize(fyne.NewSize(size.Width-theme.Padding()*3, size.Height-theme.Padding()*2))
@@ -272,15 +275,15 @@ func (li *listItemRenderer) Layout(size fyne.Size) {
 
 func (li *listItemRenderer) Refresh() {
 	if li.item.selected {
-		li.item.background.FillColor = theme.FocusColor()
-		li.item.background.Show()
+		li.item.statusIndicator.FillColor = theme.PrimaryColor()
+		li.item.statusIndicator.Show()
 	} else if li.item.hovered {
-		li.item.background.FillColor = theme.HoverColor()
-		li.item.background.Show()
+		li.item.statusIndicator.FillColor = theme.HoverColor()
+		li.item.statusIndicator.Show()
 	} else {
-		li.item.background.Hide()
+		li.item.statusIndicator.Hide()
 	}
-	li.item.background.Refresh()
+	li.item.statusIndicator.Refresh()
 	canvas.Refresh(li.item.super())
 }
 
@@ -288,9 +291,9 @@ func (li *listItemRenderer) Refresh() {
 var _ fyne.Layout = (*listLayout)(nil)
 
 type listLayout struct {
-	list       *List
-	separators []fyne.CanvasObject
-	children   []fyne.CanvasObject
+	list     *List
+	dividers []fyne.CanvasObject
+	children []fyne.CanvasObject
 
 	itemPool   *syncPool
 	visible    map[ListItemID]*listItem
@@ -325,6 +328,7 @@ func (l *listLayout) getItem() *listItem {
 	}
 	return item.(*listItem)
 }
+
 func (l *listLayout) offsetUpdated(pos fyne.Position) {
 	if l.list.offsetY == pos.Y {
 		return
@@ -400,24 +404,24 @@ func (l *listLayout) updateList() {
 		}
 	}
 	l.children = cells
-	l.updateSeparators()
+	l.updateDividers()
 
 	objects := l.children
-	objects = append(objects, l.separators...)
+	objects = append(objects, l.dividers...)
 	l.list.scroller.Content.(*fyne.Container).Objects = objects
 }
 
-func (l *listLayout) updateSeparators() {
+func (l *listLayout) updateDividers() {
 	if len(l.children) > 1 {
-		if len(l.separators) > len(l.children) {
-			l.separators = l.separators[:len(l.children)]
+		if len(l.dividers) > len(l.children) {
+			l.dividers = l.dividers[:len(l.children)]
 		} else {
-			for i := len(l.separators); i < len(l.children); i++ {
-				l.separators = append(l.separators, NewSeparator())
+			for i := len(l.dividers); i < len(l.children); i++ {
+				l.dividers = append(l.dividers, NewSeparator())
 			}
 		}
 	} else {
-		l.separators = nil
+		l.dividers = nil
 	}
 
 	separatorThickness := theme.SeparatorThicknessSize()
@@ -425,8 +429,8 @@ func (l *listLayout) updateSeparators() {
 		if i == 0 {
 			continue
 		}
-		l.separators[i].Move(fyne.NewPos(0, child.Position().Y-separatorThickness))
-		l.separators[i].Resize(fyne.NewSize(l.list.Size().Width, separatorThickness))
-		l.separators[i].Show()
+		l.dividers[i].Move(fyne.NewPos(theme.Padding(), child.Position().Y-separatorThickness))
+		l.dividers[i].Resize(fyne.NewSize(l.list.Size().Width-(theme.Padding()*2), separatorThickness))
+		l.dividers[i].Show()
 	}
 }

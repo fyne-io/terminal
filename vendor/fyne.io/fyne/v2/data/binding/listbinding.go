@@ -5,7 +5,7 @@ package binding
 // Since: 2.0
 type DataList interface {
 	DataItem
-	GetItem(index int) (DataItem, error)
+	GetItem(int) (DataItem, error)
 	Length() int
 }
 

@@ -63,7 +63,6 @@ func LoadResourceFromURLString(urlStr string) (Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
 
 	bytes, err := ioutil.ReadAll(res.Body)
 	if err != nil {
