@@ -59,6 +59,8 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 		_, _ = t.in.Write([]byte{0x3})
 	} else if _, ok := s.(*fyne.ShortcutPaste); ok {
 		_, _ = t.in.Write([]byte{0x16})
+	} else if _, ok := s.(*fyne.ShortcutSelectAll); ok {
+		_, _ = t.in.Write([]byte{0x1})
 	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
 		off := ds.KeyName[0] - 'A' + 1
 		_, _ = t.in.Write([]byte{off})
