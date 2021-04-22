@@ -44,6 +44,7 @@ func guessCellSize() fyne.Size {
 func main() {
 	a := app.New()
 	a.SetIcon(resourceIconPng)
+	a.Settings().SetTheme(newTermTheme())
 	w := a.NewWindow(termTitle)
 	w.SetPadded(false)
 
