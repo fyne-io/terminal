@@ -136,7 +136,9 @@ func (t *Terminal) Exit() {
 }
 
 func (t *Terminal) close() error {
-	_ = t.in.Close() // we may already be closed
+	if t.in != t.pty {
+		_ = t.in.Close() // we may already be closed
+	}
 	if t.pty == nil {
 		return nil
 	}
