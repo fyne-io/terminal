@@ -21,6 +21,8 @@ var specialChars = map[rune]func(t *Terminal){
 	'\n':           handleOutputLineFeed,
 	'\r':           handleOutputCarriageReturn,
 	'\t':           handleOutputTab,
+	0x0e:           nil, // handle switch to G1 character set
+	0x0f:           nil, // handle switch to G1 character set
 }
 
 var previous *parseState
@@ -98,6 +100,9 @@ func (t *Terminal) handleOutput(buf []byte) {
 		}
 
 		if out, ok := specialChars[r]; ok {
+			if out == nil {
+				continue
+			}
 			out(t)
 		} else {
 			t.handleOutputChar(r)
