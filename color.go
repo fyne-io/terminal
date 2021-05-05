@@ -23,7 +23,7 @@ var (
 	brightColors = []color.Color{
 		&color.RGBA{85, 85, 85, 255},
 		&color.RGBA{255, 85, 85, 255},
-		&color.RGBA{85, 255, 255, 255},
+		&color.RGBA{85, 255, 85, 255},
 		&color.RGBA{255, 255, 85, 255},
 		&color.RGBA{85, 85, 255, 255},
 		&color.RGBA{255, 85, 255, 255},
