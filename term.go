@@ -23,6 +23,7 @@ type Config struct {
 // Terminal is a terminal widget that loads a shell and handles input/output.
 type Terminal struct {
 	widget.BaseWidget
+	fyne.ShortcutHandler
 	content      *widget.TextGrid
 	config       Config
 	listenerLock sync.Mutex

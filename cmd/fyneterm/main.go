@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
@@ -45,6 +46,12 @@ func main() {
 	a := app.New()
 	a.SetIcon(resourceIconPng)
 	a.Settings().SetTheme(newTermTheme())
+
+	w := newTerminalWindow(a)
+	w.ShowAndRun()
+}
+
+func newTerminalWindow(a fyne.App) fyne.Window {
 	w := a.NewWindow(termTitle)
 	w.SetPadded(false)
 
@@ -61,12 +68,18 @@ func main() {
 	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
 	w.Canvas().Focus(t)
 
+	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: desktop.ControlModifier | desktop.ShiftModifier},
+		func(_ fyne.Shortcut) {
+			w := newTerminalWindow(a)
+			w.Show()
+		})
 	go func() {
 		err := t.RunLocalShell()
 		if err != nil {
 			fyne.LogError("Failure in terminal", err)
 		}
-		a.Quit()
+		w.Close()
 	}()
-	w.ShowAndRun()
+
+	return w
 }

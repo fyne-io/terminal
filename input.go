@@ -62,6 +62,8 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	} else if _, ok := s.(*fyne.ShortcutSelectAll); ok {
 		_, _ = t.in.Write([]byte{0x1})
 	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
+		t.ShortcutHandler.TypedShortcut(s) // it's not clear how we can check if this consumed the event
+
 		off := ds.KeyName[0] - 'A' + 1
 		_, _ = t.in.Write([]byte{off})
 	}
