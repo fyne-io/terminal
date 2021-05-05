@@ -1,5 +1,5 @@
-fyne.io/fyne/v2 v2.0.2-0.20210423195556-d366e2c5cc34 h1:knd3qd0hI8wPnDB0HCFplSz89xcgaV/oKjel9bCcUSE=
-fyne.io/fyne/v2 v2.0.2-0.20210423195556-d366e2c5cc34/go.mod h1:LzhXzjMRDHjWjnZVvyLcYndTM0v3XJodDC58WpDRcCg=
+fyne.io/fyne/v2 v2.0.3-rc2.0.20210504183454-1c34798c71e7 h1:0w9Kx5wvufla3qouwu/84oKyx5zaN2Z5eS0TNog02ew=
+fyne.io/fyne/v2 v2.0.3-rc2.0.20210504183454-1c34798c71e7/go.mod h1:yvHG5F54bcnRKLiG3rbjq0me/YGKknLGoTZziZbWBks=
 github.com/ActiveState/termtest/conpty v0.5.0 h1:JLUe6YDs4Jw4xNPCU+8VwTpniYOGeKzQg4SM2YHQNA8=
 github.com/ActiveState/termtest/conpty v0.5.0/go.mod h1:LO4208FLsxw6DcNZ1UtuGUMW+ga9PFtX4ntv8Ymg9og=
 github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 h1:w+iIsaOQNcT7OZ575w+acHgRric5iCyQh+xv+KJ4HB8=
@@ -22,8 +22,8 @@ github.com/fyne-io/mobile v0.1.3-0.20210412090810-650a3139866a h1:3TAJhl8vXyli0t
 github.com/fyne-io/mobile v0.1.3-0.20210412090810-650a3139866a/go.mod h1:/kOrWrZB6sasLbEy2JIvr4arEzQTXBTZGb3Y96yWbHY=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7 h1:SCYMcCJ89LjRGwEa0tRluNRiMjZHalQZrVrvTbPh+qw=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7/go.mod h1:482civXOzJJCPzJ4ZOX/pwvXBWSnzD4OKMdH4ClKGbk=
-github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210311203641-62640a716d48 h1:QrUfZrT8n72FUuiABt4tbu8PwDnOPAbnj3Mql1UhdRI=
-github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210311203641-62640a716d48/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
+github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210410170116-ea3d685f79fb h1:T6gaWBvRzJjuOrdCtg8fXXjKai2xSDqWTcKFUPuw8Tw=
+github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210410170116-ea3d685f79fb/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-ole/go-ole v1.2.5/go.mod h1:pprOEPIfldk/42T2oK7lQ4v4JSDwmV0As9GaiUsvbm0=
 github.com/godbus/dbus/v5 v5.0.4 h1:9349emZab16e7zQvpmsbtjc18ykshndd8y2PG3sgJbA=
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
