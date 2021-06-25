@@ -58,6 +58,7 @@ func main() {
 	bundle := i18n.NewBundle(language.English)
 	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
 	bundle.MustParseMessageFileBytes(resourceActiveFrJson.Content(), resourceActiveFrJson.Name())
+	bundle.MustParseMessageFileBytes(resourceActiveRuJson.Content(), resourceActiveRuJson.Name())
 	localizer = i18n.NewLocalizer(bundle, os.Getenv("LANG"))
 
 	a := app.New()

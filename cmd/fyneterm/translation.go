@@ -13,5 +13,10 @@ var resourceActiveEnJson = &fyne.StaticResource{
 var resourceActiveFrJson = &fyne.StaticResource{
 	StaticName: "active.fr.json",
 	StaticContent: []byte(
-		"{\n  \"Title\": \"Fyne Terme\"\n}\n"),
+		"{\n  \"Title\": \"Fyne Terminale\"\n}\n"),
+}
+var resourceActiveRuJson = &fyne.StaticResource{
+	StaticName: "active.ru.json",
+	StaticContent: []byte(
+		"{\n  \"Title\": \"Fyne Терминал\"\n}\n"),
 }
