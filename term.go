@@ -34,11 +34,12 @@ type Terminal struct {
 	in  io.WriteCloser
 	out io.Reader
 
-	focused, bell, bright    bool
-	currentFG, currentBG     color.Color
-	cursorRow, cursorCol     int
-	savedRow, savedCol       int
-	scrollTop, scrollBottom  int
+	bell, bright, debug, focused bool
+	currentFG, currentBG         color.Color
+	cursorRow, cursorCol         int
+	savedRow, savedCol           int
+	scrollTop, scrollBottom      int
+
 	cursor                   *canvas.Rectangle
 	cursorHidden, bufferMode bool // buffer mode is an xterm extension that impacts control keys
 	cursorMoved              func()
@@ -98,6 +99,11 @@ func (t *Terminal) Resize(s fyne.Size) {
 	t.onConfigure()
 
 	t.updatePTYSize()
+}
+
+// SetDebug turns on output about terminal codes and other errors if the parameter is `true`.
+func (t *Terminal) SetDebug(debug bool) {
+	t.debug = debug
 }
 
 // SetStartDir can be called before one of the Run calls to specify the initial directory.

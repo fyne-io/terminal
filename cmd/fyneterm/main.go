@@ -3,6 +3,7 @@
 package main
 
 import (
+	"flag"
 	"image/color"
 
 	"fyne.io/fyne/v2"
@@ -43,15 +44,19 @@ func guessCellSize() fyne.Size {
 }
 
 func main() {
+	var debug bool
+	flag.BoolVar(&debug, "debug", false, "Show terminal debug messages")
+	flag.Parse()
+
 	a := app.New()
 	a.SetIcon(resourceIconPng)
 	a.Settings().SetTheme(newTermTheme())
 
-	w := newTerminalWindow(a)
+	w := newTerminalWindow(a, debug)
 	w.ShowAndRun()
 }
 
-func newTerminalWindow(a fyne.App) fyne.Window {
+func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 	w := a.NewWindow(termTitle)
 	w.SetPadded(false)
 
@@ -61,6 +66,7 @@ func newTerminalWindow(a fyne.App) fyne.Window {
 	img.Translucency = 0.95
 
 	t := terminal.New()
+	t.SetDebug(debug)
 	setupListener(t, w)
 	w.SetContent(container.NewMax(bg, img, t))
 
@@ -70,7 +76,7 @@ func newTerminalWindow(a fyne.App) fyne.Window {
 
 	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: desktop.ControlModifier | desktop.ShiftModifier},
 		func(_ fyne.Shortcut) {
-			w := newTerminalWindow(a)
+			w := newTerminalWindow(a, debug)
 			w.Show()
 		})
 	go func() {

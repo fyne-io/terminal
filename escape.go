@@ -38,7 +38,7 @@ func (t *Terminal) handleEscape(code string) {
 	runes := []rune(code)
 	if esc, ok := escapes[runes[len(code)-1]]; ok {
 		esc(t, code[:len(code)-1])
-	} else {
+	} else if t.debug {
 		log.Println("Unrecognised Escape:", code)
 	}
 }
@@ -82,7 +82,9 @@ func (t *Terminal) handleVT100(code string) {
 	if code == "(A" || code == ")A" || code == "(B" || code == ")B" {
 		return // keycode handling A = en_GB, B = en_US
 	}
-	log.Println("Unhandled VT100:", code)
+	if t.debug {
+		log.Println("Unhandled VT100:", code)
+	}
 }
 
 func (t *Terminal) moveCursor(row, col int) {
@@ -229,7 +231,9 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 	case "?1049":
 		t.bufferMode = enable
 	default:
-		log.Println("Unknown private escape code", msg+"[hl]")
+		if t.debug {
+			log.Println("Unknown private escape code", msg+"[hl]")
+		}
 	}
 }
 

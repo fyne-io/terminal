@@ -23,7 +23,9 @@ func (t *Terminal) handleOSC(code string) {
 	case '7':
 		t.setDirectory(code[2:])
 	default:
-		log.Println("Unrecognised OSC:", code)
+		if t.debug {
+			log.Println("Unrecognised OSC:", code)
+		}
 	}
 }
 
