@@ -1,4 +1,4 @@
-# fyne.io/fyne/v2 v2.0.2-0.20210421155559-f35415910031
+# fyne.io/fyne/v2 v2.0.3-rc2.0.20210504183454-1c34798c71e7
 fyne.io/fyne/v2
 fyne.io/fyne/v2/app
 fyne.io/fyne/v2/canvas
@@ -53,7 +53,7 @@ github.com/fyne-io/mobile/internal/mobileinit
 # github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7
 github.com/go-gl/gl/v3.1/gles2
 github.com/go-gl/gl/v3.2-core/gl
-# github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210311203641-62640a716d48
+# github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210410170116-ea3d685f79fb
 github.com/go-gl/glfw/v3.3/glfw
 github.com/go-gl/glfw/v3.3/glfw/glfw/deps
 github.com/go-gl/glfw/v3.3/glfw/glfw/deps/glad

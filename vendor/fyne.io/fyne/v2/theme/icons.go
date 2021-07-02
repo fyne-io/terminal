@@ -3,7 +3,6 @@ package theme
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"image/color"
 
 	"fyne.io/fyne/v2"
@@ -159,6 +158,16 @@ const (
 	//
 	// Since: 2.0
 	IconNameDocumentSave fyne.ThemeIconName = "documentSave"
+
+	// IconNameMoreHorizontal is the name of theme lookup for horizontal more.
+	//
+	// Since 2.0
+	IconNameMoreHorizontal fyne.ThemeIconName = "moreHorizontal"
+
+	// IconNameMoreVertical is the name of theme lookup for vertical more.
+	//
+	// Since 2.0
+	IconNameMoreVertical fyne.ThemeIconName = "moreVertical"
 
 	// IconNameMailAttachment is the name of theme lookup for mail attachment icon.
 	//
@@ -404,6 +413,21 @@ const (
 	//
 	// Since: 2.0
 	IconNameComputer fyne.ThemeIconName = "computer"
+
+	// IconNameAccount is the name of theme lookup for account icon.
+	//
+	// Since: 2.1
+	IconNameAccount fyne.ThemeIconName = "account"
+
+	// IconNameLogin is the name of theme lookup for login icon.
+	//
+	// Since: 2.1
+	IconNameLogin fyne.ThemeIconName = "login"
+
+	// IconNameLogout is the name of theme lookup for logout icon.
+	//
+	// Since: 2.1
+	IconNameLogout fyne.ThemeIconName = "logout"
 )
 
 var (
@@ -438,6 +462,9 @@ var (
 		IconNameDocumentCreate: NewThemedResource(documentcreateIconRes),
 		IconNameDocumentPrint:  NewThemedResource(documentprintIconRes),
 		IconNameDocumentSave:   NewThemedResource(documentsaveIconRes),
+
+		IconNameMoreHorizontal: NewThemedResource(morehorizontalIconRes),
+		IconNameMoreVertical:   NewThemedResource(moreverticalIconRes),
 
 		IconNameInfo:     NewThemedResource(infoIconRes),
 		IconNameQuestion: NewThemedResource(questionIconRes),
@@ -500,6 +527,10 @@ var (
 		IconNameComputer: NewThemedResource(computerIconRes),
 		IconNameStorage:  NewThemedResource(storageIconRes),
 		IconNameUpload:   NewThemedResource(uploadIconRes),
+
+		IconNameAccount: NewThemedResource(accountIconRes),
+		IconNameLogin:   NewThemedResource(loginIconRes),
+		IconNameLogout:  NewThemedResource(logoutIconRes),
 	}
 )
 
@@ -625,7 +656,7 @@ type DisabledResource struct {
 
 // Name returns the resource source name prefixed with `disabled_` (used for caching)
 func (res *DisabledResource) Name() string {
-	return fmt.Sprintf("disabled_%s", res.source.Name())
+	return "disabled_" + res.source.Name()
 }
 
 // Content returns the disabled style content of the correct resource for the current theme
@@ -792,6 +823,16 @@ func DocumentPrintIcon() fyne.Resource {
 // DocumentSaveIcon returns a resource containing the standard document save icon for the current theme
 func DocumentSaveIcon() fyne.Resource {
 	return safeIconLookup(IconNameDocumentSave)
+}
+
+// MoreHorizontalIcon returns a resource containing the standard horizontal more icon for the current theme
+func MoreHorizontalIcon() fyne.Resource {
+	return current().Icon(IconNameMoreHorizontal)
+}
+
+// MoreVerticalIcon returns a resource containing the standard vertical more icon for the current theme
+func MoreVerticalIcon() fyne.Resource {
+	return current().Icon(IconNameMoreVertical)
 }
 
 // InfoIcon returns a resource containing the standard dialog info icon for the current theme
@@ -1057,6 +1098,21 @@ func StorageIcon() fyne.Resource {
 // UploadIcon returns a resource containing the standard upload icon for the current theme
 func UploadIcon() fyne.Resource {
 	return safeIconLookup(IconNameUpload)
+}
+
+// AccountIcon returns a resource containing the standard account icon for the current theme
+func AccountIcon() fyne.Resource {
+	return safeIconLookup(IconNameAccount)
+}
+
+// LoginIcon returns a resource containing the standard login icon for the current theme
+func LoginIcon() fyne.Resource {
+	return safeIconLookup(IconNameLogin)
+}
+
+// LogoutIcon returns a resource containing the standard logout icon for the current theme
+func LogoutIcon() fyne.Resource {
+	return safeIconLookup(IconNameLogout)
 }
 
 func safeIconLookup(n fyne.ThemeIconName) fyne.Resource {

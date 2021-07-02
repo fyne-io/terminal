@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/internal"
+	"fyne.io/fyne/v2/internal/app"
 	"fyne.io/fyne/v2/internal/driver"
 	"fyne.io/fyne/v2/internal/painter"
 
@@ -31,6 +32,9 @@ var drawFuncQueue = make(chan drawData)
 var runFlag = false
 var runMutex = &sync.Mutex{}
 var initOnce = &sync.Once{}
+var donePool = &sync.Pool{New: func() interface{} {
+	return make(chan struct{})
+}}
 
 // Arrange that main.main runs on main thread.
 func init() {
@@ -50,7 +54,8 @@ func runOnMain(f func()) {
 	if !running() {
 		f()
 	} else {
-		done := make(chan struct{})
+		done := donePool.Get().(chan struct{})
+		defer donePool.Put(done)
 
 		funcQueue <- funcData{f: f, done: done}
 		<-done
@@ -59,7 +64,8 @@ func runOnMain(f func()) {
 
 // force a function f to run on the draw thread
 func runOnDraw(w *window, f func()) {
-	done := make(chan struct{})
+	done := donePool.Get().(chan struct{})
+	defer donePool.Put(done)
 
 	drawFuncQueue <- drawData{f: f, win: w, done: done}
 	<-done
@@ -190,11 +196,17 @@ func (d *gLDriver) startDrawThread() {
 				if f.done != nil {
 					f.done <- struct{}{}
 				}
-			case <-settingsChange:
+			case set := <-settingsChange:
 				painter.ClearFontCache()
-				for _, win := range d.windowList() {
-					go win.Canvas().(*glCanvas).reloadScale()
-				}
+				painter.SvgCacheReset()
+				app.ApplySettingsWithCallback(set, fyne.CurrentApp(), func(w fyne.Window) {
+					c, ok := w.Canvas().(*glCanvas)
+					if !ok {
+						return
+					}
+					c.applyThemeOutOfTreeObjects()
+					go c.reloadScale()
+				})
 			case <-draw.C:
 				for _, win := range d.windowList() {
 					w := win.(*window)
