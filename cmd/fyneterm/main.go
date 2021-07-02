@@ -1,10 +1,13 @@
 //go:generate fyne bundle -o bundled.go Icon.png
+//go:generate fyne bundle -o translation.go ../../translation/
 
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"image/color"
+	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -14,11 +17,11 @@ import (
 
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 )
 
-const (
-	termTitle = "Fyne Terminal"
-)
+var localizer *i18n.Localizer
 
 func setupListener(t *terminal.Terminal, w fyne.Window) {
 	listen := make(chan terminal.Config)
@@ -27,13 +30,22 @@ func setupListener(t *terminal.Terminal, w fyne.Window) {
 			config := <-listen
 
 			if config.Title == "" {
-				w.SetTitle(termTitle)
+				w.SetTitle(termTitle())
 			} else {
-				w.SetTitle(termTitle + ": " + config.Title)
+				w.SetTitle(termTitle() + ": " + config.Title)
 			}
 		}
 	}()
 	t.AddListener(listen)
+}
+
+func termTitle() string {
+	return localizer.MustLocalize(&i18n.LocalizeConfig{
+		DefaultMessage: &i18n.Message{
+			ID:    "Title",
+			Other: "Fyne Terminal",
+		},
+	})
 }
 
 func guessCellSize() fyne.Size {
@@ -48,6 +60,12 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "Show terminal debug messages")
 	flag.Parse()
 
+	bundle := i18n.NewBundle(language.English)
+	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
+	bundle.MustParseMessageFileBytes(resourceActiveFrJson.Content(), resourceActiveFrJson.Name())
+	bundle.MustParseMessageFileBytes(resourceActiveRuJson.Content(), resourceActiveRuJson.Name())
+	localizer = i18n.NewLocalizer(bundle, os.Getenv("LANG"))
+
 	a := app.New()
 	a.SetIcon(resourceIconPng)
 	a.Settings().SetTheme(newTermTheme())
@@ -57,7 +75,7 @@ func main() {
 }
 
 func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
-	w := a.NewWindow(termTitle)
+	w := a.NewWindow(termTitle())
 	w.SetPadded(false)
 
 	bg := canvas.NewRectangle(color.Gray{Y: 0x16})

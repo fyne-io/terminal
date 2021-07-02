@@ -3,7 +3,6 @@ package widget
 import (
 	"image/color"
 	"math"
-	"log"
 	"strconv"
 	"strings"
 
@@ -470,7 +469,6 @@ func (t *textGridRenderer) updateGridSize(size fyne.Size) {
 
 	t.cols = int(math.Max(float64(sizeCols), float64(bufCols)))
 	t.rows = int(math.Max(float64(sizeRows), float64(bufRows)))
-	log.Println("Now", t.rows, t.cols) // TODO see how to remove excess refresh
 	t.addCellsIfRequired()
 }
 
