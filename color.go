@@ -62,7 +62,7 @@ func (t *Terminal) handleColorEscape(message string) {
 func (t *Terminal) handleColorMode(modeStr string) {
 	mode, err := strconv.Atoi(modeStr)
 	if err != nil {
-		fyne.LogError("Failed to parse color mode: " + modeStr, err)
+		fyne.LogError("Failed to parse color mode: "+modeStr, err)
 	}
 	switch mode {
 	case 0:
