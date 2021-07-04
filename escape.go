@@ -228,6 +228,22 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 	case "25":
 		t.cursorHidden = !enable
 		t.refreshCursor()
+	case "9":
+		if enable {
+			t.onMouseDown = t.handleMouseDownX10
+			t.onMouseUp = t.handleMouseUpX10
+		} else {
+			t.onMouseDown = nil
+			t.onMouseUp = nil
+		}
+	case "1000":
+		if enable {
+			t.onMouseDown = t.handleMouseDownV200
+			t.onMouseUp = t.handleMouseUpV200
+		} else {
+			t.onMouseDown = nil
+			t.onMouseUp = nil
+		}
 	case "1049":
 		t.bufferMode = enable
 	default:

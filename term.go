@@ -10,6 +10,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -43,6 +45,8 @@ type Terminal struct {
 	cursor                   *canvas.Rectangle
 	cursorHidden, bufferMode bool // buffer mode is an xterm extension that impacts control keys
 	cursorMoved              func()
+
+	onMouseDown, onMouseUp func(int, desktop.Modifier, fyne.Position)
 }
 
 // AcceptsTab indicates that this widget will use the Tab key (avoids loss of focus).
@@ -56,6 +60,30 @@ func (t *Terminal) AddListener(listener chan Config) {
 	defer t.listenerLock.Unlock()
 
 	t.listeners = append(t.listeners, listener)
+}
+
+func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
+	if t.onMouseDown == nil {
+		return
+	}
+
+	if ev.Button == desktop.MouseButtonPrimary {
+		t.onMouseDown(1, ev.Modifier, ev.Position)
+	} else if ev.Button == desktop.MouseButtonSecondary {
+		t.onMouseDown(2, ev.Modifier, ev.Position)
+	}
+}
+
+func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
+	if t.onMouseDown == nil {
+		return
+	}
+
+	if ev.Button == desktop.MouseButtonPrimary {
+		t.onMouseUp(1, ev.Modifier, ev.Position)
+	} else if ev.Button == desktop.MouseButtonSecondary {
+		t.onMouseUp(2, ev.Modifier, ev.Position)
+	}
 }
 
 // RemoveListener de-registers a Config channel and closes it
@@ -109,6 +137,24 @@ func (t *Terminal) SetDebug(debug bool) {
 // SetStartDir can be called before one of the Run calls to specify the initial directory.
 func (t *Terminal) SetStartDir(path string) {
 	t.startDir = path
+}
+
+func (t *Terminal) TouchCancel(ev *mobile.TouchEvent) {
+	if t.onMouseUp != nil {
+		t.onMouseUp(1, 0, ev.Position)
+	}
+}
+
+func (t *Terminal) TouchDown(ev *mobile.TouchEvent) {
+	if t.onMouseDown != nil {
+		t.onMouseDown(1, 0, ev.Position)
+	}
+}
+
+func (t *Terminal) TouchUp(ev *mobile.TouchEvent) {
+	if t.onMouseUp != nil {
+		t.onMouseUp(1, 0, ev.Position)
+	}
 }
 
 func (t *Terminal) onConfigure() {
