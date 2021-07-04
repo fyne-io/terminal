@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 )
 
@@ -61,7 +62,7 @@ func (t *Terminal) handleColorEscape(message string) {
 func (t *Terminal) handleColorMode(modeStr string) {
 	mode, err := strconv.Atoi(modeStr)
 	if err != nil {
-		log.Println("Failed to parse color mode", modeStr)
+		fyne.LogError("Failed to parse color mode: " + modeStr, err)
 	}
 	switch mode {
 	case 0:
@@ -115,7 +116,9 @@ func (t *Terminal) handleColorMode(modeStr string) {
 	case 100, 101, 102, 103, 104, 105, 106, 107:
 		t.currentBG = brightColors[mode-100]
 	default:
-		log.Println("Unsupported graphics mode", mode)
+		if t.debug {
+			log.Println("Unsupported graphics mode", mode)
+		}
 	}
 }
 
@@ -123,7 +126,9 @@ func (t *Terminal) handleColorModeMap(mode, ids string) {
 	var c color.Color
 	id, err := strconv.Atoi(ids)
 	if err != nil {
-		log.Println("Invalid color map ID", ids)
+		if t.debug {
+			log.Println("Invalid color map ID", ids)
+		}
 		return
 	}
 	if id <= 7 {
@@ -143,8 +148,8 @@ func (t *Terminal) handleColorModeMap(mode, ids string) {
 		inc := 256 / 24
 		y := id * inc
 		c = &color.Gray{uint8(y)}
-	} else {
-		log.Println("Invalid colour map id", id)
+	} else if t.debug {
+		log.Println("Invalid colour map ID", id)
 	}
 
 	if mode == "38" {
