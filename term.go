@@ -62,6 +62,7 @@ func (t *Terminal) AddListener(listener chan Config) {
 	t.listeners = append(t.listeners, listener)
 }
 
+// MouseDown handles the down action for desktop mouse events.
 func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 	if t.onMouseDown == nil {
 		return
@@ -74,6 +75,7 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 	}
 }
 
+// MouseUp handles the up action for desktop mouse events.
 func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
 	if t.onMouseDown == nil {
 		return
@@ -139,18 +141,21 @@ func (t *Terminal) SetStartDir(path string) {
 	t.startDir = path
 }
 
+// TouchCancel handles the tap action for mobile apps that lose focus during tap.
 func (t *Terminal) TouchCancel(ev *mobile.TouchEvent) {
 	if t.onMouseUp != nil {
 		t.onMouseUp(1, 0, ev.Position)
 	}
 }
 
+// TouchDown handles the down action for mobile touch events.
 func (t *Terminal) TouchDown(ev *mobile.TouchEvent) {
 	if t.onMouseDown != nil {
 		t.onMouseDown(1, 0, ev.Position)
 	}
 }
 
+// TouchUp handles the up action for mobile touch events.
 func (t *Terminal) TouchUp(ev *mobile.TouchEvent) {
 	if t.onMouseUp != nil {
 		t.onMouseUp(1, 0, ev.Position)
