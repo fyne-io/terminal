@@ -225,10 +225,10 @@ func escapeMoveCursorCol(t *Terminal, msg string) {
 
 func escapePrivateMode(t *Terminal, msg string, enable bool) {
 	switch msg {
-	case "?25":
+	case "25":
 		t.cursorHidden = !enable
 		t.refreshCursor()
-	case "?1049":
+	case "1049":
 		t.bufferMode = enable
 	default:
 		if t.debug {
@@ -238,11 +238,11 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 }
 
 func escapePrivateModeOff(t *Terminal, msg string) {
-	escapePrivateMode(t, msg, false)
+	escapePrivateMode(t, msg[1:], false)
 }
 
 func escapePrivateModeOn(t *Terminal, msg string) {
-	escapePrivateMode(t, msg, true)
+	escapePrivateMode(t, msg[1:], true)
 }
 
 func escapeMoveCursor(t *Terminal, msg string) {
