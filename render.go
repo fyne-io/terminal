@@ -56,6 +56,7 @@ func (t *Terminal) refreshCursor() {
 // CreateRenderer requests a new renderer for this terminal (just a wrapper around the TextGrid)
 func (t *Terminal) CreateRenderer() fyne.WidgetRenderer {
 	t.cursor = canvas.NewRectangle(theme.PrimaryColor())
+	t.cursor.Hidden = true
 	t.cursor.Resize(fyne.NewSize(2, t.guessCellSize().Height))
 
 	r := &render{term: t}
