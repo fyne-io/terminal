@@ -6,8 +6,10 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"image/color"
 	"os"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -21,9 +23,12 @@ import (
 	"golang.org/x/text/language"
 )
 
-var localizer *i18n.Localizer
+var (
+	nextTab   = 1
+	localizer *i18n.Localizer
+)
 
-func setupListener(t *terminal.Terminal, w fyne.Window) {
+func setupListener(t *terminal.Terminal, tab *container.TabItem, tabs *container.DocTabs, w fyne.Window) {
 	listen := make(chan terminal.Config)
 	go func() {
 		for {
@@ -33,6 +38,8 @@ func setupListener(t *terminal.Terminal, w fyne.Window) {
 				w.SetTitle(termTitle())
 			} else {
 				w.SetTitle(termTitle() + ": " + config.Title)
+				tab.Text = config.Title
+				tabs.Refresh()
 			}
 		}
 	}()
@@ -74,10 +81,7 @@ func main() {
 	w.ShowAndRun()
 }
 
-func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
-	w := a.NewWindow(termTitle())
-	w.SetPadded(false)
-
+func newTerm(debug bool, tabs *container.DocTabs, item *container.TabItem, w fyne.Window, a fyne.App) *fyne.Container {
 	bg := canvas.NewRectangle(color.Gray{Y: 0x16})
 	img := canvas.NewImageFromResource(data.FyneScene)
 	img.FillMode = canvas.ImageFillContain
@@ -85,12 +89,7 @@ func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 
 	t := terminal.New()
 	t.SetDebug(debug)
-	setupListener(t, w)
-	w.SetContent(container.NewMax(bg, img, t))
-
-	cellSize := guessCellSize()
-	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
-	w.Canvas().Focus(t)
+	setupListener(t, item, tabs, w)
 
 	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: desktop.ControlModifier | desktop.ShiftModifier},
 		func(_ fyne.Shortcut) {
@@ -102,8 +101,44 @@ func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 		if err != nil {
 			fyne.LogError("Failure in terminal", err)
 		}
-		w.Close()
+
+		if len(tabs.Items) == 1 {
+			w.Close()
+		} else {
+			tabs.Remove(tabs.Selected())
+		}
 	}()
+
+	return container.NewMax(bg, img, t)
+}
+
+func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
+	w := a.NewWindow(termTitle())
+	w.SetPadded(false)
+
+	tabs := container.NewDocTabs()
+	newTab := func() *container.TabItem {
+		item := container.NewTabItemWithIcon(fmt.Sprintf("Tab %d", nextTab), resourceIconPng, nil)
+		item.Content = newTerm(debug, tabs, item, w, a)
+
+		nextTab++
+		return item
+	}
+	tabs.Append(newTab())
+
+	tabs.CreateTab = newTab
+	tabs.OnSelected = func(tab *container.TabItem) {
+		term := tab.Content.(*fyne.Container).Objects[2].(*terminal.Terminal)
+		go func() {
+			time.Sleep(time.Millisecond * 50)
+			w.Canvas().Focus(term)
+		}()
+	}
+	w.SetContent(tabs)
+
+	cellSize := guessCellSize()
+	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
+	w.Canvas().Focus(tabs.Items[0].Content.(*fyne.Container).Objects[2].(*terminal.Terminal))
 
 	return w
 }
