@@ -12,7 +12,7 @@ type termTheme struct {
 }
 
 func newTermTheme() fyne.Theme {
-	return &termTheme{theme.DarkTheme()}
+	return &termTheme{theme.DefaultTheme()}
 }
 
 // Color fixes a bug < 2.1 where theme.DarkTheme() would not override user preference.
