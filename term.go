@@ -128,7 +128,7 @@ func (t *Terminal) Resize(s fyne.Size) {
 	}
 	t.onConfigure()
 
-	t.updatePTYSize()
+	go t.updatePTYSize()
 }
 
 // SetDebug turns on output about terminal codes and other errors if the parameter is `true`.
