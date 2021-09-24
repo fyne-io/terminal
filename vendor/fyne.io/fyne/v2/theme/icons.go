@@ -199,6 +199,21 @@ const (
 	// Since: 2.0
 	IconNameMailSend fyne.ThemeIconName = "mailSend"
 
+	// IconNameMediaMusic is the name of theme lookup for media music icon.
+	//
+	// Since: 2.1
+	IconNameMediaMusic fyne.ThemeIconName = "mediaMusic"
+
+	// IconNameMediaPhoto is the name of theme lookup for media photo icon.
+	//
+	// Since: 2.1
+	IconNameMediaPhoto fyne.ThemeIconName = "mediaPhoto"
+
+	// IconNameMediaVideo is the name of theme lookup for media video icon.
+	//
+	// Since: 2.1
+	IconNameMediaVideo fyne.ThemeIconName = "mediaVideo"
+
 	// IconNameMediaFastForward is the name of theme lookup for media fast-forward icon.
 	//
 	// Since: 2.0
@@ -428,6 +443,16 @@ const (
 	//
 	// Since: 2.1
 	IconNameLogout fyne.ThemeIconName = "logout"
+
+	// IconNameList is the name of theme lookup for list icon.
+	//
+	// Since: 2.1
+	IconNameList fyne.ThemeIconName = "list"
+
+	// IconNameGrid is the name of theme lookup for grid icon.
+	//
+	// Since: 2.1
+	IconNameGrid fyne.ThemeIconName = "grid"
 )
 
 var (
@@ -478,6 +503,9 @@ var (
 		IconNameMailReplyAll:   NewThemedResource(mailreplyallIconRes),
 		IconNameMailSend:       NewThemedResource(mailsendIconRes),
 
+		IconNameMediaMusic:        NewThemedResource(mediamusicIconRes),
+		IconNameMediaPhoto:        NewThemedResource(mediaphotoIconRes),
+		IconNameMediaVideo:        NewThemedResource(mediavideoIconRes),
 		IconNameMediaFastForward:  NewThemedResource(mediafastforwardIconRes),
 		IconNameMediaFastRewind:   NewThemedResource(mediafastrewindIconRes),
 		IconNameMediaPause:        NewThemedResource(mediapauseIconRes),
@@ -531,6 +559,9 @@ var (
 		IconNameAccount: NewThemedResource(accountIconRes),
 		IconNameLogin:   NewThemedResource(loginIconRes),
 		IconNameLogout:  NewThemedResource(logoutIconRes),
+
+		IconNameList: NewThemedResource(listIconRes),
+		IconNameGrid: NewThemedResource(gridIconRes),
 	}
 )
 
@@ -950,6 +981,27 @@ func MailSendIcon() fyne.Resource {
 	return safeIconLookup(IconNameMailSend)
 }
 
+// MediaMusicIcon returns a resource containing the standard media music icon for the current theme
+//
+// Since: 2.1
+func MediaMusicIcon() fyne.Resource {
+	return safeIconLookup(IconNameMediaMusic)
+}
+
+// MediaPhotoIcon returns a resource containing the standard media photo icon for the current theme
+//
+// Since: 2.1
+func MediaPhotoIcon() fyne.Resource {
+	return safeIconLookup(IconNameMediaPhoto)
+}
+
+// MediaVideoIcon returns a resource containing the standard media video icon for the current theme
+//
+// Since: 2.1
+func MediaVideoIcon() fyne.Resource {
+	return safeIconLookup(IconNameMediaVideo)
+}
+
 // MediaFastForwardIcon returns a resource containing the standard media fast-forward icon for the current theme
 func MediaFastForwardIcon() fyne.Resource {
 	return safeIconLookup(IconNameMediaFastForward)
@@ -1113,6 +1165,16 @@ func LoginIcon() fyne.Resource {
 // LogoutIcon returns a resource containing the standard logout icon for the current theme
 func LogoutIcon() fyne.Resource {
 	return safeIconLookup(IconNameLogout)
+}
+
+// ListIcon returns a resource containing the standard list icon for the current theme
+func ListIcon() fyne.Resource {
+	return safeIconLookup(IconNameList)
+}
+
+// GridIcon returns a resource containing the standard grid icon for the current theme
+func GridIcon() fyne.Resource {
+	return safeIconLookup(IconNameGrid)
 }
 
 func safeIconLookup(n fyne.ThemeIconName) fyne.Resource {
