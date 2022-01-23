@@ -20,6 +20,11 @@ import (
 	"golang.org/x/text/language"
 )
 
+const (
+	termBackground = fyne.ThemeColorName("termBG")
+	termOverlay = fyne.ThemeColorName("termOver")
+)
+
 var localizer *i18n.Localizer
 
 func setupListener(t *terminal.Terminal, w fyne.Window) {
@@ -66,26 +71,39 @@ func main() {
 	localizer = i18n.NewLocalizer(bundle, os.Getenv("LANG"))
 
 	a := app.New()
-	a.SetIcon(resourceIconPng)
-	a.Settings().SetTheme(newTermTheme())
-
-	w := newTerminalWindow(a, debug)
+	a.SetIcon(data.Icon)
+	th := newTermTheme()
+	a.Settings().SetTheme(th)
+	w := newTerminalWindow(a, th, debug)
 	w.ShowAndRun()
 }
 
-func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
+func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	w := a.NewWindow(termTitle())
 	w.SetPadded(false)
 
-	bg := canvas.NewRectangle(color.Gray{Y: 0x16})
-	img := canvas.NewImageFromResource(data.FyneScene)
+	bg := canvas.NewRectangle(th.Color(termBackground, a.Settings().ThemeVariant()))
+	img := canvas.NewImageFromResource(data.FyneLogo)
 	img.FillMode = canvas.ImageFillContain
-	img.Translucency = 0.95
+	over := canvas.NewRectangle(th.Color(termOverlay, a.Settings().ThemeVariant()))
+
+	ch := make(chan fyne.Settings)
+	go func() {
+		for {
+			_ = <- ch
+
+			bg.FillColor = th.Color(termBackground, a.Settings().ThemeVariant())
+			bg.Refresh()
+			over.FillColor = th.Color(termOverlay, a.Settings().ThemeVariant())
+			over.Refresh()
+		}
+	}()
+	a.Settings().AddChangeListener(ch)
 
 	t := terminal.New()
 	t.SetDebug(debug)
 	setupListener(t, w)
-	w.SetContent(container.NewMax(bg, img, t))
+	w.SetContent(container.NewMax(bg, img, over, t))
 
 	cellSize := guessCellSize()
 	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
@@ -93,7 +111,7 @@ func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 
 	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: desktop.ControlModifier | desktop.ShiftModifier},
 		func(_ fyne.Shortcut) {
-			w := newTerminalWindow(a, debug)
+			w := newTerminalWindow(a, th, debug)
 			w.Show()
 		})
 	go func() {
