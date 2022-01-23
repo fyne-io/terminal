@@ -1,4 +1,3 @@
-//go:generate fyne bundle -o bundled.go Icon.png
 //go:generate fyne bundle -o translation.go ../../translation/
 
 package main
