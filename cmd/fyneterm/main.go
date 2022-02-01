@@ -90,7 +90,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	ch := make(chan fyne.Settings)
 	go func() {
 		for {
-			_ = <-ch
+			<-ch
 
 			bg.FillColor = th.Color(termBackground, a.Settings().ThemeVariant())
 			bg.Refresh()
