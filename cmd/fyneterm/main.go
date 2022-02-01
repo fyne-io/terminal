@@ -22,7 +22,7 @@ import (
 
 const (
 	termBackground = fyne.ThemeColorName("termBG")
-	termOverlay = fyne.ThemeColorName("termOver")
+	termOverlay    = fyne.ThemeColorName("termOver")
 )
 
 var localizer *i18n.Localizer
@@ -90,7 +90,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	ch := make(chan fyne.Settings)
 	go func() {
 		for {
-			_ = <- ch
+			_ = <-ch
 
 			bg.FillColor = th.Color(termBackground, a.Settings().ThemeVariant())
 			bg.Refresh()
