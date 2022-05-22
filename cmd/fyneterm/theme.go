@@ -12,18 +12,16 @@ type termTheme struct {
 }
 
 func newTermTheme() fyne.Theme {
-	return &termTheme{theme.DefaultTheme()}
+	return &termTheme{fyne.CurrentApp().Settings().Theme()}
 }
 
 // Color fixes a bug < 2.1 where theme.DarkTheme() would not override user preference.
 func (t *termTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	switch n {
-	case termBackground:
-		if v == theme.VariantLight {
-			return &color.Gray{Y: 0xff}
-		}
-		return &color.NRGBA{R: 0x05, G: 0x08, B: 0x6b, A: 0xff}
 	case termOverlay:
+		if c := t.Color("fynedeskPanelBackground", v); c != color.Transparent {
+			return c
+		}
 		if v == theme.VariantLight {
 			return color.NRGBA{R: 0xaa, G: 0xaa, B: 0xaa, A: 0xf6}
 		}

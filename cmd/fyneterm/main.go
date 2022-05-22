@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
@@ -20,10 +21,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-const (
-	termBackground = fyne.ThemeColorName("termBG")
-	termOverlay    = fyne.ThemeColorName("termOver")
-)
+const termOverlay = fyne.ThemeColorName("termOver")
 
 var localizer *i18n.Localizer
 
@@ -82,7 +80,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	w := a.NewWindow(termTitle())
 	w.SetPadded(false)
 
-	bg := canvas.NewRectangle(th.Color(termBackground, a.Settings().ThemeVariant()))
+	bg := canvas.NewRectangle(theme.BackgroundColor())
 	img := canvas.NewImageFromResource(data.FyneLogo)
 	img.FillMode = canvas.ImageFillContain
 	over := canvas.NewRectangle(th.Color(termOverlay, a.Settings().ThemeVariant()))
@@ -92,7 +90,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 		for {
 			<-ch
 
-			bg.FillColor = th.Color(termBackground, a.Settings().ThemeVariant())
+			bg.FillColor = theme.BackgroundColor()
 			bg.Refresh()
 			over.FillColor = th.Color(termOverlay, a.Settings().ThemeVariant())
 			over.Refresh()
