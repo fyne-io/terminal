@@ -107,7 +107,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
 	w.Canvas().Focus(t)
 
-	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: desktop.ControlModifier | desktop.ShiftModifier},
+	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift},
 		func(_ fyne.Shortcut) {
 			w := newTerminalWindow(a, th, debug)
 			w.Show()

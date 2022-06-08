@@ -46,7 +46,7 @@ type Terminal struct {
 	cursorHidden, bufferMode bool // buffer mode is an xterm extension that impacts control keys
 	cursorMoved              func()
 
-	onMouseDown, onMouseUp func(int, desktop.Modifier, fyne.Position)
+	onMouseDown, onMouseUp func(int, fyne.KeyModifier, fyne.Position)
 }
 
 // AcceptsTab indicates that this widget will use the Tab key (avoids loss of focus).
@@ -280,7 +280,7 @@ func (t *Terminal) Write(b []byte) (int, error) {
 }
 
 func (t *Terminal) setupShortcuts() {
-	t.ShortcutHandler.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: desktop.ShiftModifier | desktop.ControlModifier},
+	t.ShortcutHandler.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: fyne.KeyModifierShift | fyne.KeyModifierControl},
 		func(_ fyne.Shortcut) {
 			a := fyne.CurrentApp()
 			c := a.Driver().CanvasForObject(t)
