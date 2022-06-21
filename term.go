@@ -62,6 +62,12 @@ func (t *Terminal) AddListener(listener chan Config) {
 	t.listeners = append(t.listeners, listener)
 }
 
+// MinSize provides a size large enough that a terminal could technically funcion.
+func (t *Terminal) MinSize() fyne.Size {
+	s := t.guessCellSize()
+	return fyne.NewSize(s.Width*2.5, s.Height*1.2) // just enough to get a terminal init
+}
+
 // MouseDown handles the down action for desktop mouse events.
 func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 	if t.onMouseDown == nil {
