@@ -23,7 +23,7 @@ Running on Windows with PowerShell running inside.
 Just use the go get command (you'll need a Go and C compiler installed first):
 
 ```
-go get github.com/fyne-io/terminal/cmd/fyneterm
+go install github.com/fyne-io/terminal/cmd/fyneterm@latest
 ```
 
 # Installing as an app
