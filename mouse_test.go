@@ -10,7 +10,7 @@ import (
 func TestEncodeMouse(t *testing.T) {
 	term := New()
 	assert.Equal(t, "\x1b[M !!", string(term.encodeMouse(1, 0, fyne.NewPos(4, 4))))
-	assert.Equal(t, "\x1b[M!$#", string(term.encodeMouse(2, 0, fyne.NewPos(32, 36))))
+	assert.Equal(t, "\x1b[M!$#", string(term.encodeMouse(2, 0, fyne.NewPos(30, 36))))
 	assert.Equal(t, "\x1b[M#!!", string(term.encodeMouse(0, 0, fyne.NewPos(4, 4))))
 }
 

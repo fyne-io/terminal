@@ -3,6 +3,100 @@
 This file lists the main changes with each version of the Fyne toolkit.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/fyne/releases). 
 
+## 2.3.0 - 24 December 2022
+
+### Added
+
+* Shiny new theme that was designed for us
+* Improved text handling to support non-latin alphabets
+* Add cloud storage and preference support
+* Add menu icon and submenu support to system tray menus
+* More button importance levels `ErrorImportance`, `WarningImportance`
+* Support disabling of `AppTabs` and `DocTabs` items
+* Add image support to rich text (#2366)
+* Add CheckGroup.Remove (#3124)
+
+### Changed
+
+* The buttons on the default theme are no longer transparent, but we added more button importance types
+* Expose a storage.ErrNotExists for non existing documents (#3083)
+* Update `go-gl/glfw` to build against latest Glfw 3.3.8
+* List items in `widget.List` now implement the Focusable interface
+
+### Fixed
+
+* Displaying unicode or different language like Bengali doesn't work (#598)
+* Cannot disable container.TabItem (#1904)
+* Update Linux/XDG application theme to follow the FreeDesktop Dark Style Preference (#2657)
+* Running `fyne package -os android` needs NDK 16/19c (#3066)
+* Caret position lost when resizing a MultilineEntry (#3024)
+* Fix possible crash in table resize (#3369)
+* Memory usage surge when selecting/appending MultilineEntry text (#3426)
+* Fyne bundle does not support appending when parameter is a directory
+* Crash parsing invalid file URI (#3275)
+* Systray apps on macOS can only be terminated via the systray menu quit button (#3395)
+* Wayland Scaling support: sizes and distances are scaled wrong (#2850)
+* Google play console minimum API level 31 (#3375)
+* Data bound entry text replacing selection is ignored (#3340)
+* Split Container does not respect item's Visible status (#3232)
+* Android - Entry - OnSubmitted is not working (#3267)
+* Can't set custom CGO_CFLAGS and CGO_LDFLAGS with "fyne package" on darwin (#3276)
+* Text line not displayed in RichText (#3117)
+* Segfault when adding items directly in form struct (#3153)
+* Preferences RemoveValue does not save (#3229)
+* Create new folder directly from FolderDialog (#3174)
+* Slider drag handle is clipped off at minimum size (#2966)
+* Entry text "flickering" while typing (#3461)
+* Rendering of not changed canvas objects after an event (#3211)
+* Form dialog not displaying hint text and validation errors (#2781)
+
+
+## 2.2.4 - 9 November 2022
+
+### Fixes
+
+* Iphone incorrect click coordinates in zoomed screen view (#3122)
+* CachedFontFace seems to be causing crash (#3134)
+* Fix possible compile error if "fyne build" is used without icon metadata
+* Detect and use recent Android NDK toolchain
+* Handle fyne package -release and fyne release properly for Android and iOS
+* Fix issue with mobile simulation when systray used
+* Fix incorrect size and position for radio focus indicator (#3137)
+
+
+## 2.2.3 - 8 July 2022
+
+### Fixed
+
+* Regression: Preferences are not parsed at program start (#3125)
+* Wrappable RichText in a Split container causes crash (#3003, #2961)
+* meta.Version is always 1.0.0 on android & ios (#3109)
+
+
+## 2.2.2 - 30 June 2022
+
+### Fixed
+
+* Windows missing version metadata when packaged (#3046)
+* Fyne package would not build apps using old Fyne versions
+* System tray icon may not be removed on app exit in Windows
+* Emphasis in Markdown gives erroneous output in RichText (#2974)
+* When last visible window is closed, hidden window is set visible (#3059)
+* Do not close app when last window is closed but systrayMenu exists (#3092)
+* Image with ImageFillOriginal not showing (#3102)
+
+
+## 2.2.1 - 12 June 2022
+
+### Fixed
+
+* Fix various race conditions and compatibility issues with System tray menus
+* Resolve issue where macOS systray menu may not appear
+* Updated yaml dependency to fix CVE-2022-28948
+* Tab buttons stop working after removing a tab (#3050)
+* os.SetEnv("FYNE_FONT") doesn't work in v2.2.0 (#3056)
+
+
 ## 2.2.0 - 7 June 2022
 
 ### Added
@@ -11,15 +105,19 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Access compiled app metadata using new `App.Metadata()` method
 * Add support for System tray icon and menu (#283)
 * Support for Android Application Bundle (.aab) (#2663)
+* Initial support for OpenBSD and NetBSD
 * Add keyboard shortcuts to menu (#682)
 * Add technical preview of web driver and `fyne serve` command
 * Added `iossimulator` build target (#1917)
 * Allow dynamic themes via JSON templates (#211)
-* custom hyperlink callback (#2979)
-* Add support for ico file when compiling for windows (#2412)
+* Custom hyperlink callback (#2979)
+* Add support for `.ico` file when compiling for windows (#2412)
 * Add binding.NewStringWithFormat (#2890)
 * Add Entry.SetMinRowsVisible
 * Add Menu.Refresh() and MainMenu.Refresh() (#2853)
+* Packages for Linux and BSD now support installing into the home directory
+* Add `.RemoveAll()` to containers
+* Add an AllString validator for chaining together string validators
 
 ### Changed
 
@@ -31,6 +129,12 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Prefer ANDROID_NDK_HOME over the ANDROID_HOME ndk-bundle location (#2920)
 * Support serialisation / deserialisation of the widget tree (#5)
 * Better error reporting / handling when OpenGL is not available (#2689)
+* Memory is now better reclaimed on Android when the OS requests it
+* Notifications on Linux and BSD now show the application icon
+* Change listeners for preferences no longer run when setting the same value
+* The file dialog now shows extensions in the list view for better readability
+* Many optimisations and widget performance enhancements
+* Updated various dependencies to their latest versions
 
 ### Fixed
 
@@ -44,6 +148,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Font cutoff with bold italics (#3001)
 * Fyne error: Preferences load error (#2936, 3015)
 * Scrolled List bad redraw when window is maximized (#3013)
+* Linux and BSD packages not being installable if the name contained spaces
 
 
 ## 2.1.4 - 17 March 2022
