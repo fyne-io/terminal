@@ -31,6 +31,14 @@ var (
 		&color.RGBA{85, 255, 255, 255},
 		&color.RGBA{255, 255, 255, 255},
 	}
+	colourBands = []uint8{
+		0x00,
+		0x5f,
+		0x87,
+		0xaf,
+		0xd7,
+		0xff,
+	}
 )
 
 func (t *Terminal) handleColorEscape(message string) {
@@ -136,13 +144,12 @@ func (t *Terminal) handleColorModeMap(mode, ids string) {
 	} else if id <= 15 {
 		c = brightColors[id-8]
 	} else if id <= 231 {
-		inc := 256 / 5
 		id -= 16
 		b := id % 6
 		id = (id - b) / 6
 		g := id % 6
 		r := (id - g) / 6
-		c = &color.RGBA{uint8(r * inc), uint8(g * inc), uint8(b * inc), 255}
+		c = &color.RGBA{colourBands[r], colourBands[g], colourBands[b], 255}
 	} else if id <= 255 {
 		id -= 232
 		inc := 256 / 24
