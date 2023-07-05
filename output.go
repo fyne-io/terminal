@@ -133,12 +133,7 @@ func (t *Terminal) handleOutputChar(r rune) {
 		t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newCell)
 	}
 
-	cell := t.content.Rows[t.cursorRow].Cells[t.cursorCol]
-	if cell.Rune != r || cell.Style.TextColor() != cellStyle.FGColor || cell.Style.BackgroundColor() != cellStyle.BGColor {
-		cell.Rune = r
-		cell.Style = cellStyle
-		t.content.SetCell(t.cursorRow, t.cursorCol, cell)
-	}
+	t.content.SetCell(t.cursorRow, t.cursorCol, widget.TextGridCell{Rune: r, Style: cellStyle})
 	t.cursorCol++
 }
 

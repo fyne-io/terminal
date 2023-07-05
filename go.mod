@@ -1,6 +1,6 @@
 module github.com/fyne-io/terminal
 
-go 1.13
+go 1.17
 
 require (
 	fyne.io/fyne/v2 v2.3.6-0.20230704203313-e050d7994adc
