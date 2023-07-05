@@ -101,7 +101,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	t := terminal.New()
 	t.SetDebug(debug)
 	setupListener(t, w)
-	w.SetContent(container.NewMax(bg, img, over, t))
+	w.SetContent(container.NewStack(bg, img, over, t))
 
 	cellSize := guessCellSize()
 	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
