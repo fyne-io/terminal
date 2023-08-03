@@ -47,6 +47,12 @@ type Terminal struct {
 	cursorMoved              func()
 
 	onMouseDown, onMouseUp func(int, fyne.KeyModifier, fyne.Position)
+
+	keyboardState struct {
+		shiftPressed bool
+		ctrlPressed  bool
+		altPressed   bool
+	}
 }
 
 // AcceptsTab indicates that this widget will use the Tab key (avoids loss of focus).
