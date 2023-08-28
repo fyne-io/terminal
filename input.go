@@ -14,15 +14,11 @@ func (t *Terminal) TypedRune(r rune) {
 
 // TypedKey will be called if a non-printable keyboard event occurs
 func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
-	cursorPrefix := byte('[')
-	if t.bufferMode {
-		cursorPrefix = 'O'
-	}
-
 	if t.keyboardState.shiftPressed {
 		t.KeyTypedWithShift(e)
 		return
 	}
+
 	switch e.Name {
 	case fyne.KeyEnter, fyne.KeyReturn:
 		if t.bufferMode || runtime.GOOS == "windows" {
@@ -62,14 +58,8 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 		_, _ = t.in.Write([]byte{asciiBackspace})
 	case fyne.KeyDelete:
 		_, _ = t.in.Write([]byte{asciiEscape, '[', '3', '~'})
-	case fyne.KeyUp:
-		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'A'})
-	case fyne.KeyDown:
-		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'B'})
-	case fyne.KeyLeft:
-		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'D'})
-	case fyne.KeyRight:
-		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'C'})
+	case fyne.KeyUp, fyne.KeyDown, fyne.KeyLeft, fyne.KeyRight:
+		t.typeCursorKey(e.Name)
 	case fyne.KeyPageUp:
 		_, _ = t.in.Write([]byte{asciiEscape, '[', '5', '~'})
 	case fyne.KeyPageDown:
@@ -81,7 +71,6 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 	case fyne.KeyEnd:
 		_, _ = t.in.Write([]byte{asciiEscape, 'O', 'F'})
 	}
-
 }
 
 func (t *Terminal) KeyTypedWithShift(e *fyne.KeyEvent) {
@@ -192,4 +181,22 @@ func (t *Terminal) FocusLost() {
 // Focused is used to determine if this terminal currently has focus
 func (t *Terminal) Focused() bool {
 	return t.focused
+}
+
+func (t *Terminal) typeCursorKey(key fyne.KeyName) {
+	cursorPrefix := byte('[')
+	if t.bufferMode {
+		cursorPrefix = 'O'
+	}
+
+	switch key {
+	case fyne.KeyUp:
+		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'A'})
+	case fyne.KeyDown:
+		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'B'})
+	case fyne.KeyLeft:
+		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'D'})
+	case fyne.KeyRight:
+		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'C'})
+	}
 }
