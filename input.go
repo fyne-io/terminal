@@ -15,7 +15,7 @@ func (t *Terminal) TypedRune(r rune) {
 // TypedKey will be called if a non-printable keyboard event occurs
 func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 	if t.keyboardState.shiftPressed {
-		t.KeyTypedWithShift(e)
+		t.keyTypedWithShift(e)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 	}
 }
 
-func (t *Terminal) KeyTypedWithShift(e *fyne.KeyEvent) {
+func (t *Terminal) keyTypedWithShift(e *fyne.KeyEvent) {
 	switch e.Name {
 	case fyne.KeyF1:
 		_, _ = t.in.Write([]byte{asciiEscape, '[', '2', '5', '~'})
@@ -122,7 +122,7 @@ func (t *Terminal) KeyTypedWithShift(e *fyne.KeyEvent) {
 	}
 }
 
-func (t *Terminal) TrackKeyboardState(down bool, e *fyne.KeyEvent) {
+func (t *Terminal) trackKeyboardState(down bool, e *fyne.KeyEvent) {
 	switch e.Name {
 	case desktop.KeyShiftLeft:
 		t.keyboardState.shiftPressed = down
@@ -139,12 +139,14 @@ func (t *Terminal) TrackKeyboardState(down bool, e *fyne.KeyEvent) {
 	}
 }
 
+// KeyDown is called when we get a down key event
 func (t *Terminal) KeyDown(e *fyne.KeyEvent) {
-	t.TrackKeyboardState(true, e)
+	t.trackKeyboardState(true, e)
 }
 
+// KeyUp is called when we get an up key event
 func (t *Terminal) KeyUp(e *fyne.KeyEvent) {
-	t.TrackKeyboardState(false, e)
+	t.trackKeyboardState(false, e)
 }
 
 // FocusGained notifies the terminal that it has focus
