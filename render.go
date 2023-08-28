@@ -8,6 +8,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 )
 
+const cursorWidth = 2
+
 type render struct {
 	term *Terminal
 }
@@ -50,6 +52,7 @@ func (t *Terminal) refreshCursor() {
 	} else {
 		t.cursor.FillColor = theme.PrimaryColor()
 	}
+	t.cursor.Resize(fyne.NewSize(cursorWidth, t.guessCellSize().Height))
 	t.cursor.Refresh()
 }
 
@@ -57,7 +60,7 @@ func (t *Terminal) refreshCursor() {
 func (t *Terminal) CreateRenderer() fyne.WidgetRenderer {
 	t.cursor = canvas.NewRectangle(theme.PrimaryColor())
 	t.cursor.Hidden = true
-	t.cursor.Resize(fyne.NewSize(2, t.guessCellSize().Height))
+	t.cursor.Resize(fyne.NewSize(cursorWidth, t.guessCellSize().Height))
 
 	r := &render{term: t}
 	t.cursorMoved = r.moveCursor
