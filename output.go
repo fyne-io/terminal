@@ -15,14 +15,66 @@ const (
 	tabWidth = 8
 )
 
+var charSetMap = map[CharSet]func(rune) rune{
+	CharSetANSII: func(r rune) rune {
+		return r
+	},
+	CharSetDECSpecialGraphics: func(r rune) rune {
+		m, ok := decSpecialGraphics[r]
+		if ok {
+			return m
+		}
+		return r
+	},
+	CharSetAlternate: func(r rune) rune {
+		return r
+	},
+}
+
 var specialChars = map[rune]func(t *Terminal){
 	asciiBell:      handleOutputBell,
 	asciiBackspace: handleOutputBackspace,
 	'\n':           handleOutputLineFeed,
 	'\r':           handleOutputCarriageReturn,
 	'\t':           handleOutputTab,
-	0x0e:           nil, // handle switch to G1 character set
-	0x0f:           nil, // handle switch to G1 character set
+	0x0e:           handleShitIn,  // handle switch to G0 character set
+	0x0f:           handleShitOut, // handle switch to G1 character set
+}
+
+// decSpecialGraphics is for ESC(0 graphics mode
+// https://en.wikipedia.org/wiki/DEC_Special_Graphics
+var decSpecialGraphics = map[rune]rune{
+	'`': '◆', // filled in diamond
+	'a': '▒', // filled in box
+	'b': '␉', // horizontal tab symbol
+	'c': '␌', // form feed symbol
+	'd': '␍', // carriage return symbol
+	'e': '␊', // line feed symbol
+	'f': '°', // degree symbol
+	'g': '±', // plus-minus sign
+	'h': '␤', // new line symbol
+	'i': '␋', // vertical tab symbol
+	'j': '┘', // bottom right
+	'k': '┐', // top right
+	'l': '┌', // top left
+	'm': '└', // bottom left
+	'n': '┼', // cross
+	'o': '⎺', // scan line 1
+	'p': '⎻', // scan line 2
+	'q': '─', // scan line 3
+	'r': '─', // scan line 4
+	's': '⎽', // scan line 5
+	't': '├', // vertical and right
+	'u': '┤', // vertical and left
+	'v': '┴', // horizontal and up
+	'w': '┬', // horizontal and down
+	'x': '│', // vertical bar
+	'y': '≤', // less or equal
+	'z': '≥', // greater or equal
+	'{': 'π', // pi
+	'|': '≠', // not equal
+	'}': '£', // Pounds currency symbol
+	'~': '·', // centered dot
 }
 
 var previous *parseState
@@ -105,7 +157,13 @@ func (t *Terminal) handleOutput(buf []byte) {
 			}
 			out(t)
 		} else {
-			t.handleOutputChar(r)
+			// check to see which charset to use
+			if t.useG1CharSet {
+				t.handleOutputChar(charSetMap[t.g1Charset](r))
+
+			} else {
+				t.handleOutputChar(charSetMap[t.g0Charset](r))
+			}
 		}
 	}
 
@@ -198,4 +256,12 @@ func handleOutputTab(t *Terminal) {
 	for t.cursorCol < end {
 		t.handleOutputChar(' ')
 	}
+}
+
+func handleShitOut(t *Terminal) {
+	t.useG1CharSet = true
+}
+
+func handleShitIn(t *Terminal) {
+	t.useG1CharSet = false
 }

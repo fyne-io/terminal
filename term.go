@@ -22,6 +22,14 @@ type Config struct {
 	Rows, Columns uint
 }
 
+type CharSet int
+
+const (
+	CharSetANSII CharSet = iota
+	CharSetDECSpecialGraphics
+	CharSetAlternate
+)
+
 // Terminal is a terminal widget that loads a shell and handles input/output.
 type Terminal struct {
 	widget.BaseWidget
@@ -47,6 +55,9 @@ type Terminal struct {
 	cursorMoved              func()
 
 	onMouseDown, onMouseUp func(int, fyne.KeyModifier, fyne.Position)
+	g0Charset              CharSet
+	g1Charset              CharSet
+	useG1CharSet           bool
 
 	keyboardState struct {
 		shiftPressed bool
