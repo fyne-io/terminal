@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"runtime"
+	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -9,7 +10,9 @@ import (
 
 // TypedRune is called when the user types a visible character
 func (t *Terminal) TypedRune(r rune) {
-	_, _ = t.in.Write([]byte{byte(r)})
+	b := make([]byte, 8)
+	size := utf8.EncodeRune(b, r)
+	_, _ = t.in.Write(b[:size])
 }
 
 // TypedKey will be called if a non-printable keyboard event occurs
