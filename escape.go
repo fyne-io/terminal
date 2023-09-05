@@ -51,8 +51,8 @@ func (t *Terminal) clearScreen() {
 func (t *Terminal) clearScreenFromCursor() {
 	row := t.content.Row(t.cursorRow)
 	from := t.cursorCol
-	if t.cursorCol >= len(row.Cells) {
-		from = len(row.Cells) - 1
+	if t.cursorCol > len(row.Cells) {
+		from = len(row.Cells)
 	}
 	if from > 0 {
 		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:from]})
