@@ -14,7 +14,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
-
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -129,6 +128,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 			t.Refresh()
 			t.Resize(t.Size())
 		})
+
 	go func() {
 		err := t.RunLocalShell()
 		if err != nil {

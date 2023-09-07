@@ -21,9 +21,7 @@ func (t *Terminal) handleMouseUpX10(_ int, _ fyne.KeyModifier, _ fyne.Position) 
 }
 
 func (t *Terminal) encodeMouse(button int, mods fyne.KeyModifier, pos fyne.Position) []byte {
-	cell := t.guessCellSize()
-	col := byte(pos.X/cell.Width) + 1
-	row := byte(pos.Y/cell.Height) + 1
+	p := t.GetTermPosition(pos)
 	var btn byte
 	if button == 0 {
 		btn = 3
@@ -41,5 +39,5 @@ func (t *Terminal) encodeMouse(button int, mods fyne.KeyModifier, pos fyne.Posit
 		btn += 16
 	}
 
-	return []byte{asciiEscape, '[', 'M', 32 + btn, 32 + col, 32 + row}
+	return []byte{asciiEscape, '[', 'M', 32 + btn, 32 + byte(p.Col), 32 + byte(p.Row)}
 }
