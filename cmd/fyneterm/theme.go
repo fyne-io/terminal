@@ -26,6 +26,10 @@ func (t *termTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Colo
 			return color.NRGBA{R: 0xaa, G: 0xaa, B: 0xaa, A: 0xf6}
 		}
 		return color.NRGBA{R: 0x0a, G: 0x0a, B: 0x0a, A: 0xf6}
+	case theme.ColorNameForeground:
+		// aligns with terminal.basicColors[7]
+		return color.NRGBA{R: 170, G: 170, B: 170, A: 0xff}
+
 	}
 	return t.Theme.Color(n, theme.VariantDark)
 }
