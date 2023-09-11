@@ -92,3 +92,42 @@ func TestClearHighlightRange(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTextRange(t *testing.T) {
+	// Prepare the text grid for the tests
+	grid := &TermGrid{
+		&widget.TextGrid{
+			Rows: []widget.TextGridRow{
+				{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}}},
+				{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}}},
+				{Cells: []widget.TextGridCell{{Rune: 'G'}, {Rune: 'H'}, {Rune: 'I'}}},
+			},
+		},
+	}
+
+	tests := map[string]struct {
+		startRow  int
+		startCol  int
+		endRow    int
+		endCol    int
+		blockMode bool
+		want      string
+	}{
+		"Full grid":        {0, 0, 2, 2, false, "ABC\nDEF\nGHI"},
+		"Almost Full grid": {0, 1, 2, 1, false, "BC\nDEF\nGH"},
+		"Sub grid":         {1, 1, 2, 2, false, "EF\nGHI"},
+		"Single cell":      {0, 0, 0, 0, false, "A"},
+		"Single row":       {0, 0, 0, 2, false, "ABC"},
+		"Single full row":  {0, 0, 1, -1, false, "ABC\n"},
+		"Block mode":       {0, 1, 2, 2, true, "BC\nEF\nHI"},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := grid.GetTextRange(tc.blockMode, tc.startRow, tc.startCol, tc.endRow, tc.endCol)
+			if got != tc.want {
+				t.Fatalf("GetTextRange() = %v; want %v", got, tc.want)
+			}
+		})
+	}
+}
