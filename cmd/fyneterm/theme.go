@@ -9,10 +9,12 @@ import (
 
 type termTheme struct {
 	fyne.Theme
+
+	fontSize float32
 }
 
-func newTermTheme() fyne.Theme {
-	return &termTheme{fyne.CurrentApp().Settings().Theme()}
+func newTermTheme() *termTheme {
+	return &termTheme{Theme: fyne.CurrentApp().Settings().Theme(), fontSize: 12}
 }
 
 // Color fixes a bug < 2.1 where theme.DarkTheme() would not override user preference.
@@ -32,7 +34,7 @@ func (t *termTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Colo
 
 func (t *termTheme) Size(n fyne.ThemeSizeName) float32 {
 	if n == theme.SizeNameText {
-		return 12
+		return t.fontSize
 	}
 
 	return t.Theme.Size(n)
