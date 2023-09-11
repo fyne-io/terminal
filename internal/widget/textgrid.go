@@ -14,9 +14,9 @@ func HighlightRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endR
 		// Check if already highlighted
 		if h, ok := cell.Style.(*TermTextGridStyle); !ok {
 			if cell.Style != nil {
-				cell.Style = NewTermTextGridStyle(cell.Style.TextColor(), cell.Style.BackgroundColor(), bitmask)
+				cell.Style = NewTermTextGridStyle(cell.Style.TextColor(), cell.Style.BackgroundColor(), bitmask, false)
 			} else {
-				cell.Style = NewTermTextGridStyle(nil, nil, bitmask)
+				cell.Style = NewTermTextGridStyle(nil, nil, bitmask, false)
 			}
 			cell.Style.(*TermTextGridStyle).Highlighted = true
 
@@ -80,14 +80,14 @@ func GetTextRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow
 // - eachRow (func(row *widget.TextGridRow)): A function that takes a pointer to a TextGridRow and is applied to each row in the specified range. Pass `nil` if you don't want to apply a row function.
 //
 // Note:
-// - If startRow or endRow are out of bounds (negative or greater/equal to the number of rows in the TermGrid), they will be adjusted to valid values.
+// - If startRow or endRow are out of bounds (negative or greater/equal to the number of rows in the TextGrid), they will be adjusted to valid values.
 // - If startRow and endRow are the same, the iteration will be limited to the specified column range within that row.
 // - When blockMode is true, it iterates through rows from startRow to endRow, applying the cell function for each cell in the specified column range.
 // - When blockMode is false, it iterates through individual cells row by row, applying the cell function for each cell and optionally applying the row function for each row.
 //
 // Example Usage:
-// termGrid.forRange(true, 0, 1, 2, 3, cellFunc, rowFunc) // Iterate in block mode, applying cellFunc to cells in columns 1 to 3 and rowFunc to rows 0 to 2.
-// termGrid.forRange(false, 1, 0, 3, 2, cellFunc, rowFunc) // Iterate cell by cell, applying cellFunc to all cells and rowFunc to rows 1 and 2.
+// forRange(termGrid, true, 0, 1, 2, 3, cellFunc, rowFunc) // Iterate in block mode, applying cellFunc to cells in columns 1 to 3 and rowFunc to rows 0 to 2.
+// forRange(termGrid, false, 1, 0, 3, 2, cellFunc, rowFunc) // Iterate cell by cell, applying cellFunc to all cells and rowFunc to rows 1 and 2.
 func forRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow, endCol int, eachCell func(cell *widget.TextGridCell), eachRow func(row *widget.TextGridRow)) {
 	if startRow >= len(t.Rows) || endRow < 0 {
 		return
@@ -171,12 +171,20 @@ type TermTextGridStyle struct {
 	InvertedTextColor       color.Color
 	InvertedBackgroundColor color.Color
 	Highlighted             bool
+	BlinkEnabled            bool
+	Blink                   bool
 }
 
 // TextColor returns the color of the text, depending on whether it is highlighted.
 func (h *TermTextGridStyle) TextColor() color.Color {
 	if h.Highlighted {
+		if h.BlinkEnabled && h.Blink {
+			return h.InvertedBackgroundColor
+		}
 		return h.InvertedTextColor
+	}
+	if h.BlinkEnabled && h.Blink {
+		return h.OriginalBackgroundColor
 	}
 	return h.OriginalTextColor
 }
@@ -201,11 +209,12 @@ type HighlightOption func(h *TermTextGridStyle)
 //   - fg: The foreground color.
 //   - bg: The background color.
 //   - bitmask: The bitmask to control color inversion.
+//   - blinkEnabled: Should this cell blink when told to.
 //
 // Returns:
 //
 //	A pointer to a TermTextGridStyle initialized with the provided colors and inversion settings.
-func NewTermTextGridStyle(fg, bg color.Color, bitmask byte) widget.TextGridStyle {
+func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool) widget.TextGridStyle {
 	// calculate the inverted colors
 	var invertedFg, invertedBg color.Color
 	if fg == nil {
@@ -225,6 +234,8 @@ func NewTermTextGridStyle(fg, bg color.Color, bitmask byte) widget.TextGridStyle
 		InvertedTextColor:       invertedFg,
 		InvertedBackgroundColor: invertedBg,
 		Highlighted:             false,
+		BlinkEnabled:            blinkEnabled,
+		Blink:                   false,
 	}
 }
 
