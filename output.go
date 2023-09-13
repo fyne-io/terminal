@@ -15,18 +15,18 @@ const (
 	tabWidth = 8
 )
 
-var charSetMap = map[CharSet]func(rune) rune{
-	CharSetANSII: func(r rune) rune {
+var charSetMap = map[charSet]func(rune) rune{
+	charSetANSII: func(r rune) rune {
 		return r
 	},
-	CharSetDECSpecialGraphics: func(r rune) rune {
+	charSetDECSpecialGraphics: func(r rune) rune {
 		m, ok := decSpecialGraphics[r]
 		if ok {
 			return m
 		}
 		return r
 	},
-	CharSetAlternate: func(r rune) rune {
+	charSetAlternate: func(r rune) rune {
 		return r
 	},
 }

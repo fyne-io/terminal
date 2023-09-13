@@ -81,17 +81,17 @@ func (t *Terminal) clearScreenToCursor() {
 func (t *Terminal) handleVT100(code string) {
 	switch code {
 	case "(A":
-		t.g0Charset = CharSetAlternate
+		t.g0Charset = charSetAlternate
 	case ")A":
-		t.g1Charset = CharSetAlternate
+		t.g1Charset = charSetAlternate
 	case "(B":
-		t.g0Charset = CharSetANSII
+		t.g0Charset = charSetANSII
 	case ")B":
-		t.g1Charset = CharSetANSII
+		t.g1Charset = charSetANSII
 	case "(0":
-		t.g0Charset = CharSetDECSpecialGraphics
+		t.g0Charset = charSetDECSpecialGraphics
 	case ")0":
-		t.g1Charset = CharSetDECSpecialGraphics
+		t.g1Charset = charSetDECSpecialGraphics
 	default:
 		if t.debug {
 			log.Println("Unhandled VT100:", code)
