@@ -79,11 +79,23 @@ func (t *Terminal) clearScreenToCursor() {
 }
 
 func (t *Terminal) handleVT100(code string) {
-	if code == "(A" || code == ")A" || code == "(B" || code == ")B" {
-		return // keycode handling A = en_GB, B = en_US
-	}
-	if t.debug {
-		log.Println("Unhandled VT100:", code)
+	switch code {
+	case "(A":
+		t.g0Charset = charSetAlternate
+	case ")A":
+		t.g1Charset = charSetAlternate
+	case "(B":
+		t.g0Charset = charSetANSII
+	case ")B":
+		t.g1Charset = charSetANSII
+	case "(0":
+		t.g0Charset = charSetDECSpecialGraphics
+	case ")0":
+		t.g1Charset = charSetDECSpecialGraphics
+	default:
+		if t.debug {
+			log.Println("Unhandled VT100:", code)
+		}
 	}
 }
 
