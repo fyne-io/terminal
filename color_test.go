@@ -47,7 +47,7 @@ func TestHandleOutput_Normal_Text(t *testing.T) {
 	}{
 		"bold": {
 			inputSeq:       esc("[1m"),
-			expectedFg:     &color.RGBA{R: 84, G: 84, B: 84, A: 255},
+			expectedFg:     nil,
 			expectedBg:     nil,
 			expectedBright: true,
 		},
@@ -59,7 +59,7 @@ func TestHandleOutput_Normal_Text(t *testing.T) {
 		},
 		"reverse video and bold": {
 			inputSeq:       esc("[7m") + esc("[1m"),
-			expectedFg:     &color.RGBA{R: 119, G: 119, B: 119, A: 255},
+			expectedFg:     color.NRGBA{R: 34, G: 34, B: 34, A: 255},
 			expectedBg:     color.NRGBA{R: 255, G: 255, B: 255, A: 255},
 			expectedBright: true,
 		},

@@ -82,22 +82,7 @@ func (t *Terminal) handleColorMode(modeStr string) {
 		t.currentBG, t.currentFG = nil, nil
 		t.bright = false
 	case 1:
-		if t.bright {
-			return
-		}
 		t.bright = true
-		if t.currentFG == nil {
-			t.currentFG = theme.ForegroundColor()
-		}
-		r, g, b, a := t.currentFG.RGBA()
-
-		m := &color.RGBA{
-			R: uint8(r + 85),
-			G: uint8(g + 85),
-			B: uint8(b + 85),
-			A: uint8(a),
-		}
-		t.currentFG = m
 	case 4, 24: // italic
 	case 7: // reverse
 		bg := t.currentBG
