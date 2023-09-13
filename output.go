@@ -37,8 +37,8 @@ var specialChars = map[rune]func(t *Terminal){
 	'\n':           handleOutputLineFeed,
 	'\r':           handleOutputCarriageReturn,
 	'\t':           handleOutputTab,
-	0x0e:           handleShitOut, // handle switch to G1 character set
-	0x0f:           handleShitIn,  // handle switch to G0 character set
+	0x0e:           handleShiftOut, // handle switch to G1 character set
+	0x0f:           handleShiftIn,  // handle switch to G0 character set
 }
 
 // decSpecialGraphics is for ESC(0 graphics mode
@@ -258,10 +258,10 @@ func handleOutputTab(t *Terminal) {
 	}
 }
 
-func handleShitOut(t *Terminal) {
+func handleShiftOut(t *Terminal) {
 	t.useG1CharSet = true
 }
 
-func handleShitIn(t *Terminal) {
+func handleShiftIn(t *Terminal) {
 	t.useG1CharSet = false
 }
