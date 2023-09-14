@@ -8,13 +8,13 @@ import (
 )
 
 type TermGrid struct {
-	*widget.TextGrid
+	widget.TextGrid
 }
 
 func NewTermGrid() *TermGrid {
-	return &TermGrid{
-		widget.NewTextGrid(),
-	}
+	tg := &TermGrid{}
+	tg.ExtendBaseWidget(tg)
+	return tg
 }
 
 // HighlightRange highlight options to the given range
