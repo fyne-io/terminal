@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"unicode/utf8"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 )
@@ -24,6 +25,10 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 	case fyne.KeyReturn:
 		_, _ = t.in.Write([]byte{'\r'})
 	case fyne.KeyEnter:
+		if t.newLineMode {
+			_, _ = t.in.Write([]byte{'\r'})
+			return
+		}
 		_, _ = t.in.Write([]byte{'\n'})
 	case fyne.KeyTab:
 		_, _ = t.in.Write([]byte{'\t'})
