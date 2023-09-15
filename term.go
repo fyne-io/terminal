@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/widget"
-	widget2 "github.com/fyne-io/terminal/widget"
+	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -61,7 +61,7 @@ type Terminal struct {
 	g1Charset              charSet
 	useG1CharSet           bool
 
-	selStart, selEnd *Position
+	selStart, selEnd *position
 	blockMode        bool
 	highlightBitMask uint8
 	selecting        bool
@@ -75,6 +75,7 @@ type Terminal struct {
 	newLineMode bool // new line mode or line feed mode
 }
 
+// Cursor is used for displaying a specific cursor.
 func (t *Terminal) Cursor() desktop.Cursor {
 	return t.mouseCursor
 }
@@ -113,8 +114,8 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 
 // MouseUp handles the up action for desktop mouse events.
 func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
-	if ev.Button == desktop.MouseButtonSecondary && t.HasSelectedText() {
-		t.CopySelectedText(fyne.CurrentApp().Driver().AllWindows()[0].Clipboard())
+	if ev.Button == desktop.MouseButtonSecondary && t.hasSelectedText() {
+		t.copySelectedText(fyne.CurrentApp().Driver().AllWindows()[0].Clipboard())
 	}
 
 	if t.onMouseDown == nil {
@@ -343,7 +344,7 @@ func (t *Terminal) setupShortcuts() {
 				return
 			}
 
-			t.PasteText(win.Clipboard())
+			t.pasteText(win.Clipboard())
 		})
 }
 
@@ -371,14 +372,15 @@ func New() *Terminal {
 	return t
 }
 
+// Dragged is called by fyne when the left mouse is down and moved whilst over the widget.
 func (t *Terminal) Dragged(d *fyne.DragEvent) {
 	if !t.selecting {
-		t.ClearSelectedText()
+		t.clearSelectedText()
 
 		if t.keyboardState.altPressed {
 			t.blockMode = true
 		}
-		p := t.GetTermPosition(d.Position)
+		p := t.getTermPosition(d.Position)
 		t.selStart = &p
 		t.selEnd = nil
 	}
@@ -386,11 +388,12 @@ func (t *Terminal) Dragged(d *fyne.DragEvent) {
 	// make sure that x,y,x1,y1 are always positive
 	t.selecting = true
 	t.mouseCursor = desktop.TextCursor
-	p := t.GetTermPosition(d.Position)
+	p := t.getTermPosition(d.Position)
 	t.selEnd = &p
-	t.HighlightSelectedText()
+	t.highlightSelectedText()
 }
 
+// DragEnd is called by fyne when the left mouse is released after a Drag event.
 func (t *Terminal) DragEnd() {
 	t.selecting = false
 }

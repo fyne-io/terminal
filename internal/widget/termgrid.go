@@ -7,10 +7,13 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// TermGrid is a monospaced grid of characters.
+// This is designed to be used in a terminal emulator.
 type TermGrid struct {
 	widget.TextGrid
 }
 
+// NewTermGrid creates a new empty TermGrid widget.
 func NewTermGrid() *TermGrid {
 	tg := &TermGrid{}
 	tg.ExtendBaseWidget(tg)
@@ -31,7 +34,7 @@ func (t *TermGrid) HighlightRange(blockMode bool, startRow, startCol, endRow, en
 		}
 	}
 
-	t.ForRange(blockMode, startRow, startCol, endRow, endCol, applyHighlight, nil)
+	t.forRange(blockMode, startRow, startCol, endRow, endCol, applyHighlight, nil)
 }
 
 // ClearHighlightRange disables the highlight style for the given range
@@ -42,7 +45,7 @@ func (t *TermGrid) ClearHighlightRange(blockMode bool, startRow, startCol, endRo
 			h.Highlighted = false
 		}
 	}
-	t.ForRange(blockMode, startRow, startCol, endRow, endCol, clearHighlight, nil)
+	t.forRange(blockMode, startRow, startCol, endRow, endCol, clearHighlight, nil)
 }
 
 // HighlightedTextGridStyle defines a style that can be original or highlighted.
@@ -112,7 +115,7 @@ func (h *HighlightedTextGridStyle) With(options ...HighlightOption) {
 	}
 }
 
-// ForRange iterates over a range of cells and rows within a TermGrid, optionally applying a function to each cell and row.
+// forRange iterates over a range of cells and rows within a TermGrid, optionally applying a function to each cell and row.
 //
 // Parameters:
 // - blockMode (bool): If true, the iteration is done in block mode, meaning it iterates through rows and applies the cell function for each cell in the specified column range.
@@ -130,9 +133,9 @@ func (h *HighlightedTextGridStyle) With(options ...HighlightOption) {
 // - When blockMode is false, it iterates through individual cells row by row, applying the cell function for each cell and optionally applying the row function for each row.
 //
 // Example Usage:
-// termGrid.ForRange(true, 0, 1, 2, 3, cellFunc, rowFunc) // Iterate in block mode, applying cellFunc to cells in columns 1 to 3 and rowFunc to rows 0 to 2.
-// termGrid.ForRange(false, 1, 0, 3, 2, cellFunc, rowFunc) // Iterate cell by cell, applying cellFunc to all cells and rowFunc to rows 1 and 2.
-func (t *TermGrid) ForRange(blockMode bool, startRow, startCol, endRow, endCol int, eachCell func(cell *widget.TextGridCell), eachRow func(row *widget.TextGridRow)) {
+// termGrid.forRange(true, 0, 1, 2, 3, cellFunc, rowFunc) // Iterate in block mode, applying cellFunc to cells in columns 1 to 3 and rowFunc to rows 0 to 2.
+// termGrid.forRange(false, 1, 0, 3, 2, cellFunc, rowFunc) // Iterate cell by cell, applying cellFunc to all cells and rowFunc to rows 1 and 2.
+func (t *TermGrid) forRange(blockMode bool, startRow, startCol, endRow, endCol int, eachCell func(cell *widget.TextGridCell), eachRow func(row *widget.TextGridRow)) {
 	if startRow >= len(t.Rows) || endRow < 0 {
 		return
 	}
@@ -228,7 +231,7 @@ func (t *TermGrid) ForRange(blockMode bool, startRow, startCol, endRow, endCol i
 func (t *TermGrid) GetTextRange(blockMode bool, startRow, startCol, endRow, endCol int) string {
 	var result []rune
 
-	t.ForRange(blockMode, startRow, startCol, endRow, endCol, func(cell *widget.TextGridCell) {
+	t.forRange(blockMode, startRow, startCol, endRow, endCol, func(cell *widget.TextGridCell) {
 		result = append(result, cell.Rune)
 	}, func(row *widget.TextGridRow) {
 		result = append(result, '\n')

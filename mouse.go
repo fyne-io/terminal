@@ -21,7 +21,7 @@ func (t *Terminal) handleMouseUpX10(_ int, _ fyne.KeyModifier, _ fyne.Position) 
 }
 
 func (t *Terminal) encodeMouse(button int, mods fyne.KeyModifier, pos fyne.Position) []byte {
-	p := t.GetTermPosition(pos)
+	p := t.getTermPosition(pos)
 	var btn byte
 	if button == 0 {
 		btn = 3

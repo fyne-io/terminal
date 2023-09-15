@@ -3,22 +3,22 @@ package widget
 import (
 	"testing"
 
+	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 )
 
 func TestHighlightRange(t *testing.T) {
+	// start the test app for the purpose of the test
+	test.NewApp()
 	// Define a bitmask
 	bitmask := uint8(0xAA)
 	// Define a test text grid
-	textGrid := &TermGrid{
-		&widget.TextGrid{
-			Rows: []widget.TextGridRow{
-				{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}, {Rune: '*'}}},
-				{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}, {Rune: '*'}}},
-				{Cells: []widget.TextGridCell{{Rune: 'G'}, {Rune: 'H'}, {Rune: 'I'}, {Rune: '*'}}},
-				{Cells: []widget.TextGridCell{{Rune: 'J'}, {Rune: 'K'}, {Rune: 'L'}, {Rune: '*'}}},
-			},
-		},
+	textGrid := NewTermGrid()
+	textGrid.Rows = []widget.TextGridRow{
+		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}, {Rune: '*'}}},
+		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}, {Rune: '*'}}},
+		{Cells: []widget.TextGridCell{{Rune: 'G'}, {Rune: 'H'}, {Rune: 'I'}, {Rune: '*'}}},
+		{Cells: []widget.TextGridCell{{Rune: 'J'}, {Rune: 'K'}, {Rune: 'L'}, {Rune: '*'}}},
 	}
 
 	textGrid.HighlightRange(false, 0, 0, 2, 2, WithInvert(bitmask))
@@ -51,19 +51,18 @@ func TestHighlightRange(t *testing.T) {
 }
 
 func TestClearHighlightRange(t *testing.T) {
+	// start the test app for the purpose of the test
+	test.NewApp()
 	// Define a bitmask
 	bitmask := uint8(0xAA)
 
 	// Define a test text grid
-	textGrid := &TermGrid{
-		&widget.TextGrid{
-			Rows: []widget.TextGridRow{
-				{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}, {Rune: '*'}}},
-				{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}, {Rune: '*'}}},
-				{Cells: []widget.TextGridCell{{Rune: 'G'}, {Rune: 'H'}, {Rune: 'I'}, {Rune: '*'}}},
-				{Cells: []widget.TextGridCell{{Rune: 'J'}, {Rune: 'K'}, {Rune: 'L'}, {Rune: '*'}}},
-			},
-		},
+	textGrid := NewTermGrid()
+	textGrid.Rows = []widget.TextGridRow{
+		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}, {Rune: '*'}}},
+		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}, {Rune: '*'}}},
+		{Cells: []widget.TextGridCell{{Rune: 'G'}, {Rune: 'H'}, {Rune: 'I'}, {Rune: '*'}}},
+		{Cells: []widget.TextGridCell{{Rune: 'J'}, {Rune: 'K'}, {Rune: 'L'}, {Rune: '*'}}},
 	}
 
 	textGrid.HighlightRange(false, 0, 0, 2, 2, WithInvert(bitmask))
@@ -94,15 +93,14 @@ func TestClearHighlightRange(t *testing.T) {
 }
 
 func TestGetTextRange(t *testing.T) {
+	// start the test app for the purpose of the test
+	test.NewApp()
 	// Prepare the text grid for the tests
-	grid := &TermGrid{
-		&widget.TextGrid{
-			Rows: []widget.TextGridRow{
-				{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}}},
-				{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}}},
-				{Cells: []widget.TextGridCell{{Rune: 'G'}, {Rune: 'H'}, {Rune: 'I'}}},
-			},
-		},
+	textGrid := NewTermGrid()
+	textGrid.Rows = []widget.TextGridRow{
+		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}}},
+		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}}},
+		{Cells: []widget.TextGridCell{{Rune: 'G'}, {Rune: 'H'}, {Rune: 'I'}}},
 	}
 
 	tests := map[string]struct {
@@ -124,7 +122,7 @@ func TestGetTextRange(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := grid.GetTextRange(tc.blockMode, tc.startRow, tc.startCol, tc.endRow, tc.endCol)
+			got := textGrid.GetTextRange(tc.blockMode, tc.startRow, tc.startCol, tc.endRow, tc.endCol)
 			if got != tc.want {
 				t.Fatalf("GetTextRange() = %v; want %v", got, tc.want)
 			}

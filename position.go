@@ -6,17 +6,17 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-type Position struct {
+type position struct {
 	Col, Row int
 }
 
-func (r Position) String() string {
+func (r position) String() string {
 	return fmt.Sprintf("row: %x, col: %x", r.Row, r.Col)
 }
 
-func (t *Terminal) GetTermPosition(pos fyne.Position) Position {
+func (t *Terminal) getTermPosition(pos fyne.Position) position {
 	cell := t.guessCellSize()
 	col := int(pos.X/cell.Width) + 1
 	row := int(pos.Y/cell.Height) + 1
-	return Position{col, row}
+	return position{col, row}
 }

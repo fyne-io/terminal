@@ -2,12 +2,12 @@ package terminal
 
 import (
 	"fyne.io/fyne/v2"
-	widget2 "github.com/fyne-io/terminal/widget"
+	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
-// GetSelectedRange returns the current selection range, start row, start col, end row, end col
+// getSelectedRange returns the current selection range, start row, start col, end row, end col
 // It always returns a positive selection
-func (t *Terminal) GetSelectedRange() (int, int, int, int) {
+func (t *Terminal) getSelectedRange() (int, int, int, int) {
 	if t.selStart == nil || t.selEnd == nil {
 		return 0, 0, 0, 0
 	}
@@ -27,39 +27,39 @@ func (t *Terminal) GetSelectedRange() (int, int, int, int) {
 	return startRow - 1, startCol - 1, endRow - 1, endCol - 1
 }
 
-func (t *Terminal) HighlightSelectedText() {
-	sr, sc, er, ec := t.GetSelectedRange()
+func (t *Terminal) highlightSelectedText() {
+	sr, sc, er, ec := t.getSelectedRange()
 	t.content.HighlightRange(t.blockMode, sr, sc, er, ec, widget2.WithInvert(t.highlightBitMask))
 	t.Refresh()
 }
 
-func (t *Terminal) ClearSelectedText() {
-
-	sr, sc, er, ec := t.GetSelectedRange()
+func (t *Terminal) clearSelectedText() {
+	sr, sc, er, ec := t.getSelectedRange()
 	t.content.ClearHighlightRange(t.blockMode, sr, sc, er, ec)
 	t.Refresh()
 	t.blockMode = false
 	t.selecting = false
 }
 
+// SelectedText gets the text that is currently selected.
 func (t *Terminal) SelectedText() string {
-	sr, sc, er, ec := t.GetSelectedRange()
+	sr, sc, er, ec := t.getSelectedRange()
 	return t.content.GetTextRange(t.blockMode, sr, sc, er, ec)
 }
 
-func (t *Terminal) CopySelectedText(clipboard fyne.Clipboard) {
+func (t *Terminal) copySelectedText(clipboard fyne.Clipboard) {
 	// copy start and end sel to clipboard and clear the sel style
 	text := t.SelectedText()
 	fyne.CurrentApp()
 	clipboard.SetContent(text)
-	t.ClearSelectedText()
+	t.clearSelectedText()
 }
 
-func (t *Terminal) PasteText(clipboard fyne.Clipboard) {
+func (t *Terminal) pasteText(clipboard fyne.Clipboard) {
 	content := clipboard.Content()
 	_, _ = t.in.Write([]byte(content))
 }
 
-func (t *Terminal) HasSelectedText() bool {
+func (t *Terminal) hasSelectedText() bool {
 	return t.selStart != nil && t.selEnd != nil
 }
