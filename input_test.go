@@ -97,3 +97,33 @@ func TestTerminal_TypedKey(t *testing.T) {
 		})
 	}
 }
+
+func TestTerminal_TypedKey_LineMode(t *testing.T) {
+	tests := map[string]struct {
+		key         fyne.KeyName
+		newLineMode bool
+		want        []byte
+	}{
+
+		"Enter":                 {fyne.KeyEnter, false, []byte{'\n'}},
+		"Enter with line mode":  {fyne.KeyEnter, true, []byte{'\r'}},
+		"Return":                {fyne.KeyReturn, false, []byte{'\r'}},
+		"Return with line mode": {fyne.KeyReturn, true, []byte{'\r'}},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			// Creating a mock terminal
+			inBuffer := bytes.NewBuffer([]byte{})
+			term := &Terminal{in: NopCloser(inBuffer), newLineMode: tt.newLineMode}
+			keyEvent := &fyne.KeyEvent{Name: tt.key}
+
+			term.TypedKey(keyEvent)
+
+			got := inBuffer.Bytes()
+			if !bytes.Equal(got, tt.want) {
+				t.Errorf("TypedKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

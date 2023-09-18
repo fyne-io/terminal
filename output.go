@@ -35,6 +35,8 @@ var specialChars = map[rune]func(t *Terminal){
 	asciiBell:      handleOutputBell,
 	asciiBackspace: handleOutputBackspace,
 	'\n':           handleOutputLineFeed,
+	'\v':           handleOutputLineFeed,
+	'\f':           handleOutputLineFeed,
 	'\r':           handleOutputCarriageReturn,
 	'\t':           handleOutputTab,
 	0x0e:           handleShiftOut, // handle switch to G1 character set
@@ -246,9 +248,17 @@ func handleOutputCarriageReturn(t *Terminal) {
 func handleOutputLineFeed(t *Terminal) {
 	if t.cursorRow == t.scrollBottom {
 		t.scrollDown()
-	} else {
-		t.moveCursor(t.cursorRow+1, t.cursorCol)
+		if t.newLineMode {
+			t.moveCursor(t.cursorRow, 0)
+		}
+		return
 	}
+	if t.newLineMode {
+		t.moveCursor(t.cursorRow+1, 0)
+		return
+	}
+	t.moveCursor(t.cursorRow+1, t.cursorCol)
+
 }
 
 func handleOutputTab(t *Terminal) {

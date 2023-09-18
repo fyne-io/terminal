@@ -237,6 +237,8 @@ func escapeMoveCursorCol(t *Terminal, msg string) {
 
 func escapePrivateMode(t *Terminal, msg string, enable bool) {
 	switch msg {
+	case "20":
+		t.newLineMode = enable
 	case "25":
 		t.cursorHidden = !enable
 		t.refreshCursor()

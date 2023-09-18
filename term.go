@@ -64,6 +64,7 @@ type Terminal struct {
 		ctrlPressed  bool
 		altPressed   bool
 	}
+	newLineMode bool // new line mode or line feed mode
 }
 
 // AcceptsTab indicates that this widget will use the Tab key (avoids loss of focus).
