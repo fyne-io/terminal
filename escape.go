@@ -36,11 +36,8 @@ func (t *Terminal) handleEscape(code string) {
 	}
 
 	runes := []rune(code)
-	// last rune
-	lastRune := runes[len(code)-1]
-	if esc, ok := escapes[lastRune]; ok {
-		allButTheLastRun := code[:len(code)-1]
-		esc(t, allButTheLastRun)
+	if esc, ok := escapes[runes[len(code)-1]]; ok {
+		esc(t, code[:len(code)-1])
 	} else if t.debug {
 		log.Println("Unrecognised Escape:", code)
 	}
@@ -239,7 +236,6 @@ func escapeMoveCursorCol(t *Terminal, msg string) {
 }
 
 func escapePrivateMode(t *Terminal, msg string, enable bool) {
-	msg = strings.TrimPrefix(msg, "?")
 	switch msg {
 	case "20":
 		t.newLineMode = enable
@@ -272,11 +268,11 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 }
 
 func escapePrivateModeOff(t *Terminal, msg string) {
-	escapePrivateMode(t, msg, false)
+	escapePrivateMode(t, msg[1:], false)
 }
 
 func escapePrivateModeOn(t *Terminal, msg string) {
-	escapePrivateMode(t, msg, true)
+	escapePrivateMode(t, msg[1:], true)
 }
 
 func escapeMoveCursor(t *Terminal, msg string) {

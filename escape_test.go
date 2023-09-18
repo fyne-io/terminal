@@ -127,7 +127,7 @@ func TestHandleOutput_NewLineMode(t *testing.T) {
 		},
 		{
 			name:                    "Enable New Line Mode",
-			input:                   "\x1b[20hhello\nworld",
+			input:                   "\x1b[?20hhello\nworld",
 			expectedCursorRow:       1,
 			expectedCursorCol:       5,
 			expectedNewLineMode:     true,
@@ -136,7 +136,7 @@ func TestHandleOutput_NewLineMode(t *testing.T) {
 		},
 		{
 			name:                    "Enable then disable New Line Mode",
-			input:                   "\x1b[20h\x1b[20lhello\nworld",
+			input:                   "\x1b[?20h\x1b[?20lhello\nworld",
 			expectedCursorRow:       1,
 			expectedCursorCol:       10,
 			expectedNewLineMode:     false,
@@ -145,7 +145,7 @@ func TestHandleOutput_NewLineMode(t *testing.T) {
 		},
 		{
 			name:                    "Enable new line mode - lf vt ff",
-			input:                   "\x1b[20hhello\n\v\fworld",
+			input:                   "\x1b[?20hhello\n\v\fworld",
 			expectedCursorRow:       3,
 			expectedCursorCol:       5,
 			expectedNewLineMode:     true,
