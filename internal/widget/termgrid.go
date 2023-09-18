@@ -22,13 +22,17 @@ func NewTermGrid() *TermGrid {
 
 // HighlightRange highlight options to the given range
 // if highlighting has previously been applied it is enabled
-func (t *TermGrid) HighlightRange(blockMode bool, startRow, startCol, endRow, endCol int, o ...HighlightOption) {
+func (t *TermGrid) HighlightRange(blockMode bool, startRow, startCol, endRow, endCol int, bitmask byte) {
 	applyHighlight := func(cell *widget.TextGridCell) {
 		// Check if already highlighted
-		if h, ok := cell.Style.(*HighlightedTextGridStyle); !ok {
-			highlightedStyle := &HighlightedTextGridStyle{OriginalStyle: cell.Style, Highlighted: true}
-			highlightedStyle.With(o...)
-			cell.Style = highlightedStyle
+		if h, ok := cell.Style.(*TermTextGridStyle); !ok {
+			if cell.Style != nil {
+				cell.Style = NewTermTextGridStyle(cell.Style.TextColor(), cell.Style.BackgroundColor(), bitmask)
+			} else {
+				cell.Style = NewTermTextGridStyle(nil, nil, bitmask)
+			}
+			cell.Style.(*TermTextGridStyle).Highlighted = true
+
 		} else {
 			h.Highlighted = true
 		}
@@ -41,78 +45,40 @@ func (t *TermGrid) HighlightRange(blockMode bool, startRow, startCol, endRow, en
 func (t *TermGrid) ClearHighlightRange(blockMode bool, startRow, startCol, endRow, endCol int) {
 	clearHighlight := func(cell *widget.TextGridCell) {
 		// Check if already highlighted
-		if h, ok := cell.Style.(*HighlightedTextGridStyle); ok {
+		if h, ok := cell.Style.(*TermTextGridStyle); ok {
 			h.Highlighted = false
 		}
 	}
 	t.forRange(blockMode, startRow, startCol, endRow, endCol, clearHighlight, nil)
 }
 
-// HighlightedTextGridStyle defines a style that can be original or highlighted.
-type HighlightedTextGridStyle struct {
-	OriginalStyle    widget.TextGridStyle
-	HighlightedStyle widget.TextGridStyle
-	Highlighted      bool
-}
+// GetTextRange retrieves a text range from the TextGrid. It collects the text
+// within the specified grid coordinates, starting from (startRow, startCol) and
+// ending at (endRow, endCol), and returns it as a string. The behavior of the
+// selection depends on the blockMode parameter. If blockMode is true, then
+// startCol and endCol apply to each row in the range, creating a block selection.
+// If blockMode is false, startCol applies only to the first row, and endCol
+// applies only to the last row, resulting in a continuous range.
+//
+// Parameters:
+//   - blockMode: A boolean flag indicating whether to use block mode.
+//   - startRow:  The starting row index of the text range.
+//   - startCol:  The starting column index of the text range.
+//   - endRow:    The ending row index of the text range.
+//   - endCol:    The ending column index of the text range.
+//
+// Returns:
+//   - string: The text content within the specified range as a string.
+func (t *TermGrid) GetTextRange(blockMode bool, startRow, startCol, endRow, endCol int) string {
+	var result []rune
 
-// TextColor returns the color of the text, depending on whether it is highlighted.
-func (h *HighlightedTextGridStyle) TextColor() color.Color {
-	if h.Highlighted {
-		return h.HighlightedStyle.TextColor()
-	}
-	return h.OriginalStyle.TextColor()
-}
+	t.forRange(blockMode, startRow, startCol, endRow, endCol, func(cell *widget.TextGridCell) {
+		result = append(result, cell.Rune)
+	}, func(row *widget.TextGridRow) {
+		result = append(result, '\n')
+	})
 
-// BackgroundColor returns the background color, depending on whether it is highlighted.
-func (h *HighlightedTextGridStyle) BackgroundColor() color.Color {
-	if h.Highlighted {
-		return h.HighlightedStyle.BackgroundColor()
-	}
-	return h.OriginalStyle.BackgroundColor()
-}
-
-// HighlightOption defines a function type that can modify a HighlightedTextGridStyle.
-type HighlightOption func(h *HighlightedTextGridStyle)
-
-// InvertColor inverts a color c with the given bitmask
-func InvertColor(c color.Color, bitmask uint8) color.Color {
-	r, g, b, a := c.RGBA()
-	return color.RGBA{
-		R: uint8(r>>8) ^ bitmask,
-		G: uint8(g>>8) ^ bitmask,
-		B: uint8(b>>8) ^ bitmask,
-		A: uint8(a >> 8),
-	}
-}
-
-// WithInvert returns a HighlightOption that inverts the colors of the HighlightedTextGridStyle using the provided bitmask.
-func WithInvert(bitmask uint8) HighlightOption {
-	return func(h *HighlightedTextGridStyle) {
-		var fg, bg color.Color
-		if h.OriginalStyle != nil {
-			fg = h.OriginalStyle.TextColor()
-			bg = h.OriginalStyle.BackgroundColor()
-		}
-		if fg == nil {
-			fg = theme.ForegroundColor()
-		}
-		if bg == nil {
-			bg = theme.BackgroundColor()
-		}
-
-		h.HighlightedStyle = &widget.CustomTextGridStyle{
-			FGColor: InvertColor(fg, bitmask),
-			BGColor: InvertColor(bg, bitmask),
-		}
-	}
-}
-
-// With applies one or more HighlightOption functions to the HighlightedTextGridStyle,
-// allowing customization of the style.
-func (h *HighlightedTextGridStyle) With(options ...HighlightOption) {
-	for _, option := range options {
-		option(h)
-	}
+	return string(result)
 }
 
 // forRange iterates over a range of cells and rows within a TermGrid, optionally applying a function to each cell and row.
@@ -211,31 +177,64 @@ func (t *TermGrid) forRange(blockMode bool, startRow, startCol, endRow, endCol i
 	}
 }
 
-// GetTextRange retrieves a text range from the TextGrid. It collects the text
-// within the specified grid coordinates, starting from (startRow, startCol) and
-// ending at (endRow, endCol), and returns it as a string. The behavior of the
-// selection depends on the blockMode parameter. If blockMode is true, then
-// startCol and endCol apply to each row in the range, creating a block selection.
-// If blockMode is false, startCol applies only to the first row, and endCol
-// applies only to the last row, resulting in a continuous range.
-//
-// Parameters:
-//   - blockMode: A boolean flag indicating whether to use block mode.
-//   - startRow:  The starting row index of the text range.
-//   - startCol:  The starting column index of the text range.
-//   - endRow:    The ending row index of the text range.
-//   - endCol:    The ending column index of the text range.
-//
-// Returns:
-//   - string: The text content within the specified range as a string.
-func (t *TermGrid) GetTextRange(blockMode bool, startRow, startCol, endRow, endCol int) string {
-	var result []rune
+// TermTextGridStyle defines a style that can be original or highlighted.
+type TermTextGridStyle struct {
+	OriginalTextColor       color.Color
+	OriginalBackgroundColor color.Color
+	InvertedTextColor       color.Color
+	InvertedBackgroundColor color.Color
+	Highlighted             bool
+}
 
-	t.forRange(blockMode, startRow, startCol, endRow, endCol, func(cell *widget.TextGridCell) {
-		result = append(result, cell.Rune)
-	}, func(row *widget.TextGridRow) {
-		result = append(result, '\n')
-	})
+// TextColor returns the color of the text, depending on whether it is highlighted.
+func (h *TermTextGridStyle) TextColor() color.Color {
+	if h.Highlighted {
+		return h.InvertedTextColor
+	}
+	return h.OriginalTextColor
+}
 
-	return string(result)
+// BackgroundColor returns the background color, depending on whether it is highlighted.
+func (h *TermTextGridStyle) BackgroundColor() color.Color {
+	if h.Highlighted {
+		return h.InvertedBackgroundColor
+	}
+	return h.OriginalBackgroundColor
+}
+
+// HighlightOption defines a function type that can modify a TermTextGridStyle.
+type HighlightOption func(h *TermTextGridStyle)
+
+func NewTermTextGridStyle(fg, bg color.Color, bitmask byte) widget.TextGridStyle {
+	// calculate the inverted colors
+	var invertedFg, invertedBg color.Color
+	if fg == nil {
+		invertedFg = invertColor(theme.ForegroundColor(), bitmask)
+	} else {
+		invertedFg = invertColor(fg, bitmask)
+	}
+	if bg == nil {
+		invertedBg = invertColor(theme.BackgroundColor(), bitmask)
+	} else {
+		invertedBg = invertColor(bg, bitmask)
+	}
+
+	return &TermTextGridStyle{
+		OriginalTextColor:       fg,
+		OriginalBackgroundColor: bg,
+		InvertedTextColor:       invertedFg,
+		InvertedBackgroundColor: invertedBg,
+		Highlighted:             false,
+	}
+}
+
+// invertColor inverts a color c with the given bitmask
+func invertColor(c color.Color, bitmask uint8) color.Color {
+	r, g, b, a := c.RGBA()
+	return color.RGBA{
+		R: uint8(r>>8) ^ bitmask,
+		G: uint8(g>>8) ^ bitmask,
+		B: uint8(b>>8) ^ bitmask,
+		A: uint8(a >> 8),
+	}
 }

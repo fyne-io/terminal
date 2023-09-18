@@ -2,7 +2,6 @@ package terminal
 
 import (
 	"fyne.io/fyne/v2"
-	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
 // getSelectedRange returns the current selection range, start row, start col, end row, end col
@@ -29,7 +28,7 @@ func (t *Terminal) getSelectedRange() (int, int, int, int) {
 
 func (t *Terminal) highlightSelectedText() {
 	sr, sc, er, ec := t.getSelectedRange()
-	t.content.HighlightRange(t.blockMode, sr, sc, er, ec, widget2.WithInvert(t.highlightBitMask))
+	t.content.HighlightRange(t.blockMode, sr, sc, er, ec, t.highlightBitMask)
 	t.Refresh()
 }
 

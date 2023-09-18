@@ -21,7 +21,7 @@ func TestHighlightRange(t *testing.T) {
 		{Cells: []widget.TextGridCell{{Rune: 'J'}, {Rune: 'K'}, {Rune: 'L'}, {Rune: '*'}}},
 	}
 
-	textGrid.HighlightRange(false, 0, 0, 2, 2, WithInvert(bitmask))
+	textGrid.HighlightRange(false, 0, 0, 2, 2, bitmask)
 
 	tests := map[string]struct {
 		startRow, startCol, endRow, endCol int
@@ -37,7 +37,7 @@ func TestHighlightRange(t *testing.T) {
 			for row := tt.startRow; row <= tt.endRow; row++ {
 				for col := tt.startCol; col <= tt.endCol; col++ {
 					cell := &textGrid.Rows[row].Cells[col]
-					highlightedStyle, ok := cell.Style.(*HighlightedTextGridStyle)
+					highlightedStyle, ok := cell.Style.(*TermTextGridStyle)
 					if ok != tt.wantHighlight {
 						t.Errorf("unexpected highlight status at row=%d col=%d: got %v, want %v", row, col, ok, tt.wantHighlight)
 					}
@@ -65,7 +65,7 @@ func TestClearHighlightRange(t *testing.T) {
 		{Cells: []widget.TextGridCell{{Rune: 'J'}, {Rune: 'K'}, {Rune: 'L'}, {Rune: '*'}}},
 	}
 
-	textGrid.HighlightRange(false, 0, 0, 2, 2, WithInvert(bitmask))
+	textGrid.HighlightRange(false, 0, 0, 2, 2, bitmask)
 	textGrid.ClearHighlightRange(false, 0, 0, 2, 2)
 
 	tests := map[string]struct {
@@ -82,7 +82,7 @@ func TestClearHighlightRange(t *testing.T) {
 			for row := tt.startRow; row <= tt.endRow; row++ {
 				for col := tt.startCol; col <= tt.endCol; col++ {
 					cell := &textGrid.Rows[row].Cells[col]
-					highlightedStyle, ok := cell.Style.(*HighlightedTextGridStyle)
+					highlightedStyle, ok := cell.Style.(*TermTextGridStyle)
 					if ok && highlightedStyle.Highlighted != tt.wantHighlight {
 						t.Errorf("unexpected highlighted flag at row=%d col=%d: got %v, want %v", row, col, highlightedStyle.Highlighted, tt.wantHighlight)
 					}
