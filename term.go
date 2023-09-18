@@ -5,7 +5,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"runtime"
 	"sync"
 	"time"
 
@@ -321,12 +320,7 @@ func (t *Terminal) Write(b []byte) (int, error) {
 }
 
 func (t *Terminal) setupShortcuts() {
-	mod := fyne.KeyModifierShift | fyne.KeyModifierControl
-	if runtime.GOOS == "darwin" {
-		mod = fyne.KeyModifierShift | fyne.KeyModifierSuper
-	}
-
-	t.ShortcutHandler.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: mod},
+	t.ShortcutHandler.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: fyne.KeyModifierShortcutDefault},
 		func(_ fyne.Shortcut) {
 			a := fyne.CurrentApp()
 			c := a.Driver().CanvasForObject(t)
