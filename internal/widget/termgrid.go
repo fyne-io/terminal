@@ -205,6 +205,19 @@ func (h *TermTextGridStyle) BackgroundColor() color.Color {
 // HighlightOption defines a function type that can modify a TermTextGridStyle.
 type HighlightOption func(h *TermTextGridStyle)
 
+// NewTermTextGridStyle creates a new TextGridStyle with the specified foreground (fg) and background (bg)
+// colors, as well as a bitmask to control the inversion of colors. If fg or bg is nil, the function
+// will use default foreground and background colors from the theme. The bitmask is used to determine
+// which color channels should be inverted.
+//
+// Parameters:
+//   - fg: The foreground color.
+//   - bg: The background color.
+//   - bitmask: The bitmask to control color inversion.
+//
+// Returns:
+//
+//	A pointer to a TermTextGridStyle initialized with the provided colors and inversion settings.
 func NewTermTextGridStyle(fg, bg color.Color, bitmask byte) widget.TextGridStyle {
 	// calculate the inverted colors
 	var invertedFg, invertedBg color.Color
