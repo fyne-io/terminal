@@ -25,9 +25,11 @@ func (t *termTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Colo
 			return c
 		}
 		if v == theme.VariantLight {
-			return color.NRGBA{R: 0xaa, G: 0xaa, B: 0xaa, A: 0xf6}
+			return color.NRGBA{R: 0xdd, G: 0xdd, B: 0xdd, A: 0xf6}
 		}
 		return color.NRGBA{R: 0x0a, G: 0x0a, B: 0x0a, A: 0xf6}
+	case theme.ColorNameBackground, theme.ColorNameForeground:
+		return t.Theme.Color(n, v)
 	}
 	return t.Theme.Color(n, theme.VariantDark)
 }
