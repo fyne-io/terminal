@@ -45,25 +45,29 @@ func (t *Terminal) handleColorEscape(message string) {
 	if message == "" || message == "0" {
 		t.currentBG = nil
 		t.currentFG = nil
+		t.bold = false
 		return
 	}
 
 	modes := strings.Split(message, ";")
-	mode := modes[0]
-	if (mode == "38" || mode == "48") && len(modes) >= 2 {
-		if modes[1] == "5" && len(modes) >= 3 {
-			t.handleColorModeMap(mode, modes[2])
-			modes = modes[3:]
-		} else if modes[1] == "2" && len(modes) >= 5 {
-			t.handleColorModeRGB(mode, modes[2], modes[3], modes[4])
-			modes = modes[5:]
-		}
-	}
-	for _, mode := range modes {
+	for i := 0; i < len(modes); i++ {
+		mode := modes[i]
 		if mode == "" {
 			continue
 		}
-		t.handleColorMode(mode)
+
+		if (mode == "38" || mode == "48") && i+1 < len(modes) {
+			nextMode := modes[i+1]
+			if nextMode == "5" && i+2 < len(modes) {
+				t.handleColorModeMap(mode, modes[i+2])
+				i += 2
+			} else if nextMode == "2" && i+4 < len(modes) {
+				t.handleColorModeRGB(mode, modes[i+2], modes[i+3], modes[i+4])
+				i += 4
+			}
+		} else {
+			t.handleColorMode(mode)
+		}
 	}
 }
 
@@ -71,14 +75,15 @@ func (t *Terminal) handleColorMode(modeStr string) {
 	mode, err := strconv.Atoi(modeStr)
 	if err != nil {
 		fyne.LogError("Failed to parse color mode: "+modeStr, err)
+		return
 	}
 	switch mode {
 	case 0:
 		t.currentBG, t.currentFG = nil, nil
-		t.bright = false
+		t.bold = false
 	case 1:
-		t.bright = true
-	case 4, 24: // italic
+		t.bold = true
+	case 4, 24: //italic
 	case 7: // reverse
 		bg := t.currentBG
 		if t.currentFG == nil {
@@ -104,19 +109,11 @@ func (t *Terminal) handleColorMode(modeStr string) {
 			t.currentFG = bg
 		}
 	case 30, 31, 32, 33, 34, 35, 36, 37:
-		if t.bright {
-			t.currentFG = brightColors[mode-30]
-		} else {
-			t.currentFG = basicColors[mode-30]
-		}
+		t.currentFG = basicColors[mode-30]
 	case 39:
 		t.currentFG = nil
 	case 40, 41, 42, 43, 44, 45, 46, 47:
-		if t.bright {
-			t.currentBG = brightColors[mode-40]
-		} else {
-			t.currentBG = basicColors[mode-40]
-		}
+		t.currentBG = basicColors[mode-40]
 	case 49:
 		t.currentBG = nil
 	case 90, 91, 92, 93, 94, 95, 96, 97:
