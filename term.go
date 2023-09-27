@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/widget"
+	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -371,9 +372,8 @@ func New() *Terminal {
 
 // Dragged is called by fyne when the left mouse is down and moved whilst over the widget.
 func (t *Terminal) Dragged(d *fyne.DragEvent) {
-	if !t.selecting {
-		t.clearSelectedText()
 
+	if !t.selecting {
 		if t.keyboardState.altPressed {
 			t.blockMode = true
 		}
@@ -381,6 +381,11 @@ func (t *Terminal) Dragged(d *fyne.DragEvent) {
 		t.selStart = &p
 		t.selEnd = nil
 	}
+	// clear any previous selection
+	sr, sc, er, ec := t.getSelectedRange()
+	tg := *t.content
+	tg2 := widget2.TermGrid(tg)
+	tg2.ClearHighlightRange(t.blockMode, sr, sc, er, ec)
 
 	// make sure that x,y,x1,y1 are always positive
 	t.selecting = true
