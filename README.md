@@ -46,7 +46,6 @@ Already planned is:
 * Background and font/size customisation
 * Split panels
 * Windows support
-* Copy and Paste
 
 # Library
 
