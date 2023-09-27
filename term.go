@@ -99,6 +99,10 @@ func (t *Terminal) MinSize() fyne.Size {
 
 // MouseDown handles the down action for desktop mouse events.
 func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
+	if t.hasSelectedText() {
+		t.clearSelectedText()
+	}
+
 	if t.onMouseDown == nil {
 		return
 	}
