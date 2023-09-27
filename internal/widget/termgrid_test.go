@@ -13,7 +13,7 @@ func TestHighlightRange(t *testing.T) {
 	// Define a bitmask
 	bitmask := uint8(0xAA)
 	// Define a test text grid
-	textGrid := NewTermGrid()
+	textGrid := TermGrid{}
 	textGrid.Rows = []widget.TextGridRow{
 		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}, {Rune: '*'}}},
 		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}, {Rune: '*'}}},
@@ -57,7 +57,7 @@ func TestClearHighlightRange(t *testing.T) {
 	bitmask := uint8(0xAA)
 
 	// Define a test text grid
-	textGrid := NewTermGrid()
+	textGrid := TermGrid{}
 	textGrid.Rows = []widget.TextGridRow{
 		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}, {Rune: '*'}}},
 		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}, {Rune: '*'}}},
@@ -96,7 +96,7 @@ func TestGetTextRange(t *testing.T) {
 	// start the test app for the purpose of the test
 	test.NewApp()
 	// Prepare the text grid for the tests
-	textGrid := NewTermGrid()
+	textGrid := TermGrid{}
 	textGrid.Rows = []widget.TextGridRow{
 		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}}},
 		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}}},

@@ -47,12 +47,13 @@ func TestGetSelectedRange(t *testing.T) {
 
 func TestGetTextRange(t *testing.T) {
 	// Prepare the text grid for the tests
-	grid := widget2.NewTermGrid()
-	grid.Rows = []widget.TextGridRow{
+	g := *widget.NewTextGrid()
+	g.Rows = []widget.TextGridRow{
 		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}}},
 		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}}},
 		{Cells: []widget.TextGridCell{{Rune: 'G'}, {Rune: 'H'}, {Rune: 'I'}}},
 	}
+	grid := widget2.TermGrid(g)
 
 	tests := map[string]struct {
 		startRow  int
