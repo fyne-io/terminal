@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/widget"
-	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -35,7 +34,7 @@ const (
 type Terminal struct {
 	widget.BaseWidget
 	fyne.ShortcutHandler
-	content      *widget2.TermGrid
+	content      *widget.TextGrid
 	config       Config
 	listenerLock sync.Mutex
 	listeners    []chan Config
@@ -360,7 +359,7 @@ func New() *Terminal {
 		highlightBitMask: 0x55,
 	}
 	t.ExtendBaseWidget(t)
-	t.content = widget2.NewTermGrid()
+	t.content = widget.NewTextGrid()
 	t.setupShortcuts()
 
 	return t

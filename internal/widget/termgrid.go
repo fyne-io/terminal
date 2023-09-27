@@ -9,16 +9,7 @@ import (
 
 // TermGrid is a monospaced grid of characters.
 // This is designed to be used in a terminal emulator.
-type TermGrid struct {
-	widget.TextGrid
-}
-
-// NewTermGrid creates a new empty TermGrid widget.
-func NewTermGrid() *TermGrid {
-	tg := &TermGrid{}
-	tg.ExtendBaseWidget(tg)
-	return tg
-}
+type TermGrid widget.TextGrid
 
 // HighlightRange highlight options to the given range
 // if highlighting has previously been applied it is enabled
