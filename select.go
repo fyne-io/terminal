@@ -29,17 +29,13 @@ func (t *Terminal) getSelectedRange() (int, int, int, int) {
 
 func (t *Terminal) highlightSelectedText() {
 	sr, sc, er, ec := t.getSelectedRange()
-	tg := *t.content
-	tg2 := widget2.TermGrid(tg)
-	tg2.HighlightRange(t.blockMode, sr, sc, er, ec, t.highlightBitMask)
+	widget2.HighlightRange(t.content, t.blockMode, sr, sc, er, ec, t.highlightBitMask)
 	t.Refresh()
 }
 
 func (t *Terminal) clearSelectedText() {
 	sr, sc, er, ec := t.getSelectedRange()
-	tg := *t.content
-	tg2 := widget2.TermGrid(tg)
-	tg2.ClearHighlightRange(t.blockMode, sr, sc, er, ec)
+	widget2.ClearHighlightRange(t.content, t.blockMode, sr, sc, er, ec)
 	t.Refresh()
 	t.blockMode = false
 	t.selecting = false
@@ -48,9 +44,7 @@ func (t *Terminal) clearSelectedText() {
 // SelectedText gets the text that is currently selected.
 func (t *Terminal) SelectedText() string {
 	sr, sc, er, ec := t.getSelectedRange()
-	tg := *t.content
-	tg2 := widget2.TermGrid(tg)
-	return tg2.GetTextRange(t.blockMode, sr, sc, er, ec)
+	return widget2.GetTextRange(t.content, t.blockMode, sr, sc, er, ec)
 }
 
 func (t *Terminal) copySelectedText(clipboard fyne.Clipboard) {

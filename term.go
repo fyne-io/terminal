@@ -383,9 +383,7 @@ func (t *Terminal) Dragged(d *fyne.DragEvent) {
 	}
 	// clear any previous selection
 	sr, sc, er, ec := t.getSelectedRange()
-	tg := *t.content
-	tg2 := widget2.TermGrid(tg)
-	tg2.ClearHighlightRange(t.blockMode, sr, sc, er, ec)
+	widget2.ClearHighlightRange(t.content, t.blockMode, sr, sc, er, ec)
 
 	// make sure that x,y,x1,y1 are always positive
 	t.selecting = true

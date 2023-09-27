@@ -7,13 +7,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// TermGrid is a monospaced grid of characters.
-// This is designed to be used in a terminal emulator.
-type TermGrid widget.TextGrid
-
 // HighlightRange highlight options to the given range
 // if highlighting has previously been applied it is enabled
-func (t *TermGrid) HighlightRange(blockMode bool, startRow, startCol, endRow, endCol int, bitmask byte) {
+func HighlightRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow, endCol int, bitmask byte) {
 	applyHighlight := func(cell *widget.TextGridCell) {
 		// Check if already highlighted
 		if h, ok := cell.Style.(*TermTextGridStyle); !ok {
@@ -29,18 +25,18 @@ func (t *TermGrid) HighlightRange(blockMode bool, startRow, startCol, endRow, en
 		}
 	}
 
-	t.forRange(blockMode, startRow, startCol, endRow, endCol, applyHighlight, nil)
+	forRange(t, blockMode, startRow, startCol, endRow, endCol, applyHighlight, nil)
 }
 
 // ClearHighlightRange disables the highlight style for the given range
-func (t *TermGrid) ClearHighlightRange(blockMode bool, startRow, startCol, endRow, endCol int) {
+func ClearHighlightRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow, endCol int) {
 	clearHighlight := func(cell *widget.TextGridCell) {
 		// Check if already highlighted
 		if h, ok := cell.Style.(*TermTextGridStyle); ok {
 			h.Highlighted = false
 		}
 	}
-	t.forRange(blockMode, startRow, startCol, endRow, endCol, clearHighlight, nil)
+	forRange(t, blockMode, startRow, startCol, endRow, endCol, clearHighlight, nil)
 }
 
 // GetTextRange retrieves a text range from the TextGrid. It collects the text
@@ -60,10 +56,10 @@ func (t *TermGrid) ClearHighlightRange(blockMode bool, startRow, startCol, endRo
 //
 // Returns:
 //   - string: The text content within the specified range as a string.
-func (t *TermGrid) GetTextRange(blockMode bool, startRow, startCol, endRow, endCol int) string {
+func GetTextRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow, endCol int) string {
 	var result []rune
 
-	t.forRange(blockMode, startRow, startCol, endRow, endCol, func(cell *widget.TextGridCell) {
+	forRange(t, blockMode, startRow, startCol, endRow, endCol, func(cell *widget.TextGridCell) {
 		result = append(result, cell.Rune)
 	}, func(row *widget.TextGridRow) {
 		result = append(result, '\n')
@@ -92,7 +88,7 @@ func (t *TermGrid) GetTextRange(blockMode bool, startRow, startCol, endRow, endC
 // Example Usage:
 // termGrid.forRange(true, 0, 1, 2, 3, cellFunc, rowFunc) // Iterate in block mode, applying cellFunc to cells in columns 1 to 3 and rowFunc to rows 0 to 2.
 // termGrid.forRange(false, 1, 0, 3, 2, cellFunc, rowFunc) // Iterate cell by cell, applying cellFunc to all cells and rowFunc to rows 1 and 2.
-func (t *TermGrid) forRange(blockMode bool, startRow, startCol, endRow, endCol int, eachCell func(cell *widget.TextGridCell), eachRow func(row *widget.TextGridRow)) {
+func forRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow, endCol int, eachCell func(cell *widget.TextGridCell), eachRow func(row *widget.TextGridRow)) {
 	if startRow >= len(t.Rows) || endRow < 0 {
 		return
 	}

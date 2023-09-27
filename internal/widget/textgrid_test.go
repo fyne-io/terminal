@@ -13,7 +13,7 @@ func TestHighlightRange(t *testing.T) {
 	// Define a bitmask
 	bitmask := uint8(0xAA)
 	// Define a test text grid
-	textGrid := TermGrid{}
+	textGrid := widget.NewTextGrid()
 	textGrid.Rows = []widget.TextGridRow{
 		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}, {Rune: '*'}}},
 		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}, {Rune: '*'}}},
@@ -21,7 +21,7 @@ func TestHighlightRange(t *testing.T) {
 		{Cells: []widget.TextGridCell{{Rune: 'J'}, {Rune: 'K'}, {Rune: 'L'}, {Rune: '*'}}},
 	}
 
-	textGrid.HighlightRange(false, 0, 0, 2, 2, bitmask)
+	HighlightRange(textGrid, false, 0, 0, 2, 2, bitmask)
 
 	tests := map[string]struct {
 		startRow, startCol, endRow, endCol int
@@ -57,7 +57,7 @@ func TestClearHighlightRange(t *testing.T) {
 	bitmask := uint8(0xAA)
 
 	// Define a test text grid
-	textGrid := TermGrid{}
+	textGrid := widget.NewTextGrid()
 	textGrid.Rows = []widget.TextGridRow{
 		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}, {Rune: '*'}}},
 		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}, {Rune: '*'}}},
@@ -65,8 +65,8 @@ func TestClearHighlightRange(t *testing.T) {
 		{Cells: []widget.TextGridCell{{Rune: 'J'}, {Rune: 'K'}, {Rune: 'L'}, {Rune: '*'}}},
 	}
 
-	textGrid.HighlightRange(false, 0, 0, 2, 2, bitmask)
-	textGrid.ClearHighlightRange(false, 0, 0, 2, 2)
+	HighlightRange(textGrid, false, 0, 0, 2, 2, bitmask)
+	ClearHighlightRange(textGrid, false, 0, 0, 2, 2)
 
 	tests := map[string]struct {
 		startRow, startCol, endRow, endCol int
@@ -96,7 +96,7 @@ func TestGetTextRange(t *testing.T) {
 	// start the test app for the purpose of the test
 	test.NewApp()
 	// Prepare the text grid for the tests
-	textGrid := TermGrid{}
+	textGrid := widget.NewTextGrid()
 	textGrid.Rows = []widget.TextGridRow{
 		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}}},
 		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}}},
@@ -122,7 +122,7 @@ func TestGetTextRange(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := textGrid.GetTextRange(tc.blockMode, tc.startRow, tc.startCol, tc.endRow, tc.endCol)
+			got := GetTextRange(textGrid, tc.blockMode, tc.startRow, tc.startCol, tc.endRow, tc.endCol)
 			if got != tc.want {
 				t.Fatalf("GetTextRange() = %v; want %v", got, tc.want)
 			}
