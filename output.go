@@ -145,7 +145,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 			continue
 		} else if state.esc != noEscape {
 			state.code += string(r)
-			if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' {
+			if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
 				t.handleEscape(state.code)
 				state.code = ""
 				state.esc = noEscape
