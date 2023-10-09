@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -324,7 +325,12 @@ func (t *Terminal) Write(b []byte) (int, error) {
 }
 
 func (t *Terminal) setupShortcuts() {
-	t.ShortcutHandler.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault},
+	var paste fyne.Shortcut
+	paste = &desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
+	if runtime.GOOS == "darwin" {
+		paste = &fyne.ShortcutPaste{nil} // we look up clipboard later
+	}
+	t.ShortcutHandler.AddShortcut(paste,
 		func(_ fyne.Shortcut) {
 			a := fyne.CurrentApp()
 			c := a.Driver().CanvasForObject(t)
@@ -343,6 +349,32 @@ func (t *Terminal) setupShortcuts() {
 			}
 
 			t.pasteText(win.Clipboard())
+		})
+	var copy fyne.Shortcut
+	copy = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
+	if runtime.GOOS == "darwin" {
+		copy = &fyne.ShortcutCopy{nil} // we look up clipboard later
+	}
+
+	t.ShortcutHandler.AddShortcut(copy,
+		func(_ fyne.Shortcut) {
+			a := fyne.CurrentApp()
+			c := a.Driver().CanvasForObject(t)
+			if c == nil {
+				return
+			}
+
+			var win fyne.Window
+			for _, w := range a.Driver().AllWindows() {
+				if w.Canvas() == c {
+					win = w
+				}
+			}
+			if win == nil {
+				return
+			}
+
+			t.copySelectedText(win.Clipboard())
 		})
 }
 
