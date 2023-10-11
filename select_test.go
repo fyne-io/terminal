@@ -10,33 +10,62 @@ import (
 func TestGetSelectedRange(t *testing.T) {
 	tests := map[string]struct {
 		selStart, selEnd                                   position
+		blockMode                                          bool
 		wantStartRow, wantStartCol, wantEndRow, wantEndCol int
 	}{
 		"Positive Selection": {
 			selStart:     position{Row: 1, Col: 1},
 			selEnd:       position{Row: 1, Col: 5},
+			blockMode:    false,
 			wantStartRow: 0, wantStartCol: 0, wantEndRow: 0, wantEndCol: 4,
 		},
 		"Negative Selection Same Row": {
 			selStart:     position{Row: 1, Col: 5},
 			selEnd:       position{Row: 1, Col: 1},
+			blockMode:    false,
 			wantStartRow: 0, wantStartCol: 0, wantEndRow: 0, wantEndCol: 4,
 		},
 		"Positive Selection Different Rows": {
 			selStart:     position{Row: 2, Col: 3},
 			selEnd:       position{Row: 4, Col: 3},
+			blockMode:    false,
 			wantStartRow: 1, wantStartCol: 2, wantEndRow: 3, wantEndCol: 2,
 		},
 		"Negative Selection Different Rows": {
 			selStart:     position{Row: 4, Col: 3},
 			selEnd:       position{Row: 2, Col: 3},
+			blockMode:    false,
 			wantStartRow: 1, wantStartCol: 2, wantEndRow: 3, wantEndCol: 2,
+		},
+		"Block Mode Positive Selection": {
+			selStart:     position{Row: 1, Col: 5},
+			selEnd:       position{Row: 4, Col: 6},
+			blockMode:    true,
+			wantStartRow: 0, wantStartCol: 4, wantEndRow: 3, wantEndCol: 5,
+		},
+		"Block Mode Negative Selection Same Row": {
+			selStart:     position{Row: 1, Col: 5},
+			selEnd:       position{Row: 1, Col: 1},
+			blockMode:    true,
+			wantStartRow: 0, wantStartCol: 0, wantEndRow: 0, wantEndCol: 4,
+		},
+		"Block Mode Negative Column, Positive Rows": {
+			selStart:     position{Row: 4, Col: 3},
+			selEnd:       position{Row: 2, Col: 2},
+			blockMode:    true,
+			wantStartRow: 1, wantStartCol: 1, wantEndRow: 3, wantEndCol: 2,
+		},
+		"Block Mode Negative Column, Negative Rows": {
+			selStart:     position{Row: 4, Col: 4},
+			selEnd:       position{Row: 3, Col: 3},
+			blockMode:    true,
+			wantStartRow: 2, wantStartCol: 2, wantEndRow: 3, wantEndCol: 3,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			term := &Terminal{selStart: &tt.selStart, selEnd: &tt.selEnd}
+			term := &Terminal{selStart: &tt.selStart, selEnd: &tt.selEnd, blockMode: tt.blockMode}
 			gotStartRow, gotStartCol, gotEndRow, gotEndCol := term.getSelectedRange()
 			if gotStartRow != tt.wantStartRow || gotStartCol != tt.wantStartCol || gotEndRow != tt.wantEndRow || gotEndCol != tt.wantEndCol {
 				t.Errorf("getSelectedRange() = (%d, %d, %d, %d), want (%d, %d, %d, %d)", gotStartRow, gotStartCol, gotEndRow, gotEndCol, tt.wantStartRow, tt.wantStartCol, tt.wantEndRow, tt.wantEndCol)

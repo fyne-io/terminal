@@ -17,6 +17,19 @@ func (t *Terminal) getSelectedRange() (int, int, int, int) {
 	endRow := t.selEnd.Row
 	endCol := t.selEnd.Col
 
+	if t.blockMode {
+		if startCol > endCol {
+			// Swap the start and end colums
+			startCol, endCol = endCol, startCol
+		}
+
+		if startRow > endRow {
+			// Swap the start and end rows
+			startRow, endRow = endRow, startRow
+		}
+
+		return startRow - 1, startCol - 1, endRow - 1, endCol - 1
+	}
 	// Check if the user has selected in reverse
 	if startRow > endRow || (startRow == endRow && startCol > endCol) {
 		// Swap the start and end rows and columns
