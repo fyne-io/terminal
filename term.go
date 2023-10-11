@@ -402,14 +402,35 @@ func New() *Terminal {
 	return t
 }
 
+// sanitizePosition ensures that the given position p is within the bounds of the terminal.
+// If the position is outside the bounds, it adjusts the coordinates to the nearest valid values.
+// The adjusted position is then returned.
+func (t *Terminal) sanitizePosition(p fyne.Position) *fyne.Position {
+	size := t.Size()
+	width, height := size.Width, size.Height
+	if p.X < 0 {
+		p.X = 0
+	} else if p.X > width {
+		p.X = width
+	}
+
+	if p.Y < 0 {
+		p.Y = 0
+	} else if p.Y > height {
+		p.Y = height
+	}
+
+	return &p
+}
+
 // Dragged is called by fyne when the left mouse is down and moved whilst over the widget.
 func (t *Terminal) Dragged(d *fyne.DragEvent) {
-
+	pos := t.sanitizePosition(d.Position)
 	if !t.selecting {
 		if t.keyboardState.altPressed {
 			t.blockMode = true
 		}
-		p := t.getTermPosition(d.Position)
+		p := t.getTermPosition(*pos)
 		t.selStart = &p
 		t.selEnd = nil
 	}
@@ -420,7 +441,7 @@ func (t *Terminal) Dragged(d *fyne.DragEvent) {
 	// make sure that x,y,x1,y1 are always positive
 	t.selecting = true
 	t.mouseCursor = desktop.TextCursor
-	p := t.getTermPosition(d.Position)
+	p := t.getTermPosition(*pos)
 	t.selEnd = &p
 	t.highlightSelectedText()
 }
