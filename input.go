@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"runtime"
 	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
