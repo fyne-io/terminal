@@ -70,6 +70,16 @@ func (t *Terminal) copySelectedText(clipboard fyne.Clipboard) {
 
 func (t *Terminal) pasteText(clipboard fyne.Clipboard) {
 	content := clipboard.Content()
+
+	if t.bracketedPasteMode {
+		_, _ = t.in.Write(append(
+			append(
+				[]byte{asciiEscape, '[', '2', '0', '0', '~'},
+				[]byte(content)...),
+			[]byte{asciiEscape, '[', '2', '0', '1', '~'}...),
+		)
+		return
+	}
 	_, _ = t.in.Write([]byte(content))
 }
 

@@ -260,6 +260,8 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 		}
 	case "1049":
 		t.bufferMode = enable
+	case "2004":
+		t.bracketedPasteMode = enable
 	default:
 		if t.debug {
 			log.Println("Unknown private escape code", msg+"[hl]")

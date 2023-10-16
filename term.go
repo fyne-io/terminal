@@ -72,7 +72,8 @@ type Terminal struct {
 		ctrlPressed  bool
 		altPressed   bool
 	}
-	newLineMode bool // new line mode or line feed mode
+	newLineMode        bool // new line mode or line feed mode
+	bracketedPasteMode bool
 }
 
 // Cursor is used for displaying a specific cursor.
