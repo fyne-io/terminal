@@ -328,7 +328,7 @@ func (t *Terminal) setupShortcuts() {
 	var paste fyne.Shortcut
 	paste = &desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
 	if runtime.GOOS == "darwin" {
-		paste = &fyne.ShortcutPaste{nil} // we look up clipboard later
+		paste = &fyne.ShortcutPaste{} // we look up clipboard later
 	}
 	t.ShortcutHandler.AddShortcut(paste,
 		func(_ fyne.Shortcut) {
@@ -350,13 +350,13 @@ func (t *Terminal) setupShortcuts() {
 
 			t.pasteText(win.Clipboard())
 		})
-	var copy fyne.Shortcut
-	copy = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
+	var shortcutCopy fyne.Shortcut
+	shortcutCopy = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
 	if runtime.GOOS == "darwin" {
-		copy = &fyne.ShortcutCopy{nil} // we look up clipboard later
+		shortcutCopy = &fyne.ShortcutCopy{} // we look up clipboard later
 	}
 
-	t.ShortcutHandler.AddShortcut(copy,
+	t.ShortcutHandler.AddShortcut(shortcutCopy,
 		func(_ fyne.Shortcut) {
 			a := fyne.CurrentApp()
 			c := a.Driver().CanvasForObject(t)
