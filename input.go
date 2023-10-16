@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"runtime"
 	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
@@ -161,20 +162,33 @@ func (t *Terminal) FocusGained() {
 
 // TypedShortcut handles key combinations, we pass them on to the tty.
 func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
-	// we need to override the default cut/copy/paste and do it ourselves
-	if _, ok := s.(*fyne.ShortcutCut); ok {
-		_, _ = t.in.Write([]byte{0x18})
-	} else if _, ok := s.(*fyne.ShortcutCopy); ok {
-		_, _ = t.in.Write([]byte{0x3})
-	} else if _, ok := s.(*fyne.ShortcutPaste); ok {
-		_, _ = t.in.Write([]byte{0x16})
-	} else if _, ok := s.(*fyne.ShortcutSelectAll); ok {
-		_, _ = t.in.Write([]byte{0x1})
-	} else if ds, ok := s.(*desktop.CustomShortcut); ok {
+	if ds, ok := s.(*desktop.CustomShortcut); ok {
 		t.ShortcutHandler.TypedShortcut(s) // it's not clear how we can check if this consumed the event
 
 		off := ds.KeyName[0] - 'A' + 1
 		_, _ = t.in.Write([]byte{off})
+		return
+	}
+
+	if runtime.GOOS == "darwin" {
+		// do the default thing for macOS as they separete ctrl/cmd
+		t.ShortcutHandler.TypedShortcut(s)
+	} else {
+		// we need to override the default ctrl-X/C/V/A for non-mac and do it ourselves
+
+		if _, ok := s.(*fyne.ShortcutCut); ok {
+			_, _ = t.in.Write([]byte{0x18})
+
+		} else if _, ok := s.(*fyne.ShortcutCopy); ok {
+			_, _ = t.in.Write([]byte{0x3})
+
+		} else if _, ok := s.(*fyne.ShortcutPaste); ok {
+			_, _ = t.in.Write([]byte{0x16})
+
+		} else if _, ok := s.(*fyne.ShortcutSelectAll); ok {
+			_, _ = t.in.Write([]byte{0x1})
+
+		}
 	}
 }
 

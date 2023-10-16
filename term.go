@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/widget"
+	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -59,12 +61,23 @@ type Terminal struct {
 	g1Charset              charSet
 	useG1CharSet           bool
 
+	selStart, selEnd *position
+	blockMode        bool
+	highlightBitMask uint8
+	selecting        bool
+	mouseCursor      desktop.Cursor
+
 	keyboardState struct {
 		shiftPressed bool
 		ctrlPressed  bool
 		altPressed   bool
 	}
 	newLineMode bool // new line mode or line feed mode
+}
+
+// Cursor is used for displaying a specific cursor.
+func (t *Terminal) Cursor() desktop.Cursor {
+	return t.mouseCursor
 }
 
 // AcceptsTab indicates that this widget will use the Tab key (avoids loss of focus).
@@ -88,6 +101,10 @@ func (t *Terminal) MinSize() fyne.Size {
 
 // MouseDown handles the down action for desktop mouse events.
 func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
+	if t.hasSelectedText() {
+		t.clearSelectedText()
+	}
+
 	if t.onMouseDown == nil {
 		return
 	}
@@ -101,6 +118,10 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 
 // MouseUp handles the up action for desktop mouse events.
 func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
+	if ev.Button == desktop.MouseButtonSecondary && t.hasSelectedText() {
+		t.copySelectedText(fyne.CurrentApp().Driver().AllWindows()[0].Clipboard())
+	}
+
 	if t.onMouseDown == nil {
 		return
 	}
@@ -304,7 +325,12 @@ func (t *Terminal) Write(b []byte) (int, error) {
 }
 
 func (t *Terminal) setupShortcuts() {
-	t.ShortcutHandler.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: fyne.KeyModifierShift | fyne.KeyModifierControl},
+	var paste fyne.Shortcut
+	paste = &desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
+	if runtime.GOOS == "darwin" {
+		paste = &fyne.ShortcutPaste{} // we look up clipboard later
+	}
+	t.ShortcutHandler.AddShortcut(paste,
 		func(_ fyne.Shortcut) {
 			a := fyne.CurrentApp()
 			c := a.Driver().CanvasForObject(t)
@@ -322,7 +348,33 @@ func (t *Terminal) setupShortcuts() {
 				return
 			}
 
-			_, _ = t.in.Write([]byte(win.Clipboard().Content()))
+			t.pasteText(win.Clipboard())
+		})
+	var shortcutCopy fyne.Shortcut
+	shortcutCopy = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
+	if runtime.GOOS == "darwin" {
+		shortcutCopy = &fyne.ShortcutCopy{} // we look up clipboard later
+	}
+
+	t.ShortcutHandler.AddShortcut(shortcutCopy,
+		func(_ fyne.Shortcut) {
+			a := fyne.CurrentApp()
+			c := a.Driver().CanvasForObject(t)
+			if c == nil {
+				return
+			}
+
+			var win fyne.Window
+			for _, w := range a.Driver().AllWindows() {
+				if w.Canvas() == c {
+					win = w
+				}
+			}
+			if win == nil {
+				return
+			}
+
+			t.copySelectedText(win.Clipboard())
 		})
 }
 
@@ -339,10 +391,62 @@ func (t *Terminal) startingDir() string {
 
 // New sets up a new terminal instance with the bash shell
 func New() *Terminal {
-	t := &Terminal{}
+	t := &Terminal{
+		mouseCursor:      desktop.DefaultCursor,
+		highlightBitMask: 0x55,
+	}
 	t.ExtendBaseWidget(t)
 	t.content = widget.NewTextGrid()
 	t.setupShortcuts()
 
 	return t
+}
+
+// sanitizePosition ensures that the given position p is within the bounds of the terminal.
+// If the position is outside the bounds, it adjusts the coordinates to the nearest valid values.
+// The adjusted position is then returned.
+func (t *Terminal) sanitizePosition(p fyne.Position) *fyne.Position {
+	size := t.Size()
+	width, height := size.Width, size.Height
+	if p.X < 0 {
+		p.X = 0
+	} else if p.X > width {
+		p.X = width
+	}
+
+	if p.Y < 0 {
+		p.Y = 0
+	} else if p.Y > height {
+		p.Y = height
+	}
+
+	return &p
+}
+
+// Dragged is called by fyne when the left mouse is down and moved whilst over the widget.
+func (t *Terminal) Dragged(d *fyne.DragEvent) {
+	pos := t.sanitizePosition(d.Position)
+	if !t.selecting {
+		if t.keyboardState.altPressed {
+			t.blockMode = true
+		}
+		p := t.getTermPosition(*pos)
+		t.selStart = &p
+		t.selEnd = nil
+	}
+	// clear any previous selection
+	sr, sc, er, ec := t.getSelectedRange()
+	widget2.ClearHighlightRange(t.content, t.blockMode, sr, sc, er, ec)
+
+	// make sure that x,y,x1,y1 are always positive
+	t.selecting = true
+	t.mouseCursor = desktop.TextCursor
+	p := t.getTermPosition(*pos)
+	t.selEnd = &p
+	t.highlightSelectedText()
+}
+
+// DragEnd is called by fyne when the left mouse is released after a Drag event.
+func (t *Terminal) DragEnd() {
+	t.selecting = false
 }

@@ -89,6 +89,9 @@ type parseState struct {
 }
 
 func (t *Terminal) handleOutput(buf []byte) {
+	if t.hasSelectedText() {
+		t.clearSelectedText()
+	}
 	state := &parseState{}
 	if previous != nil {
 		state = previous

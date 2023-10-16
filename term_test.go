@@ -39,3 +39,62 @@ func TestTerminal_AddListener(t *testing.T) {
 	term.RemoveListener(listen)
 	assert.Equal(t, 0, len(term.listeners))
 }
+
+func TestTerminal_SanitizePosition(t *testing.T) {
+	tests := []struct {
+		name   string
+		pos    fyne.Position
+		width  int
+		height int
+		want   fyne.Position
+	}{
+		{
+			name:   "WithinBounds",
+			pos:    fyne.NewPos(2, 3),
+			width:  45,
+			height: 45,
+			want:   fyne.NewPos(2, 3),
+		},
+		{
+			name:   "NegativeX",
+			pos:    fyne.NewPos(-1, 2),
+			width:  45,
+			height: 45,
+			want:   fyne.NewPos(0, 2),
+		},
+		{
+			name:   "ExceedsWidth",
+			pos:    fyne.NewPos(46, 2),
+			width:  45,
+			height: 45,
+			want:   fyne.NewPos(45, 2),
+		},
+		{
+			name:   "NegativeY",
+			pos:    fyne.NewPos(3, -1),
+			width:  45,
+			height: 45,
+			want:   fyne.NewPos(3, 0),
+		},
+		{
+			name:   "ExceedsHeight",
+			pos:    fyne.NewPos(3, 46),
+			width:  45,
+			height: 45,
+			want:   fyne.NewPos(3, 45),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			term := New()
+			term.Resize(fyne.NewSize(float32(tt.width), float32(tt.height)))
+
+			got := term.sanitizePosition(tt.pos)
+
+			if *got != tt.want {
+				t.Errorf("got %v, want %v", *got, tt.want)
+			}
+		})
+	}
+}
