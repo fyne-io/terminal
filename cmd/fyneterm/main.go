@@ -23,7 +23,10 @@ import (
 
 const termOverlay = fyne.ThemeColorName("termOver")
 
-var localizer *i18n.Localizer
+var (
+	localizer *i18n.Localizer
+	sizer     *termTheme
+)
 
 func setupListener(t *terminal.Terminal, w fyne.Window) {
 	listen := make(chan terminal.Config)
@@ -70,9 +73,9 @@ func main() {
 
 	a := app.New()
 	a.SetIcon(data.Icon)
-	th := newTermTheme()
-	a.Settings().SetTheme(th)
-	w := newTerminalWindow(a, th, debug)
+	sizer = newTermTheme()
+	a.Settings().SetTheme(sizer)
+	w := newTerminalWindow(a, sizer, debug)
 	w.ShowAndRun()
 }
 
@@ -101,7 +104,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	t := terminal.New()
 	t.SetDebug(debug)
 	setupListener(t, w)
-	w.SetContent(container.NewMax(bg, img, over, t))
+	w.SetContent(container.NewStack(bg, img, over, t))
 
 	cellSize := guessCellSize()
 	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
@@ -111,6 +114,20 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 		func(_ fyne.Shortcut) {
 			w := newTerminalWindow(a, th, debug)
 			w.Show()
+		})
+	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyEqual, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift},
+		func(_ fyne.Shortcut) {
+			sizer.fontSize++
+			a.Settings().SetTheme(sizer)
+			t.Refresh()
+			t.Resize(t.Size())
+		})
+	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyMinus, Modifier: fyne.KeyModifierControl},
+		func(_ fyne.Shortcut) {
+			sizer.fontSize--
+			a.Settings().SetTheme(sizer)
+			t.Refresh()
+			t.Resize(t.Size())
 		})
 	go func() {
 		err := t.RunLocalShell()

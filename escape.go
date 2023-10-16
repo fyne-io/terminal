@@ -51,8 +51,8 @@ func (t *Terminal) clearScreen() {
 func (t *Terminal) clearScreenFromCursor() {
 	row := t.content.Row(t.cursorRow)
 	from := t.cursorCol
-	if t.cursorCol >= len(row.Cells) {
-		from = len(row.Cells) - 1
+	if t.cursorCol > len(row.Cells) {
+		from = len(row.Cells)
 	}
 	if from > 0 {
 		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:from]})
@@ -79,11 +79,23 @@ func (t *Terminal) clearScreenToCursor() {
 }
 
 func (t *Terminal) handleVT100(code string) {
-	if code == "(A" || code == ")A" || code == "(B" || code == ")B" {
-		return // keycode handling A = en_GB, B = en_US
-	}
-	if t.debug {
-		log.Println("Unhandled VT100:", code)
+	switch code {
+	case "(A":
+		t.g0Charset = charSetAlternate
+	case ")A":
+		t.g1Charset = charSetAlternate
+	case "(B":
+		t.g0Charset = charSetANSII
+	case ")B":
+		t.g1Charset = charSetANSII
+	case "(0":
+		t.g0Charset = charSetDECSpecialGraphics
+	case ")0":
+		t.g1Charset = charSetDECSpecialGraphics
+	default:
+		if t.debug {
+			log.Println("Unhandled VT100:", code)
+		}
 	}
 }
 
@@ -225,6 +237,8 @@ func escapeMoveCursorCol(t *Terminal, msg string) {
 
 func escapePrivateMode(t *Terminal, msg string, enable bool) {
 	switch msg {
+	case "20":
+		t.newLineMode = enable
 	case "25":
 		t.cursorHidden = !enable
 		t.refreshCursor()

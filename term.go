@@ -22,6 +22,14 @@ type Config struct {
 	Rows, Columns uint
 }
 
+type charSet int
+
+const (
+	charSetANSII charSet = iota
+	charSetDECSpecialGraphics
+	charSetAlternate
+)
+
 // Terminal is a terminal widget that loads a shell and handles input/output.
 type Terminal struct {
 	widget.BaseWidget
@@ -36,17 +44,27 @@ type Terminal struct {
 	in  io.WriteCloser
 	out io.Reader
 
-	bell, bright, debug, focused bool
-	currentFG, currentBG         color.Color
-	cursorRow, cursorCol         int
-	savedRow, savedCol           int
-	scrollTop, scrollBottom      int
+	bell, bold, debug, focused bool
+	currentFG, currentBG       color.Color
+	cursorRow, cursorCol       int
+	savedRow, savedCol         int
+	scrollTop, scrollBottom    int
 
 	cursor                   *canvas.Rectangle
 	cursorHidden, bufferMode bool // buffer mode is an xterm extension that impacts control keys
 	cursorMoved              func()
 
 	onMouseDown, onMouseUp func(int, fyne.KeyModifier, fyne.Position)
+	g0Charset              charSet
+	g1Charset              charSet
+	useG1CharSet           bool
+
+	keyboardState struct {
+		shiftPressed bool
+		ctrlPressed  bool
+		altPressed   bool
+	}
+	newLineMode bool // new line mode or line feed mode
 }
 
 // AcceptsTab indicates that this widget will use the Tab key (avoids loss of focus).
