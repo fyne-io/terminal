@@ -72,7 +72,7 @@ type Terminal struct {
 		ctrlPressed  bool
 		altPressed   bool
 	}
-	newLineMode bool // new line mode or line feed mode
+	newLineMode        bool // new line mode or line feed mode
 	bracketedPasteMode bool
 }
 
