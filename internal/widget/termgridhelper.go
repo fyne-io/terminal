@@ -15,9 +15,9 @@ func HighlightRange(t *TermGrid, blockMode bool, startRow, startCol, endRow, end
 		// Check if already highlighted
 		if h, ok := cell.Style.(*TermTextGridStyle); !ok {
 			if cell.Style != nil {
-				cell.Style = NewTermTextGridStyle(cell.Style.TextColor(), cell.Style.BackgroundColor(), bitmask, false)
+				cell.Style = NewTermTextGridStyle(cell.Style.TextColor(), cell.Style.BackgroundColor(), bitmask, false, false, false)
 			} else {
-				cell.Style = NewTermTextGridStyle(nil, nil, bitmask, false)
+				cell.Style = NewTermTextGridStyle(nil, nil, bitmask, false, false, false)
 			}
 			cell.Style.(*TermTextGridStyle).Highlighted = true
 
@@ -174,6 +174,8 @@ type TermTextGridStyle struct {
 	InvertedBackgroundColor color.Color
 	Highlighted             bool
 	BlinkEnabled            bool
+	IsBold                  bool
+	IsUnderlined            bool
 }
 
 // Style is the text style a cell should use.
@@ -197,6 +199,16 @@ func (h *TermTextGridStyle) BackgroundColor() color.Color {
 	return h.OriginalBackgroundColor
 }
 
+// Bold is the text bold or not.
+func (h *TermTextGridStyle) Bold() bool {
+	return h.IsBold
+}
+
+// Underlined is the text underlined or not.
+func (h *TermTextGridStyle) Underlined() bool {
+	return h.IsUnderlined
+}
+
 // HighlightOption defines a function type that can modify a TermTextGridStyle.
 type HighlightOption func(h *TermTextGridStyle)
 
@@ -214,7 +226,7 @@ type HighlightOption func(h *TermTextGridStyle)
 // Returns:
 //
 //	A pointer to a TermTextGridStyle initialized with the provided colors and inversion settings.
-func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool) widget.TextGridStyle {
+func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled, bold, underlined bool) widget.TextGridStyle {
 	// calculate the inverted colors
 	var invertedFg, invertedBg color.Color
 	if fg == nil {
@@ -235,6 +247,8 @@ func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool) w
 		InvertedBackgroundColor: invertedBg,
 		Highlighted:             false,
 		BlinkEnabled:            blinkEnabled,
+		IsBold:                  bold,
+		IsUnderlined:            underlined,
 	}
 }
 
