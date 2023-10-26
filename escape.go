@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -27,6 +28,7 @@ var escapes = map[rune]func(*Terminal, string){
 	'r': escapeSetScrollArea,
 	's': escapeSaveCursor,
 	'u': escapeRestoreCursor,
+	'i': escapePrinterMode,
 }
 
 func (t *Terminal) handleEscape(code string) {
@@ -236,35 +238,53 @@ func escapeMoveCursorCol(t *Terminal, msg string) {
 }
 
 func escapePrivateMode(t *Terminal, msg string, enable bool) {
-	switch msg {
-	case "20":
-		t.newLineMode = enable
-	case "25":
-		t.cursorHidden = !enable
-		t.refreshCursor()
-	case "9":
-		if enable {
-			t.onMouseDown = t.handleMouseDownX10
-			t.onMouseUp = t.handleMouseUpX10
-		} else {
-			t.onMouseDown = nil
-			t.onMouseUp = nil
-		}
-	case "1000":
-		if enable {
-			t.onMouseDown = t.handleMouseDownV200
-			t.onMouseUp = t.handleMouseUpV200
-		} else {
-			t.onMouseDown = nil
-			t.onMouseUp = nil
-		}
-	case "1049":
-		t.bufferMode = enable
-	case "2004":
-		t.bracketedPasteMode = enable
-	default:
-		if t.debug {
-			log.Println("Unknown private escape code", msg+"[hl]")
+	modes := strings.Split(msg, ";")
+	for _, mode := range modes {
+		switch mode {
+		case "7":
+			//TODO wrap around mode
+		case "20":
+			t.newLineMode = enable
+		case "25":
+			t.cursorHidden = !enable
+			t.refreshCursor()
+		case "9":
+			if enable {
+				t.onMouseDown = t.handleMouseDownX10
+				t.onMouseUp = t.handleMouseUpX10
+			} else {
+				t.onMouseDown = nil
+				t.onMouseUp = nil
+			}
+		case "1000":
+			if enable {
+				t.onMouseDown = t.handleMouseDownV200
+				t.onMouseUp = t.handleMouseUpV200
+			} else {
+				t.onMouseDown = nil
+				t.onMouseUp = nil
+			}
+		case "1049":
+			t.bufferMode = enable
+		case "2004":
+			t.bracketedPasteMode = enable
+		case "47":
+			// TODO save screen
+			/*
+				if enable {
+					// save screen
+				} else {
+					// restore screen
+				}
+			*/
+		default:
+			m := "l"
+			if enable {
+				m = "h"
+			}
+			if t.debug {
+				log.Println("Unknown private escape code", fmt.Sprintf("%s%s", mode, m))
+			}
 		}
 	}
 }
@@ -335,4 +355,27 @@ func trimLeftZeros(s string) string {
 	}
 
 	return s[i:]
+}
+
+func escapePrinterMode(t *Terminal, code string) {
+	switch code {
+	case "5":
+		t.state.printing = true
+	case "4":
+		t.state.printing = false
+		if t.printData != nil {
+			if t.printer != nil {
+				// spool the printer
+				t.printer.Print(t.printData)
+			} else if t.debug {
+				log.Println("Print data was received but no printer has been set")
+			}
+
+		}
+		t.printData = nil
+	default:
+		if t.debug {
+			log.Println("Unknown printer mode", code)
+		}
+	}
 }

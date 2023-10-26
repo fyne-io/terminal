@@ -75,6 +75,22 @@ type Terminal struct {
 	newLineMode        bool // new line mode or line feed mode
 	bracketedPasteMode bool
 	state              *parseState
+
+	printData []byte
+	printer   Printer
+}
+
+// Printer is used for spooling print data when its received.
+type Printer interface {
+	Print([]byte)
+}
+
+// PrinterFunc is a helper function to enable easy implementation of printers.
+type PrinterFunc func([]byte)
+
+// Print calls the PrinterFunc.
+func (p PrinterFunc) Print(d []byte) {
+	p(d)
 }
 
 // Cursor is used for displaying a specific cursor.
