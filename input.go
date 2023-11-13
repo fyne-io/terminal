@@ -10,7 +10,7 @@ import (
 
 // TypedRune is called when the user types a visible character
 func (t *Terminal) TypedRune(r rune) {
-	b := make([]byte, 8)
+	b := make([]byte, utf8.UTFMax)
 	size := utf8.EncodeRune(b, r)
 	_, _ = t.in.Write(b[:size])
 }
