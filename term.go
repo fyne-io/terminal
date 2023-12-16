@@ -192,6 +192,12 @@ func (t *Terminal) Tapped(ev *fyne.PointEvent) {
 	fyne.CurrentApp().Driver().CanvasForObject(t).Focus(t)
 }
 
+// Text returns the contents of the buffer as a single string (with no style information).
+// It reconstructs the lines by joining with a `\n` character. Tab characters have padded spaces removed.
+func (t *Terminal) Text() string {
+	return t.content.Text()
+}
+
 // TouchCancel handles the tap action for mobile apps that lose focus during tap.
 func (t *Terminal) TouchCancel(ev *mobile.TouchEvent) {
 	if t.onMouseUp != nil {
