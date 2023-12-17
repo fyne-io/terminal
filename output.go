@@ -278,3 +278,4 @@ func handleShiftOut(t *Terminal) {
 func handleShiftIn(t *Terminal) {
 	t.useG1CharSet = false
 }
+
