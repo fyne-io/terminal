@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"time"
+	"unicode/utf8"
 
 	"fyne.io/fyne/v2/widget"
 )
@@ -79,8 +80,6 @@ var decSpecialGraphics = map[rune]rune{
 	'~': '·', // centered dot
 }
 
-var previous *parseState
-
 type parseState struct {
 	code  string
 	esc   int
@@ -92,67 +91,44 @@ func (t *Terminal) handleOutput(buf []byte) {
 	if t.hasSelectedText() {
 		t.clearSelectedText()
 	}
-	state := &parseState{}
-	if previous != nil {
-		state = previous
-		previous = nil
-	} else {
-		state.esc = noEscape
+	if t.state == nil {
+		t.state = &parseState{
+			esc: noEscape,
+		}
 	}
+	var (
+		size int
+		r    rune
+		i    = -1
+	)
+	for {
+		i++
+		buf = buf[size:]
+		r, size = utf8.DecodeRune(buf)
+		if size == 0 {
+			break
+		}
 
-	for i, r := range []rune(string(buf)) {
 		if r == asciiEscape {
-			state.esc = i
+			t.state.esc = i
 			continue
 		}
-		if state.esc == i-1 {
-			if r == '[' {
+		if t.state.esc == i-1 {
+			if cont := t.parseEscState(r); cont {
 				continue
 			}
-			switch r {
-			case '\\':
-				t.handleOSC(state.code)
-				state.code = ""
-				state.osc = false
-			case ']':
-				state.osc = true
-			case '(', ')':
-				state.vt100 = r
-			case '7':
-				t.savedRow = t.cursorRow
-				t.savedCol = t.cursorCol
-			case '8':
-				t.cursorRow = t.savedRow
-				t.cursorCol = t.savedCol
-			case 'D':
-				t.scrollDown()
-			case 'M':
-				t.scrollUp()
-			case '=', '>':
-			}
-			state.esc = noEscape
+			t.state.esc = noEscape
 			continue
 		}
-		if state.osc {
-			if r == asciiBell || r == 0 {
-				t.handleOSC(state.code)
-				state.code = ""
-				state.osc = false
-			} else {
-				state.code += string(r)
-			}
+		if t.state.osc {
+			t.parseOSC(r)
 			continue
-		} else if state.vt100 != 0 {
-			t.handleVT100(string([]rune{state.vt100, r}))
-			state.vt100 = 0
+		} else if t.state.vt100 != 0 {
+			t.handleVT100(string([]rune{t.state.vt100, r}))
+			t.state.vt100 = 0
 			continue
-		} else if state.esc != noEscape {
-			state.code += string(r)
-			if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
-				t.handleEscape(state.code)
-				state.code = ""
-				state.esc = noEscape
-			}
+		} else if t.state.esc != noEscape {
+			t.parseEscape(r)
 			continue
 		}
 
@@ -173,9 +149,56 @@ func (t *Terminal) handleOutput(buf []byte) {
 	}
 
 	// record progress for next chunk of buffer
-	if state.esc != noEscape {
-		state.esc = -1 - (len(state.code))
-		previous = state
+	if t.state.esc != noEscape {
+		t.state.esc = -1
+	}
+}
+
+func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
+	switch r {
+	case '[':
+		return true
+	case '\\':
+		if t.state.osc {
+			t.handleOSC(t.state.code)
+		}
+		t.state.code = ""
+		t.state.osc = false
+	case ']':
+		t.state.osc = true
+	case '(', ')':
+		t.state.vt100 = r
+	case '7':
+		t.savedRow = t.cursorRow
+		t.savedCol = t.cursorCol
+	case '8':
+		t.cursorRow = t.savedRow
+		t.cursorCol = t.savedCol
+	case 'D':
+		t.scrollDown()
+	case 'M':
+		t.scrollUp()
+	case '=', '>':
+	}
+	return false
+}
+
+func (t *Terminal) parseEscape(r rune) {
+	t.state.code += string(r)
+	if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
+		t.handleEscape(t.state.code)
+		t.state.code = ""
+		t.state.esc = noEscape
+	}
+}
+
+func (t *Terminal) parseOSC(r rune) {
+	if r == asciiBell || r == 0 {
+		t.handleOSC(t.state.code)
+		t.state.code = ""
+		t.state.osc = false
+	} else {
+		t.state.code += string(r)
 	}
 }
 
