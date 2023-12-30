@@ -31,7 +31,7 @@ func (t *Terminal) handleOSC(code string) {
 
 func (t *Terminal) setDirectory(uri string) {
 	u, err := storage.ParseURI(uri)
-	if err == nil {
+	if err != nil {
 		// working around a Fyne bug where file URI does not parse host
 		off := 4
 		count := 0
