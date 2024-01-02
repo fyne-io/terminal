@@ -63,12 +63,13 @@ use the `RunLocalShell` method after creating a `Terminal`, as follows:
 ```go
 	// win is a fyne.Window created to hold the content
 	t := terminal.New()
-	w.SetContent(t)
 
 	go func() {
 		_ = t.RunLocalShell()
 		a.Quit()
 	}()
+	
+	w.SetContent(t)
 	w.ShowAndRun()
 ```
 
@@ -85,7 +86,6 @@ For example to open a terminal to an SSH connection that you have created:
 	go session.Run("$SHELL || bash")
 
 	t := terminal.New()
-	w.SetContent(t)
 
 	go func() {
 		_ = t.RunWithConnection(in, out)
@@ -108,6 +108,6 @@ For example to open a terminal to an SSH connection that you have created:
 	}()
 	t.AddListener(ch)
 
-	// Run the app
+	w.SetContent(t)
 	w.ShowAndRun()
 ```
