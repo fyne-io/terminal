@@ -8,6 +8,8 @@ import (
 	"path"
 	"runtime"
 	"strings"
+
+	"github.com/fyne-io/terminal/internal/printer"
 )
 
 var apcHandlers = map[string]func(*Terminal, string){
@@ -31,12 +33,17 @@ func (t *Terminal) handleAPC(code string) {
 		// Handle other APC sequences or log the received APC code
 		log.Println("Unrecognised APC", code)
 	}
-
 }
 
 func setWindowsQueue(t *Terminal, arg string) {
-	// Implement the action for setting the Windows queue
-	log.Println("Setting Windows queue to", arg)
+	t.printer = PrinterFunc(func(data []byte) {
+		// Write data to the printer
+		err := printer.PrintPostScriptFile(arg, data)
+		if err != nil && t.debug {
+			log.Println("Error printing postscript", err)
+			return
+		}
+	})
 }
 
 func setFilePrinting(t *Terminal, arg string) {
