@@ -91,5 +91,23 @@ For example to open a terminal to an SSH connection that you have created:
 		_ = t.RunWithConnection(in, out)
 		a.Quit()
 	}()
+
+	// OPTIONAL: Dynamically resize the terminal session
+	cell := canvas.NewText("M", color.White)
+	cell.TextStyle.Monospace = true
+	cellSize = cell.MinSize()
+
+	ch := make(chan terminal.Config)
+	go func() {
+		for {
+			<-ch
+			rows := int(t.Size().Height / cellSize.Height)
+			cols := int(t.Size().Width / cellSize.Width)
+			session.WindowChange(rows, cols)
+		}
+	}()
+	t.AddListener(ch)
+
+	// Run the app
 	w.ShowAndRun()
 ```
