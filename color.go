@@ -85,7 +85,7 @@ func (t *Terminal) handleColorMode(modeStr string) {
 	case 4, 24: //italic
 	case 7: // reverse
 		bg, fg := t.currentBG, t.currentFG
-		if t.currentFG == nil {
+		if fg == nil {
 			t.currentBG = theme.ForegroundColor()
 		} else {
 			t.currentBG = fg
@@ -97,7 +97,7 @@ func (t *Terminal) handleColorMode(modeStr string) {
 		}
 	case 27: // reverse off
 		bg, fg := t.currentBG, t.currentFG
-		if t.currentFG != nil {
+		if fg != nil {
 			t.currentBG = nil
 		} else {
 			t.currentBG = fg
