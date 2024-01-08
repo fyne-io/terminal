@@ -93,8 +93,8 @@ For example to open a terminal to an SSH connection that you have created:
 	// OPTIONAL: dynamically resize the terminal session
 	cell := canvas.NewText("M", color.White)
 	cell.TextStyle.Monospace = true
-	cellHeight := int(cell.Minsize().Height)
-	cellWidth := int(cell.MinSize().Width)
+	cellHeight := int(math.Round(float64(cell.MinSize().Height)))
+	cellWidth := int(math.Round(float64(cell.MinSize().Width)))
 	ch := make(chan terminal.Config)
 	go func() {
 		mrows, mcols := 0, 0
