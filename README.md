@@ -61,14 +61,14 @@ To load a terminal widget and launch the current shell (works on macOS and Linux
 use the `RunLocalShell` method after creating a `Terminal`, as follows:
 
 ```go
-	// win is a fyne.Window created to hold the content
+	// run new terminal and close app on terminal exit.
 	t := terminal.New()
-
 	go func() {
 		_ = t.RunLocalShell()
 		a.Quit()
 	}()
 	
+	// w is a fyne.Window created to hold the content
 	w.SetContent(t)
 	w.ShowAndRun()
 ```
@@ -79,35 +79,39 @@ For example to open a terminal to an SSH connection that you have created:
 
 ```go
 	// session is an *ssh.Session from golang.org/x/crypto/ssh
-	// win is a fyne.Window created to hold the content
 	in, _ := session.StdinPipe()
 	out, _ := session.StdoutPipe()
-
 	go session.Run("$SHELL || bash")
-
+	
+	// run new terminal and close app on terminal exit.
 	t := terminal.New()
-
 	go func() {
 		_ = t.RunWithConnection(in, out)
 		a.Quit()
 	}()
 
-	// OPTIONAL: Dynamically resize the terminal session
+	// OPTIONAL: dynamically resize the terminal session
 	cell := canvas.NewText("M", color.White)
 	cell.TextStyle.Monospace = true
-	cellSize := cell.MinSize()
-
+	cellHeight := int(cell.Minsize().Height)
+	cellWidth := int(cell.MinSize().Width)
 	ch := make(chan terminal.Config)
 	go func() {
+		mrows, mcols := 0, 0
 		for {
 			<-ch
-			rows := int(t.Size().Height / cellSize.Height)
-			cols := int(t.Size().Width / cellSize.Width)
+			rows := int(t.Size().Height) / cellHeight
+			cols := int(t.Size().Width) / cellWidth
+			if rows == mrows && cols == mcols {
+				continue
+			}
+			mrows, mcols = rows, cols
 			session.WindowChange(rows, cols)
 		}
 	}()
 	t.AddListener(ch)
 
+	// w is a fyne.Window created to hold the content
 	w.SetContent(t)
 	w.ShowAndRun()
 ```
