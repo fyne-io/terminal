@@ -77,6 +77,7 @@ func (t *Terminal) handleColorMode(modeStr string) {
 		fyne.LogError("Failed to parse color mode: "+modeStr, err)
 		return
 	}
+	var originalBG, originalFG color.Color
 	switch mode {
 	case 0:
 		t.currentBG, t.currentFG = nil, nil
@@ -85,29 +86,19 @@ func (t *Terminal) handleColorMode(modeStr string) {
 		t.bold = true
 	case 4, 24: //italic
 	case 7: // reverse
-		bg := t.currentBG
-		if t.currentFG == nil {
+		originalBG, originalFG = t.currentBG, t.currentFG
+		if originalFG == nil {
 			t.currentBG = theme.ForegroundColor()
 		} else {
-			t.currentBG = t.currentFG
+			t.currentBG = originalFG
 		}
-		if bg == nil {
+		if originalBG == nil {
 			t.currentFG = theme.DisabledButtonColor()
 		} else {
-			t.currentFG = bg
+			t.currentFG = originalBG
 		}
 	case 27: // reverse off
-		bg := t.currentBG
-		if t.currentFG == theme.ForegroundColor() {
-			t.currentBG = nil
-		} else {
-			t.currentBG = t.currentFG
-		}
-		if bg == theme.DisabledButtonColor() {
-			t.currentFG = nil
-		} else {
-			t.currentFG = bg
-		}
+		t.currentBG, t.currentFG = originalBG, originalFG
 	case 30, 31, 32, 33, 34, 35, 36, 37:
 		t.currentFG = basicColors[mode-30]
 	case 39:
