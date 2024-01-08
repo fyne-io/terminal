@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"fmt"
 	"image/color"
 	"log"
 	"strconv"
@@ -48,7 +49,7 @@ func (t *Terminal) handleColorEscape(message string) {
 		t.bold = false
 		return
 	}
-
+	fmt.Println("START")
 	modes := strings.Split(message, ";")
 	for i := 0; i < len(modes); i++ {
 		mode := modes[i]
@@ -77,7 +78,6 @@ func (t *Terminal) handleColorMode(modeStr string) {
 		fyne.LogError("Failed to parse color mode: "+modeStr, err)
 		return
 	}
-	var originalBG, originalFG color.Color
 	switch mode {
 	case 0:
 		t.currentBG, t.currentFG = nil, nil
@@ -86,19 +86,29 @@ func (t *Terminal) handleColorMode(modeStr string) {
 		t.bold = true
 	case 4, 24: //italic
 	case 7: // reverse
-		originalBG, originalFG = t.currentBG, t.currentFG
-		if originalFG == nil {
+		bg, fg := t.currentBG, t.currentFG
+		if t.currentFG == nil {
 			t.currentBG = theme.ForegroundColor()
 		} else {
-			t.currentBG = originalFG
+			t.currentBG = fg
 		}
-		if originalBG == nil {
+		if bg == nil {
 			t.currentFG = theme.DisabledButtonColor()
 		} else {
-			t.currentFG = originalBG
+			t.currentFG = bg
 		}
 	case 27: // reverse off
-		t.currentBG, t.currentFG = originalBG, originalFG
+		bg, fg := t.currentBG, t.currentFG
+		if t.currentFG != nil {
+			t.currentBG = nil
+		} else {
+			t.currentBG = fg
+		}
+		if bg != nil {
+			t.currentFG = nil
+		} else {
+			t.currentFG = bg
+		}
 	case 30, 31, 32, 33, 34, 35, 36, 37:
 		t.currentFG = basicColors[mode-30]
 	case 39:
