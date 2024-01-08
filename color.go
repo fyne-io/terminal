@@ -1,7 +1,6 @@
 package terminal
 
 import (
-	"fmt"
 	"image/color"
 	"log"
 	"strconv"
@@ -49,7 +48,6 @@ func (t *Terminal) handleColorEscape(message string) {
 		t.bold = false
 		return
 	}
-	fmt.Println("START")
 	modes := strings.Split(message, ";")
 	for i := 0; i < len(modes); i++ {
 		mode := modes[i]
