@@ -170,8 +170,7 @@ func (t *Terminal) Resize(s fyne.Size) {
 	t.content.Resize(fyne.NewSize(float32(cols-1)*cellSize.Width, float32(rows)*cellSize.Height))
 
 	oldRows := int(t.config.Rows)
-	t.config.Columns = cols
-	t.config.Rows = rows
+	t.config.Columns, t.config.Rows = cols, rows
 	if t.scrollBottom == 0 || t.scrollBottom == oldRows-1 {
 		t.scrollBottom = int(t.config.Rows) - 1
 	}
