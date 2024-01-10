@@ -156,20 +156,18 @@ func (t *Terminal) RemoveListener(listener chan Config) {
 // Resize is called when this terminal widget has been resized.
 // It ensures that the virtual terminal is within the bounds of the widget.
 func (t *Terminal) Resize(s fyne.Size) {
-	if s.Width == t.Size().Width && s.Height == t.Size().Height {
-		return
-	}
-	if s.Width < 20 { // not sure why we get tiny sizes
-		return
-	}
-	t.BaseWidget.Resize(s)
-	t.content.Resize(s)
-
 	cellSize := t.guessCellSize()
-	oldRows := int(t.config.Rows)
+	cols := uint(math.Floor(float64(s.Width) / float64(cellSize.Width)))
+	rows := uint(math.Floor(float64(s.Height) / float64(cellSize.Height)))
+	if (t.config.Columns == cols) && (t.config.Rows == rows) {
+		return
+	}
 
-	t.config.Columns = uint(math.Floor(float64(s.Width) / float64(cellSize.Width)))
-	t.config.Rows = uint(math.Floor(float64(s.Height) / float64(cellSize.Height)))
+	t.BaseWidget.Resize(s)
+	t.content.Resize(fyne.NewSize(float32(cols)*cellSize.Width, float32(rows)*cellSize.Height))
+
+	oldRows := int(t.config.Rows)
+	t.config.Columns, t.config.Rows = cols, rows
 	if t.scrollBottom == 0 || t.scrollBottom == oldRows-1 {
 		t.scrollBottom = int(t.config.Rows) - 1
 	}
