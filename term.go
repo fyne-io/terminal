@@ -164,7 +164,7 @@ func (t *Terminal) Resize(s fyne.Size) {
 	}
 
 	t.BaseWidget.Resize(s)
-	t.content.Resize(fyne.NewSize(float32(cols-1)*cellSize.Width, float32(rows)*cellSize.Height))
+	t.content.Resize(fyne.NewSize(float32(cols)*cellSize.Width, float32(rows)*cellSize.Height))
 
 	oldRows := int(t.config.Rows)
 	t.config.Columns, t.config.Rows = cols, rows
