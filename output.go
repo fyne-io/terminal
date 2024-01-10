@@ -100,8 +100,15 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 		size int
 		r    rune
 		i    = -1
+		cols = t.config.Columns
+		rows = t.config.Rows
 	)
 	for {
+		// check if terminal size has changed
+		if t.config.Columns != cols || t.config.Rows != rows {
+			break
+		}
+
 		i++
 		buf = buf[size:]
 		r, size = utf8.DecodeRune(buf)
