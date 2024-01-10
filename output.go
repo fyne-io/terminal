@@ -108,8 +108,7 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 		if size == 0 {
 			break
 		}
-		// UTF-8 can be 1-4 bytes long
-		if r == utf8.RuneError && size < 4 {
+		if r == utf8.RuneError && size == 1 {
 			return buf
 		}
 
