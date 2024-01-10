@@ -288,7 +288,7 @@ func (t *Terminal) run() {
 		}
 
 		if len(leftOver) > 0 {
-			buf = append(leftOver, buf...)
+			buf = append(leftOver, buf[:num]...)
 			num++
 		}
 		leftOver = t.handleOutput(buf[:num])
