@@ -87,7 +87,7 @@ type parseState struct {
 	vt100 rune
 }
 
-func (t *Terminal) handleOutput(buf []byte) {
+func (t *Terminal) handleOutput(buf []byte) []byte {
 	if t.hasSelectedText() {
 		t.clearSelectedText()
 	}
@@ -107,6 +107,9 @@ func (t *Terminal) handleOutput(buf []byte) {
 		r, size = utf8.DecodeRune(buf)
 		if size == 0 {
 			break
+		}
+		if r == utf8.RuneError && size == 1 {
+			return buf
 		}
 
 		if r == asciiEscape {
@@ -152,6 +155,7 @@ func (t *Terminal) handleOutput(buf []byte) {
 	if t.state.esc != noEscape {
 		t.state.esc = -1
 	}
+	return buf
 }
 
 func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
