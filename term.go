@@ -290,10 +290,9 @@ func (t *Terminal) run() {
 		if len(leftOver) > 0 {
 			buf = append(leftOver, buf[:num]...)
 			num += len(leftOver)
-			bufLen += len(leftOver)
 		}
 		leftOver = t.handleOutput(buf[:num])
-		if num < bufLen {
+		if num < bufLen+len(leftOver) {
 			t.Refresh()
 		}
 	}
