@@ -170,13 +170,13 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 			off := ds.KeyName[0] - 'A' + 1
 			switch {
 			case ds.Key() == fyne.KeySpace:
+				fallthrough
+			case ds.Key() == "@":
 				off = 0
-			case off < 0:
-				off = 0
-			case off > 31:
-				off = 31
+				fallthrough
+			case off >= 1 && off <= 31:
+				_, _ = t.in.Write([]byte{off})
 			}
-			_, _ = t.in.Write([]byte{off})
 		}
 		return
 	}
