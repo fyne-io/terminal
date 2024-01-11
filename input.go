@@ -165,8 +165,19 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	if ds, ok := s.(*desktop.CustomShortcut); ok {
 		t.ShortcutHandler.TypedShortcut(s) // it's not clear how we can check if this consumed the event
 
-		off := ds.KeyName[0] - 'A' + 1
-		_, _ = t.in.Write([]byte{off})
+		// handle CTRL+A to CTRL+_ and everything inbetween
+		if ds.Modifier == fyne.KeyModifierControl {
+			off := ds.KeyName[0] - 'A' + 1
+			switch {
+			case ds.Key() == fyne.KeySpace:
+				off = 0
+			case off < 0:
+				off = 0
+			case off > 31:
+				off = 31
+			}
+			_, _ = t.in.Write([]byte{off})
+		}
 		return
 	}
 
