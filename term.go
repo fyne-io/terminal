@@ -287,12 +287,13 @@ func (t *Terminal) run() {
 			fyne.LogError("pty read error", err)
 		}
 
-		if len(leftOver) > 0 {
+		lenLeftOver := len(leftOver)
+		if lenLeftOver > 0 {
 			buf = append(leftOver, buf[:num]...)
-			num += len(leftOver)
+			num += lenLeftOver
 		}
 		leftOver = t.handleOutput(buf[:num])
-		if num < bufLen+len(leftOver) {
+		if num < bufLen+lenLeftOver {
 			t.Refresh()
 		}
 	}
