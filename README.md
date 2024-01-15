@@ -60,11 +60,6 @@ to a remote shell.
 To load a terminal widget and launch the current shell (works on macOS and Linux)
 use the `RunLocalShell` method after creating a `Terminal`, as follows:
 
-## Local Shell
-
-To load a terminal widget and launch the current shell (works on macOS and Linux)
-use the `RunLocalShell` method after creating a `Terminal`, as follows:
-
 ```go
 	// run new terminal and close app on terminal exit.
 	t := terminal.New()
