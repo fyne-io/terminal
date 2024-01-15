@@ -95,11 +95,11 @@ For example to open a terminal to an SSH connection that you have created:
 	go func() {
 		rows, cols := uint(0), uint(0)
 		for {
-			listener := <-ch
-			if rows == listener.Rows && cols == listener.Columns {
+			config := <-ch
+			if rows == config.Rows && cols == config.Columns {
 				continue
 			}
-			rows, cols = listener.Rows, listener.Columns
+			rows, cols = config.Rows, config.Columns
 			session.WindowChange(int(rows), int(cols))
 		}
 	}()
