@@ -61,7 +61,7 @@ To load a terminal widget and launch the current shell (works on macOS and Linux
 use the `RunLocalShell` method after creating a `Terminal`, as follows:
 
 ```go
-	// run new terminal and close app on terminal exit.
+	// run new terminal and close app on terminal exit
 	t := terminal.New()
 	go func() {
 		_ = t.RunLocalShell()
@@ -83,7 +83,7 @@ For example to open a terminal to an SSH connection that you have created:
 	out, _ := session.StdoutPipe()
 	go session.Run("$SHELL || bash")
 	
-	// run new terminal and close app on terminal exit.
+	// run new terminal and close app on terminal exit
 	t := terminal.New()
 	go func() {
 		_ = t.RunWithConnection(in, out, func(rows int, cols int) {
