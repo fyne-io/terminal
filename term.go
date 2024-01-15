@@ -313,13 +313,29 @@ func (t *Terminal) RunLocalShell() error {
 }
 
 // RunWithConnection starts the terminal by connecting to an external resource like an SSH connection.
-func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
+// windowChangeFunc is called when the terminal rows or cols change.
+func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader, windowChangeFunc func(rows int, cols int)) error {
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
 		time.Sleep(time.Millisecond * 50)
 	}
+
+	// monitor window size changes and run windowChangeFunc
+	ch := make(chan Config)
+	go func() {
+		mr, mc := uint(0), uint(0)
+		for {
+			r, c := t.config.Rows, t.config.Columns
+			if mr == r && mc == c {
+				continue
+			}
+			mr, mc = r, c
+			windowChangeFunc(int(r), int(c))
+		}
+	}()
+	t.AddListener(ch)
+
 	t.in = in
 	t.out = out
-
 	t.run()
 
 	return t.close()
