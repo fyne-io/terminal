@@ -87,6 +87,7 @@ For example to open a terminal to an SSH connection that you have created:
 	t := terminal.New()
 	go func() {
 		_ = t.RunWithConnection(in, out, func(rows int, cols int) {
+			// Update session window with fyne window resize
 			session.WindowChange(rows, cols)
 		})
 		a.Quit()
