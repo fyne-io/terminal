@@ -61,14 +61,15 @@ To load a terminal widget and launch the current shell (works on macOS and Linux
 use the `RunLocalShell` method after creating a `Terminal`, as follows:
 
 ```go
-	// win is a fyne.Window created to hold the content
+	// run new terminal and close app on terminal exit.
 	t := terminal.New()
-	w.SetContent(t)
-
 	go func() {
 		_ = t.RunLocalShell()
 		a.Quit()
 	}()
+	
+	// w is a fyne.Window created to hold the content
+	w.SetContent(t)
 	w.ShowAndRun()
 ```
 
@@ -78,18 +79,33 @@ For example to open a terminal to an SSH connection that you have created:
 
 ```go
 	// session is an *ssh.Session from golang.org/x/crypto/ssh
-	// win is a fyne.Window created to hold the content
 	in, _ := session.StdinPipe()
 	out, _ := session.StdoutPipe()
-
 	go session.Run("$SHELL || bash")
-
+	
+	// run new terminal and close app on terminal exit.
 	t := terminal.New()
-	w.SetContent(t)
-
 	go func() {
 		_ = t.RunWithConnection(in, out)
 		a.Quit()
 	}()
+
+	// OPTIONAL: dynamically resize the terminal session
+	ch := make(chan terminal.Config)
+	go func() {
+		rows, cols := uint(0), uint(0)
+		for {
+			config := <-ch
+			if rows == config.Rows && cols == config.Columns {
+				continue
+			}
+			rows, cols = config.Rows, config.Columns
+			session.WindowChange(int(rows), int(cols))
+		}
+	}()
+	t.AddListener(ch)
+
+	// w is a fyne.Window created to hold the content
+	w.SetContent(t)
 	w.ShowAndRun()
 ```
