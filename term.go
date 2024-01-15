@@ -322,9 +322,9 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader, windowCha
 	// monitor window size changes and run windowChangeFunc
 	ch := make(chan Config)
 	go func() {
-		<-ch
 		mr, mc := uint(0), uint(0)
 		for {
+			<-ch
 			r, c := t.config.Rows, t.config.Columns
 			if mr == r && mc == c {
 				continue
