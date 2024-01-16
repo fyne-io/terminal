@@ -271,7 +271,7 @@ func (t *Terminal) guessCellSize() fyne.Size {
 func (t *Terminal) run() {
 	bufLen := 4096
 	buf := make([]byte, bufLen)
-	leftOver := make([]byte, bufLen+3) // +3 for utf8 partials
+	var leftOver []byte
 	for {
 		num, err := t.out.Read(buf)
 		if err != nil {
@@ -285,10 +285,8 @@ func (t *Terminal) run() {
 			fyne.LogError("pty read error", err)
 		}
 
-		leftOver = append(leftOver, buf[:num]...)
-		leftOver = t.handleOutput(leftOver)
-
-		if len(leftOver) < bufLen {
+		leftOver = t.handleOutput(append(leftOver, buf[:num]...))
+		if len(leftOver) == 0 {
 			t.Refresh()
 		}
 	}
