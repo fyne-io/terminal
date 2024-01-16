@@ -271,7 +271,7 @@ func (t *Terminal) guessCellSize() fyne.Size {
 func (t *Terminal) run() {
 	bufLen := 4096
 	buf := make([]byte, bufLen)
-	var leftOver []byte
+	leftOver := make([]byte, bufLen+3) // +3 for utf8 partials
 	for {
 		num, err := t.out.Read(buf)
 		if err != nil {
