@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
 )
 
 // NopCloser returns a WriteCloser with a no-op Close method wrapping
@@ -123,6 +124,65 @@ func TestTerminal_TypedKey_LineMode(t *testing.T) {
 			got := inBuffer.Bytes()
 			if !bytes.Equal(got, tt.want) {
 				t.Errorf("TypedKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTerminal_TypedShortcut(t *testing.T) {
+	tests := map[string]struct {
+		shortcut fyne.Shortcut
+		want     []byte
+	}{
+		"LeftOption+U": {
+			shortcut: &desktop.CustomShortcut{
+				Modifier: fyne.KeyModifierAlt,
+				KeyName:  fyne.KeyU},
+			want: []byte{},
+		},
+		"Control+@": {
+			shortcut: &desktop.CustomShortcut{
+				Modifier: fyne.KeyModifierControl,
+				KeyName:  "@"},
+			want: []byte{0},
+		},
+		"Control+Space": {
+			shortcut: &desktop.CustomShortcut{
+				Modifier: fyne.KeyModifierControl,
+				KeyName:  fyne.KeySpace},
+			want: []byte{0},
+		},
+		"Control+C": {
+			shortcut: &desktop.CustomShortcut{
+				Modifier: fyne.KeyModifierControl,
+				KeyName:  fyne.KeyC},
+			want: []byte{3},
+		},
+		"Control+_": {
+			shortcut: &desktop.CustomShortcut{
+				Modifier: fyne.KeyModifierControl,
+				KeyName:  "_"},
+			want: []byte{31},
+		},
+		"Control+X": {
+			shortcut: &desktop.CustomShortcut{
+				Modifier: fyne.KeyModifierControl,
+				KeyName:  fyne.KeyX},
+			want: []byte{24},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			// Creating a mock terminal
+			inBuffer := bytes.NewBuffer([]byte{})
+			term := &Terminal{in: NopCloser(inBuffer)}
+
+			term.TypedShortcut(tt.shortcut)
+
+			got := inBuffer.Bytes()
+			if !bytes.Equal(got, tt.want) {
+				t.Errorf("TypedShortcut() = %v, want %v", got, tt.want)
 			}
 		})
 	}
