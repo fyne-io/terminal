@@ -9,6 +9,7 @@ import (
 )
 
 var escapes = map[rune]func(*Terminal, string){
+	'@': escapeInsertCharacters,
 	'A': escapeMoveCursorUp,
 	'B': escapeMoveCursorDown,
 	'C': escapeMoveCursorRight,
@@ -177,6 +178,25 @@ func escapeEraseInScreen(t *Terminal, msg string) {
 	case 2:
 		t.clearScreen()
 	}
+}
+
+func escapeInsertCharacters(t *Terminal, msg string) {
+	chars, _ := strconv.Atoi(msg)
+	if chars == 0 {
+		chars = 1
+	}
+
+	newCells := make([]widget.TextGridCell, chars)
+	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
+	for i := range newCells {
+		newCells[i] = widget.TextGridCell{
+			Rune:  ' ',
+			Style: cellStyle,
+		}
+	}
+
+	row := &t.content.Rows[t.cursorRow]
+	row.Cells = append(row.Cells[:t.cursorCol], append(newCells, row.Cells[t.cursorCol:]...)...)
 }
 
 func escapeInsertLines(t *Terminal, msg string) {
