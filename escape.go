@@ -134,7 +134,6 @@ func escapeDeleteChars(t *Terminal, msg string) {
 
 	row := t.content.Row(t.cursorRow)
 	cells := row.Cells[:t.cursorCol]
-	cells = append(cells, make([]widget.TextGridCell, i)...)
 	if right < len(row.Cells) {
 		cells = append(cells, row.Cells[right:]...)
 	}
