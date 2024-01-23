@@ -9,7 +9,7 @@ import (
 )
 
 var escapes = map[rune]func(*Terminal, string){
-	'@': escapeInsertCharacters,
+	'@': escapeInsertChars,
 	'A': escapeMoveCursorUp,
 	'B': escapeMoveCursorDown,
 	'C': escapeMoveCursorRight,
@@ -180,7 +180,7 @@ func escapeEraseInScreen(t *Terminal, msg string) {
 	}
 }
 
-func escapeInsertCharacters(t *Terminal, msg string) {
+func escapeInsertChars(t *Terminal, msg string) {
 	chars, _ := strconv.Atoi(msg)
 	if chars == 0 {
 		chars = 1
