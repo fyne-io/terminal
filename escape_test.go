@@ -18,6 +18,20 @@ func TestClearScreen(t *testing.T) {
 	assert.Equal(t, "", term.content.Text())
 }
 
+func TestInsertDeleteChars(t *testing.T) {
+	term := New()
+	term.config.Columns = 5
+	term.config.Rows = 2
+	term.handleOutput([]byte("Hello"))
+	assert.Equal(t, "Hello", term.content.Text())
+
+	term.moveCursor(0, 2)
+	term.handleEscape("2@")
+	assert.Equal(t, "He  llo", term.content.Text())
+	term.handleEscape("3P")
+	assert.Equal(t, "Helo", term.content.Text())
+}
+
 func TestEraseLine(t *testing.T) {
 	term := New()
 	term.config.Columns = 5

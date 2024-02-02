@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -130,6 +131,9 @@ func escapeColorMode(t *Terminal, msg string) {
 
 func escapeDeleteChars(t *Terminal, msg string) {
 	i, _ := strconv.Atoi(msg)
+	if i == 0 {
+		i = 1
+	}
 	right := t.cursorCol + i
 
 	row := t.content.Row(t.cursorRow)
@@ -139,6 +143,7 @@ func escapeDeleteChars(t *Terminal, msg string) {
 	}
 
 	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
+	fmt.Println(t.content.Text())
 }
 
 func escapeEraseInLine(t *Terminal, msg string) {
