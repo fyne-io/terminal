@@ -17,6 +17,10 @@ import (
 	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
+const (
+	bufLen = 32768 // 32KB buffer for output, to align with modern L1 cache
+)
+
 // Config is the state of a terminal, updated upon certain actions or commands.
 // Use Terminal.OnConfigure hook to register for changes.
 type Config struct {
@@ -285,7 +289,7 @@ func (t *Terminal) guessCellSize() fyne.Size {
 }
 
 func (t *Terminal) run() {
-	buf := make([]byte, 32768) // 32KB buffer for output
+	buf := make([]byte, bufLen)
 	var leftOver []byte
 	for {
 		num, err := t.out.Read(buf)
