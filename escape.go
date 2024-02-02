@@ -1,7 +1,6 @@
 package terminal
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -143,7 +142,6 @@ func escapeDeleteChars(t *Terminal, msg string) {
 	}
 
 	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
-	fmt.Println(t.content.Text())
 }
 
 func escapeEraseInLine(t *Terminal, msg string) {
