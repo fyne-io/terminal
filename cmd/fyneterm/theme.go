@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
+	notosansmono "github.com/fyne-io/terminal/cmd/fyneterm/font/NotoSansMono"
 )
 
 type termTheme struct {
@@ -40,4 +41,13 @@ func (t *termTheme) Size(n fyne.ThemeSizeName) float32 {
 	}
 
 	return t.Theme.Size(n)
+}
+
+func (t *termTheme) Font(style fyne.TextStyle) fyne.Resource {
+	switch {
+	case style.Bold:
+		return notosansmono.Bold
+	default:
+		return notosansmono.Regular
+	}
 }

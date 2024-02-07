@@ -40,12 +40,22 @@ func testColor(t *testing.T, tests map[string]struct {
 
 func TestHandleOutput_Text(t *testing.T) {
 	tests := map[string]struct {
-		inputSeq   string
-		expectBold bool
+		inputSeq        string
+		expectBold      bool
+		expectUnderline bool
 	}{
 		"bold": {
 			inputSeq:   esc("[1m"),
 			expectBold: true,
+		},
+		"underline": {
+			inputSeq:        esc("[4m"),
+			expectUnderline: true,
+		},
+		"bold and underline": {
+			inputSeq:        esc("[1m") + esc("[4m"),
+			expectBold:      true,
+			expectUnderline: true,
 		},
 	}
 
@@ -54,6 +64,11 @@ func TestHandleOutput_Text(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			terminal := New()
 			terminal.handleOutput([]byte(test.inputSeq))
+
+			// Verify the actual results match the expected results
+			if terminal.underlined != test.expectUnderline {
+				t.Errorf("Bold flag mismatch. Got %v, expected %v", terminal.underlined, test.expectUnderline)
+			}
 
 			if terminal.bold != test.expectBold {
 				t.Errorf("Bold flag mismatch. Got %v, expected %v", terminal.bold, test.expectBold)
