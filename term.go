@@ -17,6 +17,10 @@ import (
 	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
+const (
+	bufLen = 32768 // 32KB buffer for output, to align with modern L1 cache
+)
+
 // Config is the state of a terminal, updated upon certain actions or commands.
 // Use Terminal.OnConfigure hook to register for changes.
 type Config struct {
@@ -75,6 +79,7 @@ type Terminal struct {
 	newLineMode        bool // new line mode or line feed mode
 	bracketedPasteMode bool
 	state              *parseState
+	blinking           bool
 }
 
 // Cursor is used for displaying a specific cursor.
@@ -268,26 +273,74 @@ func (t *Terminal) guessCellSize() fyne.Size {
 	return fyne.NewSize(float32(math.Round(float64(min.Width))), float32(math.Round(float64(min.Height))))
 }
 
+// run starts the main loop for handling terminal output, blinking, and refreshing.
+// It reads terminal output asynchronously, processes it, and toggles blinking every
+// blinkingInterval duration.
+// The function returns when the terminal is closed.
 func (t *Terminal) run() {
-	buf := make([]byte, 32768) // 32KB buffer for output
+	ch := make(chan []byte)
 	var leftOver []byte
+	ticker := time.NewTicker(blinkingInterval)
+	blinking := false
+	go t.readOutAsync(ch)
+
+	for {
+		select {
+		case b, ok := <-ch:
+			if !ok {
+				// we've been closed
+				return
+			}
+			leftOver = t.handleOutput(append(leftOver, b...))
+			if len(leftOver) == 0 {
+				t.Refresh()
+			}
+		case <-ticker.C:
+			blinking = !blinking
+			t.runBlink(blinking)
+		}
+	}
+}
+
+// runBlink manages the blinking effect for cells in the terminal content.
+// It toggles the blinking state for blinking cells and refreshes the content as needed.
+func (t *Terminal) runBlink(blinking bool) {
+	for rowNo, r := range t.content.Rows {
+		for colNo, c := range r.Cells {
+			s, ok := c.Style.(*widget2.TermTextGridStyle)
+			if ok {
+				s.Blink = blinking
+			}
+
+			_, _ = rowNo, colNo
+		}
+	}
+
+	// redraw the cells we just flipped
+	t.content.Refresh()
+}
+
+// readOutAsync reads terminal output asynchronously and sends it to the provided channel.
+// It handles  when the terminal is closed or encounters an error. The chanel is closed on returning.
+func (t *Terminal) readOutAsync(ch chan []byte) {
+	buf := make([]byte, bufLen)
 	for {
 		num, err := t.out.Read(buf)
 		if err != nil {
 			// this is the pre-go 1.13 way to check for the read failing (terminal closed)
 			if err.Error() == "EOF" {
+				close(ch)
 				break // term exit on macOS
 			} else if err, ok := err.(*os.PathError); ok && err.Err.Error() == "input/output error" {
+				close(ch)
 				break // broken pipe, terminal exit
 			}
 
 			fyne.LogError("pty read error", err)
 		}
-
-		leftOver = t.handleOutput(append(leftOver, buf[:num]...))
-		if len(leftOver) == 0 {
-			t.Refresh()
-		}
+		cp := make([]byte, num)
+		copy(cp, buf[:num])
+		ch <- cp
 	}
 }
 
