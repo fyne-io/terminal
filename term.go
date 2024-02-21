@@ -280,17 +280,14 @@ func (t *Terminal) run() {
 			} else if err, ok := err.(*os.PathError); ok && err.Err.Error() == "input/output error" {
 				break // broken pipe, terminal exit
 			}
-
 			fyne.LogError("pty read error", err)
 		}
 
-		lenLeftOver := len(leftOver)
-		fullBuf := buf
-		if lenLeftOver > 0 {
-			fullBuf = append(leftOver, buf[:num]...)
-			num += lenLeftOver
+		if len(leftOver) > 0 {
+			leftOver = t.handleOutput(append(leftOver, buf[:num]...))
+		} else {
+			leftOver = t.handleOutput(buf[:num])
 		}
-		leftOver = t.handleOutput(fullBuf[:num])
 		if len(leftOver) == 0 {
 			t.Refresh()
 		}
