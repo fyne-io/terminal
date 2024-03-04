@@ -193,6 +193,8 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 		t.scrollDown()
 	case 'M':
 		t.scrollUp()
+	case '_':
+		t.state.apc = true
 	case '=', '>':
 	}
 	return false
