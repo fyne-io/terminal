@@ -5,6 +5,7 @@ import (
 	"testing"
 	"unicode/utf16"
 
+	"fyne.io/fyne/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,6 +33,7 @@ func TestHandleOutput_Printing(t *testing.T) {
 		expectedPrintingState bool
 		expectedPrintData     []byte
 		expectedSpooledData   []byte
+		expectedScreenData    string
 	}{
 		"start printing": {
 			inputSeq:              []byte(esc("[5ithisshouldbeprinted")),
@@ -65,18 +67,25 @@ func TestHandleOutput_Printing(t *testing.T) {
 			expectedSpooledData:   []byte{0x48, 0xe9, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57, 0xf6, 0x72, 0x6c, 0x64, 0x21},
 			expectedPrintingState: false,
 		},
+		"when print is mid buffer": {
+			inputSeq:            []byte("abc" + esc("[5i") + "def" + esc("[4i") + "ghi"),
+			expectedScreenData:  "abcghi",
+			expectedSpooledData: []byte("def"),
+		},
 	}
 
 	// Iterate through the test cases
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			terminal := New()
+			terminal.Resize(fyne.NewSize(50, 50))
 			var spooledData []byte
 			terminal.printer = PrinterFunc(func(d []byte) {
 				spooledData = d
 			})
 			terminal.handleOutput(test.inputSeq)
 
+			assert.Equal(t, test.expectedScreenData, terminal.content.Text())
 			assert.Equal(t, test.expectedPrintingState, terminal.state.printing)
 			assert.Equal(t, test.expectedSpooledData, spooledData)
 			assert.Equal(t, test.expectedPrintData, terminal.printData)
