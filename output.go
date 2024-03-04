@@ -338,3 +338,8 @@ func handleShiftOut(t *Terminal) {
 func handleShiftIn(t *Terminal) {
 	t.useG1CharSet = false
 }
+
+// SetPrinterFunc sets the printer function which is executed when printing.
+func (t *Terminal) SetPrinterFunc(printerFunc PrinterFunc) {
+	t.printer = printerFunc
+}
