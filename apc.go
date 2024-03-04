@@ -12,6 +12,9 @@ import (
 	"github.com/fyne-io/terminal/internal/printer"
 )
 
+// APCHandler handles a APC command for the given terminal.
+type APCHandler func(*Terminal, string)
+
 var apcHandlers = map[string]func(*Terminal, string){
 	"set printer /windows-queue:": setWindowsQueue,
 	"set printer:_file:":          setFilePrinting,
@@ -107,4 +110,9 @@ func openDefaultApp(filename string) error {
 	default:
 		return fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}
+}
+
+// RegisterAPCHandler registers a APC handler for the given APC command string.
+func RegisterAPCHandler(APC string, handler APCHandler) {
+	apcHandlers[APC] = handler
 }
