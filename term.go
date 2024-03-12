@@ -17,6 +17,10 @@ import (
 	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
+const (
+	bufLen = 32768 // 32KB buffer for output, to align with modern L1 cache
+)
+
 // Config is the state of a terminal, updated upon certain actions or commands.
 // Use Terminal.OnConfigure hook to register for changes.
 type Config struct {
@@ -75,6 +79,22 @@ type Terminal struct {
 	newLineMode        bool // new line mode or line feed mode
 	bracketedPasteMode bool
 	state              *parseState
+
+	printData []byte
+	printer   Printer
+}
+
+// Printer is used for spooling print data when its received.
+type Printer interface {
+	Print([]byte)
+}
+
+// PrinterFunc is a helper function to enable easy implementation of printers.
+type PrinterFunc func([]byte)
+
+// Print calls the PrinterFunc.
+func (p PrinterFunc) Print(d []byte) {
+	p(d)
 }
 
 // Cursor is used for displaying a specific cursor.
@@ -269,7 +289,7 @@ func (t *Terminal) guessCellSize() fyne.Size {
 }
 
 func (t *Terminal) run() {
-	buf := make([]byte, 32768) // 32KB buffer for output
+	buf := make([]byte, bufLen)
 	var leftOver []byte
 	for {
 		num, err := t.out.Read(buf)
