@@ -68,10 +68,10 @@ func (t *termGridRenderer) refreshCell(row, col int) {
 	}
 
 	cell := t.text.Rows[row].Cells[col]
-	t.setCellRune(cell.Rune, pos, cell.Style, t.text.Rows[row].Style)
+	t.setCellRune(cell.Rune, pos, cell.Style)
 }
 
-func (t *termGridRenderer) setCellRune(str rune, pos int, style, rowStyle widget.TextGridStyle) {
+func (t *termGridRenderer) setCellRune(str rune, pos int, style widget.TextGridStyle) {
 	if str == 0 {
 		str = ' '
 	}
@@ -81,8 +81,6 @@ func (t *termGridRenderer) setCellRune(str rune, pos int, style, rowStyle widget
 	fg := theme.ForegroundColor()
 	if style != nil && style.TextColor() != nil {
 		fg = style.TextColor()
-	} else if rowStyle != nil && rowStyle.TextColor() != nil {
-		fg = rowStyle.TextColor()
 	}
 	newStr := string(str)
 	if text.Text != newStr || text.Color != fg {
@@ -95,8 +93,6 @@ func (t *termGridRenderer) setCellRune(str rune, pos int, style, rowStyle widget
 	bg := color.Color(color.Transparent)
 	if style != nil && style.BackgroundColor() != nil {
 		bg = style.BackgroundColor()
-	} else if rowStyle != nil && rowStyle.BackgroundColor() != nil {
-		bg = rowStyle.BackgroundColor()
 	}
 	if rect.FillColor != bg {
 		rect.FillColor = bg
@@ -119,22 +115,21 @@ func (t *termGridRenderer) refreshGrid() {
 	x := 0
 
 	for rowIndex, row := range t.text.Rows {
-		rowStyle := row.Style
 		i := 0
 		if t.text.ShowLineNumbers {
 			lineStr := []rune(strconv.Itoa(line))
 			pad := t.lineNumberWidth() - len(lineStr)
 			for ; i < pad; i++ {
-				t.setCellRune(' ', x, widget.TextGridStyleWhitespace, rowStyle) // padding space
+				t.setCellRune(' ', x, widget.TextGridStyleWhitespace) // padding space
 				x++
 			}
 			for c := 0; c < len(lineStr); c++ {
-				t.setCellRune(lineStr[c], x, widget.TextGridStyleDefault, rowStyle) // line numbers
+				t.setCellRune(lineStr[c], x, widget.TextGridStyleDefault) // line numbers
 				i++
 				x++
 			}
 
-			t.setCellRune('|', x, widget.TextGridStyleWhitespace, rowStyle) // last space
+			t.setCellRune('|', x, widget.TextGridStyleWhitespace) // last space
 			i++
 			x++
 		}
@@ -151,30 +146,30 @@ func (t *termGridRenderer) refreshGrid() {
 				if r.Style != nil && r.Style.BackgroundColor() != nil {
 					whitespaceBG := &widget.CustomTextGridStyle{FGColor: widget.TextGridStyleWhitespace.TextColor(),
 						BGColor: r.Style.BackgroundColor()}
-					t.setCellRune(sym, x, whitespaceBG, rowStyle) // whitespace char
+					t.setCellRune(sym, x, whitespaceBG) // whitespace char
 				} else {
-					t.setCellRune(sym, x, widget.TextGridStyleWhitespace, rowStyle) // whitespace char
+					t.setCellRune(sym, x, widget.TextGridStyleWhitespace) // whitespace char
 				}
 			} else {
-				t.setCellRune(r.Rune, x, r.Style, rowStyle) // regular char
+				t.setCellRune(r.Rune, x, r.Style) // regular char
 			}
 			i++
 			x++
 		}
 		if t.text.ShowWhitespace && i < t.cols && rowIndex < len(t.text.Rows)-1 {
-			t.setCellRune(textAreaNewLineSymbol, x, widget.TextGridStyleWhitespace, rowStyle) // newline
+			t.setCellRune(textAreaNewLineSymbol, x, widget.TextGridStyleWhitespace) // newline
 			i++
 			x++
 		}
 		for ; i < t.cols; i++ {
-			t.setCellRune(' ', x, widget.TextGridStyleDefault, rowStyle) // blanks
+			t.setCellRune(' ', x, widget.TextGridStyleDefault) // blanks
 			x++
 		}
 
 		line++
 	}
 	for ; x < len(t.objects)/2; x++ {
-		t.setCellRune(' ', x, widget.TextGridStyleDefault, nil) // trailing cells and blank lines
+		t.setCellRune(' ', x, widget.TextGridStyleDefault) // trailing cells and blank lines
 	}
 }
 
