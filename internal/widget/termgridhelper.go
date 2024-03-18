@@ -9,7 +9,7 @@ import (
 
 // HighlightRange highlight options to the given range
 // if highlighting has previously been applied it is enabled
-func HighlightRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow, endCol int, bitmask byte) {
+func HighlightRange(t *TermGrid, blockMode bool, startRow, startCol, endRow, endCol int, bitmask byte) {
 	applyHighlight := func(cell *widget.TextGridCell) {
 		// Check if already highlighted
 		if h, ok := cell.Style.(*TermTextGridStyle); !ok {
@@ -29,7 +29,7 @@ func HighlightRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endR
 }
 
 // ClearHighlightRange disables the highlight style for the given range
-func ClearHighlightRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow, endCol int) {
+func ClearHighlightRange(t *TermGrid, blockMode bool, startRow, startCol, endRow, endCol int) {
 	clearHighlight := func(cell *widget.TextGridCell) {
 		// Check if already highlighted
 		if h, ok := cell.Style.(*TermTextGridStyle); ok {
@@ -56,7 +56,7 @@ func ClearHighlightRange(t *widget.TextGrid, blockMode bool, startRow, startCol,
 //
 // Returns:
 //   - string: The text content within the specified range as a string.
-func GetTextRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow, endCol int) string {
+func GetTextRange(t *TermGrid, blockMode bool, startRow, startCol, endRow, endCol int) string {
 	var result []rune
 
 	forRange(t, blockMode, startRow, startCol, endRow, endCol, func(cell *widget.TextGridCell) {
@@ -88,7 +88,7 @@ func GetTextRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow
 // Example Usage:
 // forRange(termGrid, true, 0, 1, 2, 3, cellFunc, rowFunc) // Iterate in block mode, applying cellFunc to cells in columns 1 to 3 and rowFunc to rows 0 to 2.
 // forRange(termGrid, false, 1, 0, 3, 2, cellFunc, rowFunc) // Iterate cell by cell, applying cellFunc to all cells and rowFunc to rows 1 and 2.
-func forRange(t *widget.TextGrid, blockMode bool, startRow, startCol, endRow, endCol int, eachCell func(cell *widget.TextGridCell), eachRow func(row *widget.TextGridRow)) {
+func forRange(t *TermGrid, blockMode bool, startRow, startCol, endRow, endCol int, eachCell func(cell *widget.TextGridCell), eachRow func(row *widget.TextGridRow)) {
 	if startRow >= len(t.Rows) || endRow < 0 {
 		return
 	}

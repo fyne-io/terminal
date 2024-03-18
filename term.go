@@ -40,7 +40,7 @@ const (
 type Terminal struct {
 	widget.BaseWidget
 	fyne.ShortcutHandler
-	content      *widget.TextGrid
+	content      *widget2.TermGrid
 	config       Config
 	listenerLock sync.Mutex
 	listeners    []chan Config
@@ -454,7 +454,7 @@ func New() *Terminal {
 		highlightBitMask: 0x55,
 	}
 	t.ExtendBaseWidget(t)
-	t.content = widget.NewTextGrid()
+	t.content = widget2.NewTermGrid()
 	t.setupShortcuts()
 
 	return t

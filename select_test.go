@@ -76,7 +76,7 @@ func TestGetSelectedRange(t *testing.T) {
 
 func TestGetTextRange(t *testing.T) {
 	// Prepare the text grid for the tests
-	grid := widget.NewTextGrid()
+	grid := widget2.NewTermGrid()
 	grid.Rows = []widget.TextGridRow{
 		{Cells: []widget.TextGridCell{{Rune: 'A'}, {Rune: 'B'}, {Rune: 'C'}}},
 		{Cells: []widget.TextGridCell{{Rune: 'D'}, {Rune: 'E'}, {Rune: 'F'}}},
