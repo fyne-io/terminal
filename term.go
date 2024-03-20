@@ -305,17 +305,12 @@ func (t *Terminal) run() {
 // runBlink manages the blinking effect for cells in the terminal content.
 // It toggles the blinking state for blinking cells and refreshes the content as needed.
 func (t *Terminal) runBlink(blinking bool) {
-	for rowNo, r := range t.content.Rows {
-		for colNo, c := range r.Cells {
-			s, ok := c.Style.(*widget2.TermTextGridStyle)
-			if ok {
-				s.Blink = blinking
-			}
-
-			_, _ = rowNo, colNo
-		}
+	r := widget2.GetRenderer(t.content)
+	b, ok := r.(widget2.BlinkingRender)
+	if !ok {
+		return
 	}
-
+	b.SetBlink(blinking)
 	// redraw the cells we just flipped
 	t.content.Refresh()
 }

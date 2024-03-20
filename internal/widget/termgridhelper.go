@@ -172,19 +172,12 @@ type TermTextGridStyle struct {
 	InvertedBackgroundColor color.Color
 	Highlighted             bool
 	BlinkEnabled            bool
-	Blink                   bool
 }
 
 // TextColor returns the color of the text, depending on whether it is highlighted.
 func (h *TermTextGridStyle) TextColor() color.Color {
 	if h.Highlighted {
-		if h.BlinkEnabled && h.Blink {
-			return h.InvertedBackgroundColor
-		}
 		return h.InvertedTextColor
-	}
-	if h.BlinkEnabled && h.Blink {
-		return h.OriginalBackgroundColor
 	}
 	return h.OriginalTextColor
 }
@@ -235,7 +228,6 @@ func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool) w
 		InvertedBackgroundColor: invertedBg,
 		Highlighted:             false,
 		BlinkEnabled:            blinkEnabled,
-		Blink:                   false,
 	}
 }
 

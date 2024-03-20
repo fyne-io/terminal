@@ -33,6 +33,8 @@ func (t *TermGrid) CreateRenderer() fyne.WidgetRenderer {
 	widget.TextGridStyleDefault = &widget.CustomTextGridStyle{}
 	widget.TextGridStyleWhitespace = &widget.CustomTextGridStyle{FGColor: theme.DisabledColor()}
 
+	// register the renderer (we can't use fyne cache because its internal)
+	RegisterRenderer(t, render)
 	return render
 }
 
@@ -51,6 +53,7 @@ type termGridRenderer struct {
 	cellSize fyne.Size
 	objects  []fyne.CanvasObject
 	current  fyne.Canvas
+	blink    bool
 }
 
 func (t *termGridRenderer) appendTextCell(str rune) {
@@ -75,13 +78,22 @@ func (t *termGridRenderer) setCellRune(str rune, pos int, style widget.TextGridS
 	if str == 0 {
 		str = ' '
 	}
-
-	text := t.objects[pos*2+1].(*canvas.Text)
-	text.TextSize = theme.TextSize()
 	fg := theme.ForegroundColor()
 	if style != nil && style.TextColor() != nil {
 		fg = style.TextColor()
 	}
+	bg := color.Color(color.Transparent)
+	if style != nil && style.BackgroundColor() != nil {
+		bg = style.BackgroundColor()
+	}
+
+	if s, ok := style.(*TermTextGridStyle); ok && s != nil && t.blink {
+		fg = bg
+	}
+
+	text := t.objects[pos*2+1].(*canvas.Text)
+	text.TextSize = theme.TextSize()
+
 	newStr := string(str)
 	if text.Text != newStr || text.Color != fg {
 		text.Text = newStr
@@ -90,10 +102,6 @@ func (t *termGridRenderer) setCellRune(str rune, pos int, style widget.TextGridS
 	}
 
 	rect := t.objects[pos*2].(*canvas.Rectangle)
-	bg := color.Color(color.Transparent)
-	if style != nil && style.BackgroundColor() != nil {
-		bg = style.BackgroundColor()
-	}
 	if rect.FillColor != bg {
 		rect.FillColor = bg
 		t.refresh(rect)
@@ -274,4 +282,12 @@ func (t *termGridRenderer) updateCellSize() {
 	size.Height = float32(math.Round(float64((size.Height))))
 
 	t.cellSize = size
+}
+
+func (t *termGridRenderer) SetBlink(b bool) {
+	t.blink = b
+}
+
+type BlinkingRender interface {
+	SetBlink(b bool)
 }
