@@ -5,6 +5,10 @@ import (
 	"image/color"
 	"reflect"
 	"testing"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
+	"github.com/stretchr/testify/assert"
 )
 
 func esc(s string) string {
@@ -901,4 +905,27 @@ func TestHandleOutput_24_bit_colour(t *testing.T) {
 	}
 
 	testColor(t, tests)
+}
+
+func TestHandleOutput_BufferCutoff(t *testing.T) {
+	term := New()
+	termsize := fyne.NewSize(80, 50)
+	term.Resize(termsize)
+	term.handleOutput([]byte("\x1b[38;5;64"))
+	term.handleOutput([]byte("m40\x1b[38;5;65m41"))
+	tg := widget.NewTextGrid()
+	tg.Resize(termsize)
+	c1 := &color.RGBA{R: 95, G: 135, A: 255}
+	c2 := &color.RGBA{R: 95, G: 135, B: 95, A: 255}
+	tg.Rows = []widget.TextGridRow{
+		{
+			Cells: []widget.TextGridCell{
+				{Rune: '4', Style: &widget.CustomTextGridStyle{FGColor: c1, BGColor: nil}},
+				{Rune: '0', Style: &widget.CustomTextGridStyle{FGColor: c1, BGColor: nil}},
+				{Rune: '4', Style: &widget.CustomTextGridStyle{FGColor: c2, BGColor: nil}},
+				{Rune: '1', Style: &widget.CustomTextGridStyle{FGColor: c2, BGColor: nil}},
+			},
+		},
+	}
+	assert.Equal(t, tg.Rows, term.content.Rows)
 }
