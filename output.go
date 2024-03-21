@@ -15,8 +15,6 @@ const (
 
 	noEscape = 5000
 	tabWidth = 8
-
-	blinkingInterval = 500 * time.Millisecond
 )
 
 var charSetMap = map[charSet]func(rune) rune{

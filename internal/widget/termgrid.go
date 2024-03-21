@@ -1,9 +1,11 @@
 package widget
 
 import (
+	"context"
 	"image/color"
 	"math"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2/widget"
 
@@ -16,16 +18,22 @@ const (
 	textAreaSpaceSymbol   = '·'
 	textAreaTabSymbol     = '→'
 	textAreaNewLineSymbol = '↵'
+	blinkingInterval      = 500 * time.Millisecond
 )
 
 // TermGrid is a monospaced grid of characters.
 // This is designed to be used by our terminal emulator.
 type TermGrid struct {
 	widget.TextGrid
+	tickerCancel func()
 }
 
 // CreateRenderer is a private method to Fyne which links this widget to it's renderer
 func (t *TermGrid) CreateRenderer() fyne.WidgetRenderer {
+	if t.tickerCancel != nil {
+		t.tickerCancel()
+
+	}
 	t.ExtendBaseWidget(t)
 	render := &termGridRenderer{text: t}
 	render.updateCellSize()
@@ -33,8 +41,23 @@ func (t *TermGrid) CreateRenderer() fyne.WidgetRenderer {
 	widget.TextGridStyleDefault = &widget.CustomTextGridStyle{}
 	widget.TextGridStyleWhitespace = &widget.CustomTextGridStyle{FGColor: theme.DisabledColor()}
 
-	// register the renderer (we can't use fyne cache because its internal)
-	RegisterRenderer(t, render)
+	var tickerContext context.Context
+	tickerContext, t.tickerCancel = context.WithCancel(context.Background())
+	ticker := time.NewTicker(blinkingInterval)
+	blinking := false
+	go func() {
+		for {
+			select {
+			case <-tickerContext.Done():
+				return
+			case <-ticker.C:
+				render.SetBlink(blinking)
+				blinking = !blinking
+				render.refreshGrid()
+			}
+		}
+	}()
+
 	return render
 }
 

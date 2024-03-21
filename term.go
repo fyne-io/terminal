@@ -280,8 +280,6 @@ func (t *Terminal) guessCellSize() fyne.Size {
 func (t *Terminal) run() {
 	ch := make(chan []byte)
 	var leftOver []byte
-	ticker := time.NewTicker(blinkingInterval)
-	blinking := false
 	go t.readOutAsync(ch)
 
 	for {
@@ -295,24 +293,8 @@ func (t *Terminal) run() {
 			if len(leftOver) == 0 {
 				t.Refresh()
 			}
-		case <-ticker.C:
-			blinking = !blinking
-			t.runBlink(blinking)
 		}
 	}
-}
-
-// runBlink manages the blinking effect for cells in the terminal content.
-// It toggles the blinking state for blinking cells and refreshes the content as needed.
-func (t *Terminal) runBlink(blinking bool) {
-	r := widget2.GetRenderer(t.content)
-	b, ok := r.(widget2.BlinkingRender)
-	if !ok {
-		return
-	}
-	b.SetBlink(blinking)
-	// redraw the cells we just flipped
-	t.content.Refresh()
 }
 
 // readOutAsync reads terminal output asynchronously and sends it to the provided channel.
