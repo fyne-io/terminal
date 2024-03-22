@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"bytes"
 	"time"
 	"unicode/utf8"
 
@@ -81,10 +82,12 @@ var decSpecialGraphics = map[rune]rune{
 }
 
 type parseState struct {
-	code  string
-	esc   int
-	osc   bool
-	vt100 rune
+	code     string
+	esc      int
+	osc      bool
+	vt100    rune
+	apc      bool
+	printing bool
 }
 
 func (t *Terminal) handleOutput(buf []byte) []byte {
@@ -108,6 +111,10 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 		if size == 0 {
 			break
 		}
+		if t.state.printing {
+			t.parsePrinting(buf, size)
+			continue
+		}
 		if r == utf8.RuneError && size == 1 {
 			return buf
 		}
@@ -121,6 +128,10 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 				continue
 			}
 			t.state.esc = noEscape
+			continue
+		}
+		if t.state.apc {
+			t.parseAPC(r)
 			continue
 		}
 		if t.state.osc {
@@ -182,6 +193,8 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 		t.scrollDown()
 	case 'M':
 		t.scrollUp()
+	case '_':
+		t.state.apc = true
 	case '=', '>':
 	}
 	return false
@@ -193,6 +206,26 @@ func (t *Terminal) parseEscape(r rune) {
 		t.handleEscape(t.state.code)
 		t.state.code = ""
 		t.state.esc = noEscape
+	}
+}
+
+func (t *Terminal) parsePrinting(buf []byte, size int) {
+	t.printData = append(t.printData, buf[:size]...)
+	if bytes.HasSuffix(t.printData, []byte{asciiEscape, '[', '4', 'i'}) {
+		// Handle the end of printing
+		t.printData = t.printData[:len(t.printData)-4]
+		escapePrinterMode(t, "4")
+		t.state.esc = noEscape
+	}
+}
+
+func (t *Terminal) parseAPC(r rune) {
+	if r == 0 {
+		t.handleAPC(t.state.code)
+		t.state.code = ""
+		t.state.apc = false
+	} else {
+		t.state.code += string(r)
 	}
 }
 
@@ -304,4 +337,9 @@ func handleShiftOut(t *Terminal) {
 
 func handleShiftIn(t *Terminal) {
 	t.useG1CharSet = false
+}
+
+// SetPrinterFunc sets the printer function which is executed when printing.
+func (t *Terminal) SetPrinterFunc(printerFunc PrinterFunc) {
+	t.printer = printerFunc
 }
