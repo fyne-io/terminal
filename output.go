@@ -164,7 +164,7 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 
 	// record progress for next chunk of buffer
 	if t.state.esc != noEscape {
-		t.state.esc = -1
+		t.state.esc = t.state.esc - i
 	}
 	return buf
 }
