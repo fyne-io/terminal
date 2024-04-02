@@ -37,6 +37,7 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 	env = append(env, "TERM=xterm-256color")
 	c := exec.Command(shell)
 	c.Env = env
+	t.cmd = c
 
 	// Start the command with a pty.
 	f, err := pty.Start(c)

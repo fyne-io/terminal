@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"syscall"
 
 	"github.com/ActiveState/termtest/conpty"
@@ -33,15 +34,17 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 		return nil, nil, nil, err
 	}
 
+	t.cmd = &exec.Cmd{}
 	process, err := os.FindProcess(pid)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	go func() {
-		_, err := process.Wait()
+		ps, err := process.Wait()
 		if err != nil {
 			log.Fatalf("Error waiting for process: %v", err)
 		}
+		t.cmd.ProcessState = ps
 		if t.pty != nil {
 			t.pty = nil
 			_ = cpty.Close()

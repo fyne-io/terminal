@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"os/exec"
 	"runtime"
 	"sync"
 	"time"
@@ -82,6 +83,7 @@ type Terminal struct {
 
 	printData []byte
 	printer   Printer
+	cmd       *exec.Cmd
 }
 
 // Printer is used for spooling print data when its received.
@@ -216,6 +218,14 @@ func (t *Terminal) Text() string {
 	return t.content.Text()
 }
 
+// ExitCode returns the exit code from the terminal's shell
+func (t *Terminal) ExitCode() int {
+	if t.cmd == nil {
+		return -1
+	}
+	return t.cmd.ProcessState.ExitCode()
+}
+
 // TouchCancel handles the tap action for mobile apps that lose focus during tap.
 func (t *Terminal) TouchCancel(ev *mobile.TouchEvent) {
 	if t.onMouseUp != nil {
@@ -294,6 +304,8 @@ func (t *Terminal) run() {
 	for {
 		num, err := t.out.Read(buf)
 		if err != nil {
+			// wait for cmd (shell) to exit, populates ProcessState.ExitCode
+			t.cmd.Wait()
 			// this is the pre-go 1.13 way to check for the read failing (terminal closed)
 			if err.Error() == "EOF" {
 				break // term exit on macOS
