@@ -218,7 +218,9 @@ func (t *Terminal) Text() string {
 	return t.content.Text()
 }
 
-// ExitCode returns the exit code from the terminal's shell
+// ExitCode returns the exit code from the terminal's shell.
+// Returns -1 if called before shell was started or before shell exited.
+// Also returns -1 if shell was terminated by a signal.
 func (t *Terminal) ExitCode() int {
 	if t.cmd == nil {
 		return -1

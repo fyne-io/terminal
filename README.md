@@ -64,9 +64,6 @@ a `Terminal`, as follows:
 	t := terminal.New()
 	go func() {
 		_ = t.RunLocalShell()
-		// Optionally use ExitCode() to get the shell's exit code.
-		// It will return -1 if called before actual exit - just like
-		// https://pkg.go.dev/os#ProcessState 's ExitCode() would.
 		log.Printf("Terminal's shell exited with exit code: %d", t.ExitCode())
 		a.Quit()
 	}()
