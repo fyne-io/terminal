@@ -45,29 +45,29 @@ Already planned is:
 * Scroll-back
 * Background and font/size customisation
 * Split panels
-* Windows support
 
 # Library
 
 You can also use this project as a library to create your own
 terminal based applications, using the import path "github.com/fyne-io/terminal".
 
-There are two modes, using the default shell (macOS and Linux) or connecting
-to a remote shell.
+There are two modes, using the default shell or connecting to a remote shell.
 
 ## Local Shell
 
-To load a terminal widget and launch the current shell (works on macOS and Linux)
-use the `RunLocalShell` method after creating a `Terminal`, as follows:
+To load a terminal widget and launch the current shell (works on macOS and Linux;
+on Windows, it always uses PowerShell) use the `RunLocalShell` method after creating
+a `Terminal`, as follows:
 
 ```go
 	// run new terminal and close app on terminal exit.
 	t := terminal.New()
 	go func() {
 		_ = t.RunLocalShell()
+		log.Printf("Terminal's shell exited with exit code: %d", t.ExitCode())
 		a.Quit()
 	}()
-	
+
 	// w is a fyne.Window created to hold the content
 	w.SetContent(t)
 	w.ShowAndRun()
@@ -82,7 +82,7 @@ For example to open a terminal to an SSH connection that you have created:
 	in, _ := session.StdinPipe()
 	out, _ := session.StdoutPipe()
 	go session.Run("$SHELL || bash")
-	
+
 	// run new terminal and close app on terminal exit.
 	t := terminal.New()
 	go func() {
