@@ -29,11 +29,14 @@ func testExitCodeN(t *testing.T, n int) {
 	go term.RunLocalShell()
 	err := errors.New("NotYet")
 	for err != nil {
+		time.Sleep(50 * time.Millisecond)
 		_, err = term.Write([]byte(fmt.Sprintf("exit %d\n", n)))
-		time.Sleep(1 * time.Second)
+	}
+	for term.ExitCode() == -1 {
+		time.Sleep(50 * time.Millisecond)
 	}
 
-	assert.Equal(t, term.ExitCode(), n)
+	assert.Equal(t, n, term.ExitCode())
 }
 
 func TestExitCode01(t *testing.T) {
