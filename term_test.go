@@ -1,6 +1,8 @@
 package terminal
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -19,6 +21,27 @@ func TestNewTerminal(t *testing.T) {
 func TestExitCode(t *testing.T) {
 	term := New()
 	assert.Equal(t, term.ExitCode(), int(-1))
+}
+
+func testExitCodeN(t *testing.T, n int) {
+	term := New()
+	term.Resize(fyne.NewSize(45, 45))
+	go term.RunLocalShell()
+	err := errors.New("NotYet")
+	for err != nil {
+		time.Sleep(50 * time.Millisecond)
+		_, err = term.Write([]byte(fmt.Sprintf("exit %d\n", n)))
+	}
+	for term.ExitCode() == -1 {
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	assert.Equal(t, n, term.ExitCode())
+}
+
+func TestExitCode01(t *testing.T) {
+	testExitCodeN(t, 0)
+	testExitCodeN(t, 1)
 }
 
 func TestTerminal_Resize(t *testing.T) {
