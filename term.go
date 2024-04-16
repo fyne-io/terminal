@@ -41,7 +41,7 @@ const (
 type Terminal struct {
 	widget.BaseWidget
 	fyne.ShortcutHandler
-	content      *widget.TextGrid
+	content      *widget2.TermGrid
 	config       Config
 	listenerLock sync.Mutex
 	listeners    []chan Config
@@ -80,10 +80,10 @@ type Terminal struct {
 	newLineMode        bool // new line mode or line feed mode
 	bracketedPasteMode bool
 	state              *parseState
-
-	printData []byte
-	printer   Printer
-	cmd       *exec.Cmd
+	blinking           bool
+	printData          []byte
+	printer            Printer
+	cmd                *exec.Cmd
 }
 
 // Printer is used for spooling print data when its received.
@@ -441,7 +441,7 @@ func New() *Terminal {
 		highlightBitMask: 0x55,
 	}
 	t.ExtendBaseWidget(t)
-	t.content = widget.NewTextGrid()
+	t.content = widget2.NewTermGrid()
 	t.setupShortcuts()
 
 	return t
