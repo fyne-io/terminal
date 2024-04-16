@@ -6,6 +6,7 @@ import (
 	"unicode/utf8"
 
 	"fyne.io/fyne/v2/widget"
+	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
 const (
@@ -247,7 +248,8 @@ func (t *Terminal) handleOutputChar(r rune) {
 		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
 	}
 
-	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
+	var cellStyle widget.TextGridStyle
+	cellStyle = &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
 	for len(t.content.Rows[t.cursorRow].Cells)-1 < t.cursorCol {
 		newCell := widget.TextGridCell{
 			Rune:  ' ',
@@ -255,7 +257,9 @@ func (t *Terminal) handleOutputChar(r rune) {
 		}
 		t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newCell)
 	}
-
+	if t.blinking {
+		cellStyle = widget2.NewTermTextGridStyle(t.currentFG, t.currentBG, t.highlightBitMask, t.blinking)
+	}
 	t.content.SetCell(t.cursorRow, t.cursorCol, widget.TextGridCell{Rune: r, Style: cellStyle})
 	t.cursorCol++
 }
