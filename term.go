@@ -84,6 +84,7 @@ type Terminal struct {
 	printData          []byte
 	printer            Printer
 	cmd                *exec.Cmd
+	minSize            fyne.Size
 }
 
 // Printer is used for spooling print data when its received.
@@ -119,8 +120,8 @@ func (t *Terminal) AddListener(listener chan Config) {
 
 // MinSize provides a size large enough that a terminal could technically funcion.
 func (t *Terminal) MinSize() fyne.Size {
-	s := guessCellSize()
-	return fyne.NewSize(s.Width*2.5, s.Height*1.2) // just enough to get a terminal init
+
+	return t.minSize
 }
 
 // MouseDown handles the down action for desktop mouse events.
@@ -436,14 +437,15 @@ func (t *Terminal) startingDir() string {
 
 // New sets up a new terminal instance with the bash shell
 func New() *Terminal {
+	s := guessCellSize()
 	t := &Terminal{
 		mouseCursor:      desktop.DefaultCursor,
 		highlightBitMask: 0x55,
+		minSize:          fyne.NewSize(s.Width*2.5, s.Height*1.2),
 	}
 	t.ExtendBaseWidget(t)
 	t.content = widget2.NewTermGrid()
 	t.setupShortcuts()
-
 	return t
 }
 
@@ -494,4 +496,9 @@ func (t *Terminal) Dragged(d *fyne.DragEvent) {
 // DragEnd is called by fyne when the left mouse is released after a Drag event.
 func (t *Terminal) DragEnd() {
 	t.selecting = false
+}
+
+// SetMinSize specifies the smallest size this object should be.
+func (t *Terminal) SetMinSize(size fyne.Size) {
+	t.minSize = size
 }
