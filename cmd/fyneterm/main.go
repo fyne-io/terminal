@@ -23,8 +23,8 @@ import (
 const termOverlay = fyne.ThemeColorName("termOver")
 
 var (
-	DefaultRows float32 = 24.0
-	DefaultCols float32 = 80.0
+	DefaultRows float32 = 24.0 // The default number of rows in the terminal.
+	DefaultCols float32 = 80.0 // The default number of columns in the terminal.
 )
 
 var (
