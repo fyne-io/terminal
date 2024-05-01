@@ -119,7 +119,7 @@ func (t *Terminal) AddListener(listener chan Config) {
 
 // MinSize provides a size large enough that a terminal could technically funcion.
 func (t *Terminal) MinSize() fyne.Size {
-	s := t.guessCellSize()
+	s := guessCellSize()
 	return fyne.NewSize(s.Width*2.5, s.Height*1.2) // just enough to get a terminal init
 }
 
@@ -178,7 +178,7 @@ func (t *Terminal) RemoveListener(listener chan Config) {
 // Resize is called when this terminal widget has been resized.
 // It ensures that the virtual terminal is within the bounds of the widget.
 func (t *Terminal) Resize(s fyne.Size) {
-	cellSize := t.guessCellSize()
+	cellSize := guessCellSize()
 	cols := uint(math.Floor(float64(s.Width) / float64(cellSize.Width)))
 	rows := uint(math.Floor(float64(s.Height) / float64(cellSize.Height)))
 	if (t.config.Columns == cols) && (t.config.Rows == rows) {
@@ -292,7 +292,7 @@ func (t *Terminal) close() error {
 }
 
 // don't call often - should we cache?
-func (t *Terminal) guessCellSize() fyne.Size {
+func guessCellSize() fyne.Size {
 	cell := canvas.NewText("M", color.White)
 	cell.TextStyle.Monospace = true
 
