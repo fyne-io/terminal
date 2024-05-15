@@ -125,6 +125,7 @@ func (t *Terminal) MinSize() fyne.Size {
 
 // MouseDown handles the down action for desktop mouse events.
 func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
+	t.requestFocus()
 	if t.hasSelectedText() {
 		t.clearSelectedText()
 	}
@@ -209,8 +210,8 @@ func (t *Terminal) SetStartDir(path string) {
 }
 
 // Tapped makes sure we ask for focus if user taps us.
-func (t *Terminal) Tapped(ev *fyne.PointEvent) {
-	fyne.CurrentApp().Driver().CanvasForObject(t).Focus(t)
+func (t *Terminal) Tapped(*fyne.PointEvent) {
+	t.requestFocus()
 }
 
 // Text returns the contents of the buffer as a single string joined with `\n` (no style information).
@@ -298,6 +299,12 @@ func (t *Terminal) guessCellSize() fyne.Size {
 
 	min := cell.MinSize()
 	return fyne.NewSize(float32(math.Round(float64(min.Width))), float32(math.Round(float64(min.Height))))
+}
+
+func (t *Terminal) requestFocus() {
+	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+		c.Focus(t)
+	}
 }
 
 func (t *Terminal) run() {
