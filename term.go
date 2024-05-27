@@ -306,8 +306,10 @@ func (t *Terminal) run() {
 	for {
 		num, err := t.out.Read(buf)
 		if err != nil {
-			// wait for cmd (shell) to exit, populates ProcessState.ExitCode
-			t.cmd.Wait()
+			if t.cmd != nil {
+				// wait for cmd (shell) to exit, populates ProcessState.ExitCode
+				t.cmd.Wait()
+			}
 			// this is the pre-go 1.13 way to check for the read failing (terminal closed)
 			if err.Error() == "EOF" {
 				break // term exit on macOS
