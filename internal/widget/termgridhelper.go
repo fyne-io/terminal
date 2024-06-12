@@ -3,6 +3,7 @@ package widget
 import (
 	"image/color"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -166,6 +167,7 @@ func forRange(t *TermGrid, blockMode bool, startRow, startCol, endRow, endCol in
 
 // TermTextGridStyle defines a style that can be original or highlighted.
 type TermTextGridStyle struct {
+	TextStyle               fyne.TextStyle
 	OriginalTextColor       color.Color
 	OriginalBackgroundColor color.Color
 	InvertedTextColor       color.Color
@@ -174,6 +176,11 @@ type TermTextGridStyle struct {
 	BlinkEnabled            bool
 	IsBold                  bool
 	IsUnderlined            bool
+}
+
+// Style is the text style a cell should use.
+func (h *TermTextGridStyle) Style() fyne.TextStyle {
+	return h.TextStyle
 }
 
 // TextColor returns the color of the text, depending on whether it is highlighted.
