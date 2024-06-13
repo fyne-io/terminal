@@ -28,6 +28,7 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 		[]string{},
 		&syscall.ProcAttr{
 			Env: os.Environ(),
+			Dir: t.startingDir(),
 		},
 	)
 	if err != nil {
