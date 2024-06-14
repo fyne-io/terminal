@@ -174,8 +174,6 @@ type TermTextGridStyle struct {
 	InvertedBackgroundColor color.Color
 	Highlighted             bool
 	BlinkEnabled            bool
-	IsBold                  bool
-	IsUnderlined            bool
 }
 
 // Style is the text style a cell should use.
@@ -197,16 +195,6 @@ func (h *TermTextGridStyle) BackgroundColor() color.Color {
 		return h.InvertedBackgroundColor
 	}
 	return h.OriginalBackgroundColor
-}
-
-// Bold is the text bold or not.
-func (h *TermTextGridStyle) Bold() bool {
-	return h.IsBold
-}
-
-// Underlined is the text underlined or not.
-func (h *TermTextGridStyle) Underlined() bool {
-	return h.IsUnderlined
 }
 
 // HighlightOption defines a function type that can modify a TermTextGridStyle.
@@ -247,8 +235,10 @@ func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled, bold, 
 		InvertedBackgroundColor: invertedBg,
 		Highlighted:             false,
 		BlinkEnabled:            blinkEnabled,
-		IsBold:                  bold,
-		IsUnderlined:            underlined,
+		TextStyle: fyne.TextStyle{
+			Bold:      bold,
+			Underline: underlined,
+		},
 	}
 }
 
