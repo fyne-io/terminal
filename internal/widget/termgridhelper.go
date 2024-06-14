@@ -3,6 +3,7 @@ package widget
 import (
 	"image/color"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -14,9 +15,9 @@ func HighlightRange(t *TermGrid, blockMode bool, startRow, startCol, endRow, end
 		// Check if already highlighted
 		if h, ok := cell.Style.(*TermTextGridStyle); !ok {
 			if cell.Style != nil {
-				cell.Style = NewTermTextGridStyle(cell.Style.TextColor(), cell.Style.BackgroundColor(), bitmask, false)
+				cell.Style = NewTermTextGridStyle(cell.Style.TextColor(), cell.Style.BackgroundColor(), bitmask, false, false, false)
 			} else {
-				cell.Style = NewTermTextGridStyle(nil, nil, bitmask, false)
+				cell.Style = NewTermTextGridStyle(nil, nil, bitmask, false, false, false)
 			}
 			cell.Style.(*TermTextGridStyle).Highlighted = true
 
@@ -166,12 +167,18 @@ func forRange(t *TermGrid, blockMode bool, startRow, startCol, endRow, endCol in
 
 // TermTextGridStyle defines a style that can be original or highlighted.
 type TermTextGridStyle struct {
+	TextStyle               fyne.TextStyle
 	OriginalTextColor       color.Color
 	OriginalBackgroundColor color.Color
 	InvertedTextColor       color.Color
 	InvertedBackgroundColor color.Color
 	Highlighted             bool
 	BlinkEnabled            bool
+}
+
+// Style is the text style a cell should use.
+func (h *TermTextGridStyle) Style() fyne.TextStyle {
+	return h.TextStyle
 }
 
 // TextColor returns the color of the text, depending on whether it is highlighted.
@@ -207,7 +214,7 @@ type HighlightOption func(h *TermTextGridStyle)
 // Returns:
 //
 //	A pointer to a TermTextGridStyle initialized with the provided colors and inversion settings.
-func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool) widget.TextGridStyle {
+func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled, bold, underlined bool) widget.TextGridStyle {
 	// calculate the inverted colors
 	var invertedFg, invertedBg color.Color
 	if fg == nil {
@@ -228,6 +235,10 @@ func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool) w
 		InvertedBackgroundColor: invertedBg,
 		Highlighted:             false,
 		BlinkEnabled:            blinkEnabled,
+		TextStyle: fyne.TextStyle{
+			Bold:      bold,
+			Underline: underlined,
+		},
 	}
 }
 
