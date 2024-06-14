@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"time"
 
+	"fyne.io/fyne/v2/widget"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 )
 
 type termGridRenderer struct {
@@ -27,44 +28,86 @@ type termGridRenderer struct {
 }
 
 func (t *termGridRenderer) appendTextCell(str rune) {
-	text := canvas.NewText(string(str), theme.ForegroundColor())
+	th := t.text.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+
+	text := canvas.NewText(string(str), th.Color(theme.ColorNameForeground, v))
 	text.TextStyle.Monospace = true
 
 	bg := canvas.NewRectangle(color.Transparent)
-	t.objects = append(t.objects, bg, text)
+
+	ul := canvas.NewLine(color.Transparent)
+
+	t.objects = append(t.objects, bg, text, ul)
+}
+
+func (t *termGridRenderer) refreshCell(row, col int) {
+	pos := row*t.cols + col
+	if pos*3+1 >= len(t.objects) {
+		return
+	}
+
+	cell := t.text.Rows[row].Cells[col]
+	t.setCellRune(cell.Rune, pos, cell.Style)
 }
 
 func (t *termGridRenderer) setCellRune(str rune, pos int, style widget.TextGridStyle) {
 	if str == 0 {
 		str = ' '
 	}
-	fg := theme.ForegroundColor()
+	rect := t.objects[pos*3].(*canvas.Rectangle)
+	text := t.objects[pos*3+1].(*canvas.Text)
+	underline := t.objects[pos*3+2].(*canvas.Line)
+
+	th := t.text.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	fg := th.Color(theme.ColorNameForeground, v)
+	bg := color.Color(color.Transparent)
+	text.TextSize = th.Size(theme.SizeNameText)
+	textStyle := fyne.TextStyle{}
+	var underlineStrokeWidth float32 = 1
+	var underlineStrokeColor color.Color = color.Transparent
+
 	if style != nil && style.TextColor() != nil {
 		fg = style.TextColor()
 	}
-	bg := color.Color(color.Transparent)
-	if style != nil && style.BackgroundColor() != nil {
-		bg = style.BackgroundColor()
+
+	if style != nil {
+		if style.BackgroundColor() != nil {
+			bg = style.BackgroundColor()
+		}
+		if style.Style().Bold {
+			underlineStrokeWidth = 2
+			textStyle = fyne.TextStyle{
+				Bold: true,
+			}
+		}
+		if style.Style().Underline {
+			underlineStrokeColor = fg
+		}
 	}
 
 	if s, ok := style.(*TermTextGridStyle); ok && s != nil && s.BlinkEnabled {
 		t.shouldBlink = true
 		if t.blink {
 			fg = bg
+			underlineStrokeColor = bg
 		}
 	}
 
-	text := t.objects[pos*2+1].(*canvas.Text)
-	text.TextSize = theme.TextSize()
-
 	newStr := string(str)
-	if text.Text != newStr || text.Color != fg {
+	if text.Text != newStr || text.Color != fg || textStyle != text.TextStyle {
 		text.Text = newStr
 		text.Color = fg
+		text.TextStyle = textStyle
 		t.refresh(text)
 	}
 
-	rect := t.objects[pos*2].(*canvas.Rectangle)
+	if underlineStrokeWidth != underline.StrokeWidth || underlineStrokeColor != underline.StrokeColor {
+		underline.StrokeWidth, underline.StrokeColor = underlineStrokeWidth, underlineStrokeColor
+		t.refresh(underline)
+	}
+
 	if rect.FillColor != bg {
 		rect.FillColor = bg
 		t.refresh(rect)
@@ -73,10 +116,10 @@ func (t *termGridRenderer) setCellRune(str rune, pos int, style widget.TextGridS
 
 func (t *termGridRenderer) addCellsIfRequired() {
 	cellCount := t.cols * t.rows
-	if len(t.objects) == cellCount*2 {
+	if len(t.objects) == cellCount*3 {
 		return
 	}
-	for i := len(t.objects); i < cellCount*2; i += 2 {
+	for i := len(t.objects); i < cellCount*3; i += 3 {
 		t.appendTextCell(' ')
 	}
 }
@@ -141,7 +184,7 @@ func (t *termGridRenderer) refreshGrid() {
 
 		line++
 	}
-	for ; x < len(t.objects)/2; x++ {
+	for ; x < len(t.objects)/3; x++ {
 		t.setCellRune(' ', x, widget.TextGridStyleDefault) // trailing cells and blank lines
 	}
 
@@ -209,10 +252,17 @@ func (t *termGridRenderer) Layout(size fyne.Size) {
 	cellPos := fyne.NewPos(0, 0)
 	for y := 0; y < t.rows; y++ {
 		for x := 0; x < t.cols; x++ {
-			t.objects[i*2+1].Move(cellPos)
+			// rect
+			t.objects[i*3].Resize(t.cellSize)
+			t.objects[i*3].Move(cellPos)
 
-			t.objects[i*2].Resize(t.cellSize)
-			t.objects[i*2].Move(cellPos)
+			// text
+			t.objects[i*3+1].Move(cellPos)
+
+			// underline
+			t.objects[i*3+2].Move(cellPos.Add(fyne.Position{X: 0, Y: t.cellSize.Height}))
+			t.objects[i*3+2].Resize(fyne.Size{Width: t.cellSize.Width})
+
 			cellPos.X += t.cellSize.Width
 			i++
 		}
@@ -240,7 +290,9 @@ func (t *termGridRenderer) Refresh() {
 	// theme could change text size
 	t.updateCellSize()
 
-	widget.TextGridStyleWhitespace = &widget.CustomTextGridStyle{FGColor: theme.DisabledColor()}
+	th := t.text.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	widget.TextGridStyleWhitespace = &widget.CustomTextGridStyle{FGColor: th.Color(theme.ColorNameDisabled, v)}
 	t.updateGridSize(t.text.Size())
 	t.refreshGrid()
 }
@@ -271,11 +323,12 @@ func (t *termGridRenderer) refresh(obj fyne.CanvasObject) {
 }
 
 func (t *termGridRenderer) updateCellSize() {
-	size := fyne.MeasureText("M", theme.TextSize(), fyne.TextStyle{Monospace: true})
+	th := t.text.Theme()
+	size := fyne.MeasureText("M", th.Size(theme.SizeNameText), fyne.TextStyle{Monospace: true})
 
 	// round it for seamless background
-	size.Width = float32(math.Round(float64((size.Width))))
-	size.Height = float32(math.Round(float64((size.Height))))
+	size.Width = float32(math.Round(float64(size.Width)))
+	size.Height = float32(math.Round(float64(size.Height)))
 
 	t.cellSize = size
 }
