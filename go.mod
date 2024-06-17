@@ -5,10 +5,10 @@ go 1.17
 require (
 	fyne.io/fyne/v2 v2.4.6-0.20240617083040-1cbc2e354b50
 	github.com/ActiveState/termtest/conpty v0.5.0
-	github.com/creack/pty v1.1.11
+	github.com/creack/pty v1.1.21
 	github.com/nicksnyder/go-i18n/v2 v2.4.0
-	github.com/stretchr/testify v1.8.4
-	golang.org/x/text v0.15.0
+	github.com/stretchr/testify v1.9.0
+	golang.org/x/text v0.16.0
 )
 
 require (
