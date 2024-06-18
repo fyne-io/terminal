@@ -15,7 +15,7 @@ func (r position) String() string {
 }
 
 func (t *Terminal) getTermPosition(pos fyne.Position) position {
-	cell := t.guessCellSize()
+	cell := guessCellSize()
 	col := int(pos.X/cell.Width) + 1
 	row := int(pos.Y/cell.Height) + 1
 	return position{col, row}

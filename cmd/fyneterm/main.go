@@ -23,6 +23,13 @@ import (
 const termOverlay = fyne.ThemeColorName("termOver")
 
 var (
+	// DefaultRows The default number of rows in the terminal.
+	DefaultRows float32 = 24.0
+	// DefaultCols The default number of columns in the terminal.
+	DefaultCols float32 = 80.0
+)
+
+var (
 	localizer *i18n.Localizer
 	sizer     *termTheme
 )
@@ -104,9 +111,10 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	t.SetDebug(debug)
 	setupListener(t, w)
 	w.SetContent(container.NewStack(bg, img, over, t))
-
 	cellSize := guessCellSize()
-	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
+	minSize := fyne.NewSize(cellSize.Width*DefaultCols, cellSize.Height*DefaultRows)
+	t.SetMinSize(minSize)
+	w.Resize(minSize)
 	w.Canvas().Focus(t)
 
 	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift},
