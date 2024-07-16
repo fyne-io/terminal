@@ -1,8 +1,7 @@
-//go:generate fyne bundle -o translation.go ../../translation/
-
 package main
 
 import (
+	"embed"
 	"flag"
 	"image/color"
 
@@ -20,6 +19,9 @@ import (
 const termOverlay = fyne.ThemeColorName("termOver")
 
 var sizer *termTheme
+
+//go:embed translation
+var translations embed.FS
 
 func setupListener(t *terminal.Terminal, w fyne.Window) {
 	listen := make(chan terminal.Config)
@@ -53,11 +55,7 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "Show terminal debug messages")
 	flag.Parse()
 
-	lang.AddTranslations(resourceActiveEnJson)
-	lang.AddTranslations(resourceActiveFrJson)
-	lang.AddTranslations(resourceActiveRuJson)
-	lang.AddTranslations(resourceActiveSkJson)
-	lang.AddTranslations(resourceActiveUkJson)
+	lang.AddTranslationsFS(translations, "translation")
 
 	a := app.New()
 	a.SetIcon(data.Icon)
