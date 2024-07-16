@@ -15,8 +15,23 @@ var resourceActiveFrJson = &fyne.StaticResource{
 	StaticContent: []byte(
 		"{\n  \"Title\": \"Fyne Terminale\"\n}\n"),
 }
+var resourceActivePtBRJson = &fyne.StaticResource{
+	StaticName: "active.pt_BR.json",
+	StaticContent: []byte(
+		"{\n    \"Title\": \"Fyne Terminal\"\n}\n"),
+}
 var resourceActiveRuJson = &fyne.StaticResource{
 	StaticName: "active.ru.json",
 	StaticContent: []byte(
 		"{\n  \"Title\": \"Fyne Терминал\"\n}\n"),
+}
+var resourceActiveSkJson = &fyne.StaticResource{
+	StaticName: "active.sk.json",
+	StaticContent: []byte(
+		"{\n    \"Title\": \"Fyne Terminál\"\n}\n"),
+}
+var resourceActiveUkJson = &fyne.StaticResource{
+	StaticName: "active.uk.json",
+	StaticContent: []byte(
+		"{\n    \"Title\": \"Термінал Fyne\"\n}\n"),
 }
