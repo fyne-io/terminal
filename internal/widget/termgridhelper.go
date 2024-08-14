@@ -218,12 +218,12 @@ func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool) w
 	// calculate the inverted colors
 	var invertedFg, invertedBg color.Color
 	if fg == nil {
-		invertedFg = invertColor(theme.ForegroundColor(), bitmask)
+		invertedFg = invertColor(theme.Color(theme.ColorNameForeground), bitmask)
 	} else {
 		invertedFg = invertColor(fg, bitmask)
 	}
 	if bg == nil {
-		invertedBg = invertColor(theme.BackgroundColor(), bitmask)
+		invertedBg = invertColor(theme.Color(theme.ColorNameBackground), bitmask)
 	} else {
 		invertedBg = invertColor(bg, bitmask)
 	}

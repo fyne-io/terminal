@@ -69,7 +69,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	w := a.NewWindow(termTitle())
 	w.SetPadded(false)
 
-	bg := canvas.NewRectangle(theme.BackgroundColor())
+	bg := canvas.NewRectangle(theme.Color(theme.ColorNameBackground))
 	img := canvas.NewImageFromResource(data.FyneLogo)
 	img.FillMode = canvas.ImageFillContain
 	over := canvas.NewRectangle(th.Color(termOverlay, a.Settings().ThemeVariant()))
@@ -79,7 +79,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 		for {
 			<-ch
 
-			bg.FillColor = theme.BackgroundColor()
+			bg.FillColor = theme.Color(theme.ColorNameBackground)
 			bg.Refresh()
 			over.FillColor = th.Color(termOverlay, a.Settings().ThemeVariant())
 			over.Refresh()
