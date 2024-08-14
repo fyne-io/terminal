@@ -34,7 +34,7 @@ func (t *TermGrid) CreateRenderer() fyne.WidgetRenderer {
 	render.updateCellSize()
 	// N.B these global variables are not a good idea.
 	widget.TextGridStyleDefault = &widget.CustomTextGridStyle{}
-	widget.TextGridStyleWhitespace = &widget.CustomTextGridStyle{FGColor: theme.DisabledColor()}
+	widget.TextGridStyleWhitespace = &widget.CustomTextGridStyle{FGColor: theme.Color(theme.ColorNameDisabled)}
 
 	return render
 }
@@ -60,7 +60,7 @@ type termGridRenderer struct {
 }
 
 func (t *termGridRenderer) appendTextCell(str rune) {
-	text := canvas.NewText(string(str), theme.ForegroundColor())
+	text := canvas.NewText(string(str), theme.Color(theme.ColorNameForeground))
 	text.TextStyle.Monospace = true
 
 	bg := canvas.NewRectangle(color.Transparent)
@@ -71,7 +71,7 @@ func (t *termGridRenderer) setCellRune(str rune, pos int, style widget.TextGridS
 	if str == 0 {
 		str = ' '
 	}
-	fg := theme.ForegroundColor()
+	fg := theme.Color(theme.ColorNameForeground)
 	if style != nil && style.TextColor() != nil {
 		fg = style.TextColor()
 	}
@@ -273,7 +273,7 @@ func (t *termGridRenderer) Refresh() {
 	// theme could change text size
 	t.updateCellSize()
 
-	widget.TextGridStyleWhitespace = &widget.CustomTextGridStyle{FGColor: theme.DisabledColor()}
+	widget.TextGridStyleWhitespace = &widget.CustomTextGridStyle{FGColor: theme.Color(theme.ColorNameDisabled)}
 	t.updateGridSize(t.text.Size())
 	t.refreshGrid()
 }

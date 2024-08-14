@@ -1,31 +1,27 @@
-//go:generate fyne bundle -o translation.go ../../translation/
-
 package main
 
 import (
-	"encoding/json"
+	"embed"
 	"flag"
 	"image/color"
-	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/theme"
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"golang.org/x/text/language"
 )
 
 const termOverlay = fyne.ThemeColorName("termOver")
 
-var (
-	localizer *i18n.Localizer
-	sizer     *termTheme
-)
+var sizer *termTheme
+
+//go:embed translation
+var translations embed.FS
 
 func setupListener(t *terminal.Terminal, w fyne.Window) {
 	listen := make(chan terminal.Config)
@@ -44,12 +40,7 @@ func setupListener(t *terminal.Terminal, w fyne.Window) {
 }
 
 func termTitle() string {
-	return localizer.MustLocalize(&i18n.LocalizeConfig{
-		DefaultMessage: &i18n.Message{
-			ID:    "Title",
-			Other: "Fyne Terminal",
-		},
-	})
+	return lang.L("Title")
 }
 
 func guessCellSize() fyne.Size {
@@ -64,11 +55,7 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "Show terminal debug messages")
 	flag.Parse()
 
-	bundle := i18n.NewBundle(language.English)
-	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
-	bundle.MustParseMessageFileBytes(resourceActiveFrJson.Content(), resourceActiveFrJson.Name())
-	bundle.MustParseMessageFileBytes(resourceActiveRuJson.Content(), resourceActiveRuJson.Name())
-	localizer = i18n.NewLocalizer(bundle, os.Getenv("LANG"))
+	lang.AddTranslationsFS(translations, "translation")
 
 	a := app.New()
 	a.SetIcon(data.Icon)
@@ -82,7 +69,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	w := a.NewWindow(termTitle())
 	w.SetPadded(false)
 
-	bg := canvas.NewRectangle(theme.BackgroundColor())
+	bg := canvas.NewRectangle(theme.Color(theme.ColorNameBackground))
 	img := canvas.NewImageFromResource(data.FyneLogo)
 	img.FillMode = canvas.ImageFillContain
 	over := canvas.NewRectangle(th.Color(termOverlay, a.Settings().ThemeVariant()))
@@ -92,7 +79,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 		for {
 			<-ch
 
-			bg.FillColor = theme.BackgroundColor()
+			bg.FillColor = theme.Color(theme.ColorNameBackground)
 			bg.Refresh()
 			over.FillColor = th.Color(termOverlay, a.Settings().ThemeVariant())
 			over.Refresh()

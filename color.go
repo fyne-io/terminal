@@ -90,12 +90,12 @@ func (t *Terminal) handleColorMode(modeStr string) {
 	case 7: // reverse
 		bg, fg := t.currentBG, t.currentFG
 		if fg == nil {
-			t.currentBG = theme.ForegroundColor()
+			t.currentBG = theme.Color(theme.ColorNameForeground)
 		} else {
 			t.currentBG = fg
 		}
 		if bg == nil {
-			t.currentFG = theme.DisabledButtonColor()
+			t.currentFG = theme.Color(theme.ColorNameDisabledButton)
 		} else {
 			t.currentFG = bg
 		}

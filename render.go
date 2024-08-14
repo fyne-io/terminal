@@ -48,9 +48,9 @@ func (r *render) moveCursor() {
 func (t *Terminal) refreshCursor() {
 	t.cursor.Hidden = !t.focused || t.cursorHidden
 	if t.bell {
-		t.cursor.FillColor = theme.ErrorColor()
+		t.cursor.FillColor = theme.Color(theme.ColorNameError)
 	} else {
-		t.cursor.FillColor = theme.PrimaryColor()
+		t.cursor.FillColor = theme.Color(theme.ColorNamePrimary)
 	}
 	t.cursor.Resize(fyne.NewSize(cursorWidth, t.guessCellSize().Height))
 	t.cursor.Refresh()
@@ -58,7 +58,7 @@ func (t *Terminal) refreshCursor() {
 
 // CreateRenderer requests a new renderer for this terminal (just a wrapper around the TextGrid)
 func (t *Terminal) CreateRenderer() fyne.WidgetRenderer {
-	t.cursor = canvas.NewRectangle(theme.PrimaryColor())
+	t.cursor = canvas.NewRectangle(theme.Color(theme.ColorNamePrimary))
 	t.cursor.Hidden = true
 	t.cursor.Resize(fyne.NewSize(cursorWidth, t.guessCellSize().Height))
 
