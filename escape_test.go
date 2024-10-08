@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"strconv"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -16,6 +17,48 @@ func TestClearScreen(t *testing.T) {
 
 	term.handleEscape("2J")
 	assert.Equal(t, "", term.content.Text())
+}
+
+// test clearing the screen by using "scrollback"
+// this is a method tmux uses to "clear the screen"
+func TestScrollBack(t *testing.T) {
+	// Step 1: Setup a new terminal instance
+	term := New()
+	term.debug = true
+	term.config.Columns = 80 // 80 columns (standard terminal width)
+	term.config.Rows = 5     // Doesn't matter
+
+	// Step 2: Populate the entire screen with lines using cursor movement
+	for i := 1; i <= 40; i++ {
+		lineText := "Line " + strconv.Itoa(i)
+		// Move the cursor to the beginning of each line using the escape sequence \x1b[{row};{col}H
+		escapeMoveCursor := "\x1b[" + strconv.Itoa(i) + ";1H"
+		term.handleOutput([]byte(escapeMoveCursor + lineText))
+	}
+
+	// Step 3: Set up the scroll region and scroll content away
+	term.handleOutput([]byte("\x1b[1;47r")) // Set scroll region from lines 1 to 47
+	term.handleOutput([]byte("\x1b[2;47r")) // Set scroll region again (redundant in most cases)
+	term.handleOutput([]byte("\x1b[46S"))   // Scroll up by 46 lines (this should move almost all content out of view)
+
+	// Step 4: Additional escape sequences to clear the screen
+	term.handleOutput([]byte("\x1b[1;1H"))  // Move cursor to the top-left corner
+	term.handleOutput([]byte("\x1b[K"))     // Clear the current line
+	term.handleOutput([]byte("\x1b[1;48r")) // Restore scroll region to the full screen
+	term.handleOutput([]byte("\x1b[1;1H"))  // Move cursor to top-left again
+	term.handleOutput([]byte("\x1b(B"))     // Reset character set
+	term.handleOutput([]byte("\x1b[m"))     // Reset all attributes
+
+	// Step 5: Check the final content of the terminal
+	expectedContent := "" // After scrolling and clearing, the visible area should be empty
+	for i := 0; i < 46; i++ {
+		expectedContent += "\n" // Each row should be an empty line
+	}
+
+	assert.Equal(t, 0, term.cursorRow)
+	assert.Equal(t, 0, term.cursorCol)
+
+	assert.Equal(t, expectedContent, term.content.Text())
 }
 
 func TestInsertDeleteChars(t *testing.T) {
