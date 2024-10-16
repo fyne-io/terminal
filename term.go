@@ -143,7 +143,7 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 // MouseUp handles the up action for desktop mouse events.
 func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
 	if ev.Button == desktop.MouseButtonSecondary && t.hasSelectedText() {
-		t.copySelectedText(fyne.CurrentApp().Driver().AllWindows()[0].Clipboard())
+		t.copySelectedText(fyne.CurrentApp().Clipboard())
 	}
 
 	if t.onMouseDown == nil {
@@ -380,22 +380,7 @@ func (t *Terminal) setupShortcuts() {
 	t.ShortcutHandler.AddShortcut(paste,
 		func(_ fyne.Shortcut) {
 			a := fyne.CurrentApp()
-			c := a.Driver().CanvasForObject(t)
-			if c == nil {
-				return
-			}
-
-			var win fyne.Window
-			for _, w := range a.Driver().AllWindows() {
-				if w.Canvas() == c {
-					win = w
-				}
-			}
-			if win == nil {
-				return
-			}
-
-			t.pasteText(win.Clipboard())
+			t.pasteText(a.Clipboard())
 		})
 	var shortcutCopy fyne.Shortcut
 	shortcutCopy = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
@@ -406,22 +391,7 @@ func (t *Terminal) setupShortcuts() {
 	t.ShortcutHandler.AddShortcut(shortcutCopy,
 		func(_ fyne.Shortcut) {
 			a := fyne.CurrentApp()
-			c := a.Driver().CanvasForObject(t)
-			if c == nil {
-				return
-			}
-
-			var win fyne.Window
-			for _, w := range a.Driver().AllWindows() {
-				if w.Canvas() == c {
-					win = w
-				}
-			}
-			if win == nil {
-				return
-			}
-
-			t.copySelectedText(win.Clipboard())
+			t.copySelectedText(a.Clipboard())
 		})
 }
 
