@@ -2,3 +2,7 @@
   Icon = "data/Icon.png"
   Name = "FyneTerm"
   ID = "io.fyne.terminal"
+
+[Source]
+  Repo = "https://github.com/fyne-io/terminal"
+  Dir = "cmd/fyneterm"
