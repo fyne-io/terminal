@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -21,7 +22,7 @@ func TestClearScreen(t *testing.T) {
 
 // test clearing the screen by using "scrollback"
 // this is a method tmux uses to "clear the screen"
-func TestScrollBack(t *testing.T) {
+func TestScrollBack_Tmux(t *testing.T) {
 	// Step 1: Setup a new terminal instance
 	term := New()
 	term.debug = true
@@ -59,6 +60,57 @@ func TestScrollBack(t *testing.T) {
 	assert.Equal(t, 0, term.cursorCol)
 
 	assert.Equal(t, expectedContent, term.content.Text())
+}
+
+func TestScrollBack_With_Zero_Back_Buffer(t *testing.T) {
+	// Define the test cases using a map
+	tests := map[string]struct {
+		linesToAdd        int
+		scrollLines       int
+		expectedOutput    string
+		expectedCursorRow int
+		expectedCursorCol int
+	}{
+		"when 5 lines added and scrolled up 4 lines, should show line 5": {
+			linesToAdd:        5,
+			scrollLines:       4,
+			expectedOutput:    "Line 5",
+			expectedCursorRow: 0, // Adjust as needed
+			expectedCursorCol: 6, // Assuming cursor is at end of visible text
+		},
+		// Add more test cases here as needed
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			// Setup: Create a new terminal instance with a zero back buffer
+			term := New()
+			term.debug = true
+			term.config.Columns = 80 // 80 columns (standard terminal width)
+			term.config.Rows = 5     // Doesn't matter
+
+			// Step 1: Populate the entire screen with lines using cursor movement
+			for i := 1; i <= tt.linesToAdd; i++ {
+				lineText := "Line " + strconv.Itoa(i)
+				// Move the cursor to the beginning of each line using the escape sequence \x1b[{row};{col}H
+				escapeMoveCursor := "\x1b[" + strconv.Itoa(i) + ";1H" // Move cursor to row i, column 1
+				term.handleOutput([]byte(escapeMoveCursor + lineText))
+			}
+			term.handleOutput([]byte("\x1b[1;" + strconv.Itoa(tt.linesToAdd) + "r")) // Set scroll region from lines 1 to linesToAdd
+
+			term.handleOutput([]byte("\x1b[" + strconv.Itoa(tt.scrollLines) + "S")) // Scroll up
+
+			// Step 3: Get the current output after scrolling
+			currentOutput := strings.TrimRight(term.Text(), "\n")
+
+			// Step 4: Assert that the output matches
+			assert.Equal(t, tt.expectedOutput, currentOutput)
+
+			// Step 5: Check the final content of the terminal
+			assert.Equal(t, tt.expectedCursorRow, term.cursorRow)
+			assert.Equal(t, tt.expectedCursorCol, term.cursorCol)
+		})
+	}
 }
 
 func TestInsertDeleteChars(t *testing.T) {
