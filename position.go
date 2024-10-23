@@ -20,3 +20,11 @@ func (t *Terminal) getTermPosition(pos fyne.Position) position {
 	row := int(pos.Y/cell.Height) + 1
 	return position{col, row}
 }
+
+// getPixelPosition converts a terminal position (row and col) to pixel coordinates.
+func (t *Terminal) getPixelPosition(pos position) fyne.Position {
+	cell := t.guessCellSize()
+	x := (pos.Col - 1) * int(cell.Width)  // Convert column to pixel position (1-based to 0-based)
+	y := (pos.Row - 1) * int(cell.Height) // Convert row to pixel position (1-based to 0-based)
+	return fyne.NewPos(float32(x), float32(y))
+}
