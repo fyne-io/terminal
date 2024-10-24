@@ -3,8 +3,10 @@ package terminal
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 	widget2 "github.com/fyne-io/terminal/internal/widget"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetSelectedRange(t *testing.T) {
@@ -106,6 +108,77 @@ func TestGetTextRange(t *testing.T) {
 			if got != tc.want {
 				t.Fatalf("GetTextRange() = %v; want %v", got, tc.want)
 			}
+		})
+	}
+}
+
+func TestDoubleTapped(t *testing.T) {
+	// Mock content to simulate terminal data
+	grid := widget2.NewTermGrid()
+	grid.Rows = []widget.TextGridRow{
+		{Cells: []widget.TextGridCell{
+			{Rune: 'H'}, {Rune: 'e'}, {Rune: 'l'}, {Rune: 'l'}, {Rune: 'o'},
+			{Rune: ' '}, {Rune: 'W'}, {Rune: 'o'}, {Rune: 'r'}, {Rune: 'l'},
+			{Rune: 'd'}, {Rune: '!'},
+		}},
+		{Cells: []widget.TextGridCell{
+			{Rune: 'T'}, {Rune: 'e'}, {Rune: 's'}, {Rune: 't'}, {Rune: 'i'},
+			{Rune: 'n'}, {Rune: 'g'}, {Rune: ' '}, {Rune: '1'}, {Rune: '2'},
+			{Rune: '3'}, {Rune: '.'},
+		}},
+	}
+
+	// Simulate terminal with some text content
+	term := &Terminal{
+		content: grid,
+	}
+	term.Resize(fyne.NewSize(500, 500))
+
+	tests := map[string]struct {
+		clickPosition fyne.Position // position where the double-tap occurs
+		expectedWord  string        // expected word to be selected
+	}{
+		"Double tap on 'Hello'": {
+			clickPosition: term.getPixelPosition(position{Row: 1, Col: 1}), // should yield (0, 0)
+			expectedWord:  "Hello",
+		},
+		"Double tap on 'World'": {
+			clickPosition: term.getPixelPosition(position{Row: 1, Col: 7}), // should yield (48, 0)
+			expectedWord:  "World",
+		},
+		"Double tap on '123'": {
+			clickPosition: term.getPixelPosition(position{Row: 2, Col: 9}), // should yield (72, 16)
+			expectedWord:  "123",
+		},
+		"Double tap on '!' should not select": {
+			clickPosition: term.getPixelPosition(position{Row: 1, Col: 12}), // should yield (88, 0)
+			expectedWord:  "",                                               // Non-alphanumeric character should not be selected
+		},
+		"Double tap on '.' should not select": {
+			clickPosition: term.getPixelPosition(position{Row: 2, Col: 12}), // should yield (88, 16)
+			expectedWord:  "",                                               // Non-alphanumeric character should not be selected
+		},
+		"Double tap on space between words": {
+			clickPosition: term.getPixelPosition(position{Row: 1, Col: 6}), // should yield (40, 0)
+			expectedWord:  "",                                              // Space should not select a word
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			term.clearSelectedText()
+			// Simulate double-tap at the given position
+			term.DoubleTapped(&fyne.PointEvent{
+				Position: tc.clickPosition,
+			})
+
+			// Check the selected word
+			selectedWord := ""
+			if term.hasSelectedText() {
+				selectedWord = term.SelectedText()
+			}
+
+			assert.Equal(t, tc.expectedWord, selectedWord)
 		})
 	}
 }
