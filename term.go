@@ -126,7 +126,12 @@ func (t *Terminal) MinSize() fyne.Size {
 // MouseDown handles the down action for desktop mouse events.
 func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 	if t.hasSelectedText() {
+		t.copySelectedText(fyne.CurrentApp().Clipboard())
 		t.clearSelectedText()
+	} else {
+		if ev.Button == desktop.MouseButtonSecondary {
+			t.pasteText(fyne.CurrentApp().Clipboard())
+		}
 	}
 
 	if t.onMouseDown == nil {
@@ -142,9 +147,6 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 
 // MouseUp handles the up action for desktop mouse events.
 func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
-	if ev.Button == desktop.MouseButtonSecondary && t.hasSelectedText() {
-		t.copySelectedText(fyne.CurrentApp().Clipboard())
-	}
 
 	if t.onMouseDown == nil {
 		return
