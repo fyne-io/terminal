@@ -128,10 +128,8 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 	if t.hasSelectedText() {
 		t.copySelectedText(fyne.CurrentApp().Clipboard())
 		t.clearSelectedText()
-	} else {
-		if ev.Button == desktop.MouseButtonSecondary {
-			t.pasteText(fyne.CurrentApp().Clipboard())
-		}
+	} else if ev.Button == desktop.MouseButtonSecondary {
+		t.pasteText(fyne.CurrentApp().Clipboard())
 	}
 
 	if t.onMouseDown == nil {
