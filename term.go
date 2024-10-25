@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"sync"
 	"time"
+	"unicode"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -155,6 +156,51 @@ func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
 	} else if ev.Button == desktop.MouseButtonSecondary {
 		t.onMouseUp(2, ev.Modifier, ev.Position)
 	}
+}
+
+// DoubleTapped handles the double tapped event.
+func (t *Terminal) DoubleTapped(pe *fyne.PointEvent) {
+	pos := t.sanitizePosition(pe.Position)
+	termPos := t.getTermPosition(*pos)
+	row, col := termPos.Row, termPos.Col
+
+	if t.hasSelectedText() {
+		t.clearSelectedText()
+	}
+
+	if row < 1 || row > len(t.content.Rows) {
+		return
+	}
+
+	rowContent := t.content.Rows[row-1].Cells
+
+	if col < 0 || col >= len(rowContent) {
+		return // No valid character under the cursor, do nothing
+	}
+
+	start, end := col-1, col-1
+
+	if !unicode.IsLetter(rowContent[start].Rune) && !unicode.IsDigit(rowContent[start].Rune) {
+		return
+	}
+
+	for start > 0 && (unicode.IsLetter(rowContent[start-1].Rune) || unicode.IsDigit(rowContent[start-1].Rune)) {
+		start--
+	}
+	if start < len(rowContent) && !unicode.IsLetter(rowContent[start].Rune) && !unicode.IsDigit(rowContent[start].Rune) {
+		start++
+	}
+	for end < len(rowContent) && (unicode.IsLetter(rowContent[end].Rune) || unicode.IsDigit(rowContent[end].Rune)) {
+		end++
+	}
+	if start == end {
+		return
+	}
+
+	t.selStart = &position{Row: row, Col: start + 1}
+	t.selEnd = &position{Row: row, Col: end}
+
+	t.highlightSelectedText()
 }
 
 // RemoveListener de-registers a Config channel and closes it

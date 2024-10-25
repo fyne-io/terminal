@@ -52,6 +52,8 @@ func (t *Terminal) clearSelectedText() {
 	t.Refresh()
 	t.blockMode = false
 	t.selecting = false
+	t.selStart = nil
+	t.selEnd = nil
 }
 
 // SelectedText gets the text that is currently selected.
