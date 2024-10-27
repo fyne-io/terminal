@@ -521,3 +521,13 @@ type ReadWriterConfigurator interface {
 	// the terminal will use for I/O operations.
 	SetupReadWriter(r io.Reader, w io.WriteCloser) (io.Reader, io.WriteCloser)
 }
+
+// ReadWriterConfiguratorFunc is a function type that matches the signature of the
+// SetupReadWriter method in the Middleware interface.
+type ReadWriterConfiguratorFunc func(r io.Reader, w io.WriteCloser) (io.Reader, io.WriteCloser)
+
+// SetupReadWriter allows ReadWriterConfiguratorFunc to satisfy the Middleware interface.
+// It calls the ReadWriterConfiguratorFunc itself.
+func (m ReadWriterConfiguratorFunc) SetupReadWriter(r io.Reader, w io.WriteCloser) (io.Reader, io.WriteCloser) {
+	return m(r, w)
+}
