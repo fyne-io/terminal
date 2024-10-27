@@ -41,16 +41,6 @@ func (t *termGridRenderer) appendTextCell(str rune) {
 	t.objects = append(t.objects, bg, text, ul)
 }
 
-func (t *termGridRenderer) refreshCell(row, col int) {
-	pos := row*t.cols + col
-	if pos*3+1 >= len(t.objects) {
-		return
-	}
-
-	cell := t.text.Rows[row].Cells[col]
-	t.setCellRune(cell.Rune, pos, cell.Style)
-}
-
 func (t *termGridRenderer) setCellRune(str rune, pos int, style widget.TextGridStyle) {
 	if str == 0 {
 		str = ' '
