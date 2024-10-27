@@ -136,27 +136,27 @@ func TestDoubleTapped(t *testing.T) {
 		expectedWord  string
 	}{
 		"Double tap on 'Hello'": {
-			clickPosition: term.getPixelPosition(position{Row: 1, Col: 1}),
+			clickPosition: term.getTextPosition(position{Row: 1, Col: 1}),
 			expectedWord:  "Hello",
 		},
 		"Double tap on 'World'": {
-			clickPosition: term.getPixelPosition(position{Row: 1, Col: 7}),
+			clickPosition: term.getTextPosition(position{Row: 1, Col: 7}),
 			expectedWord:  "World",
 		},
 		"Double tap on '123'": {
-			clickPosition: term.getPixelPosition(position{Row: 2, Col: 9}),
+			clickPosition: term.getTextPosition(position{Row: 2, Col: 9}),
 			expectedWord:  "123",
 		},
 		"Double tap on '!' should not select": {
-			clickPosition: term.getPixelPosition(position{Row: 1, Col: 12}),
+			clickPosition: term.getTextPosition(position{Row: 1, Col: 12}),
 			expectedWord:  "",
 		},
 		"Double tap on '.' should not select": {
-			clickPosition: term.getPixelPosition(position{Row: 2, Col: 12}),
+			clickPosition: term.getTextPosition(position{Row: 2, Col: 12}),
 			expectedWord:  "",
 		},
 		"Double tap on space between words": {
-			clickPosition: term.getPixelPosition(position{Row: 1, Col: 6}),
+			clickPosition: term.getTextPosition(position{Row: 1, Col: 6}),
 			expectedWord:  "",
 		},
 	}
