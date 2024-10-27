@@ -77,13 +77,14 @@ type Terminal struct {
 		ctrlPressed  bool
 		altPressed   bool
 	}
-	newLineMode        bool // new line mode or line feed mode
-	bracketedPasteMode bool
-	state              *parseState
-	blinking           bool
-	printData          []byte
-	printer            Printer
-	cmd                *exec.Cmd
+	newLineMode            bool // new line mode or line feed mode
+	bracketedPasteMode     bool
+	state                  *parseState
+	blinking               bool
+	printData              []byte
+	printer                Printer
+	cmd                    *exec.Cmd
+	readWriterConfigurator ReadWriterConfigurator
 }
 
 // Printer is used for spooling print data when its received.
@@ -266,8 +267,12 @@ func (t *Terminal) open() error {
 	if err != nil {
 		return err
 	}
-	t.in = in
-	t.out = out
+
+	t.in, t.out = in, out
+	if t.readWriterConfigurator != nil {
+		t.out, t.in = t.readWriterConfigurator.SetupReadWriter(out, in)
+	}
+
 	t.pty = pty
 
 	t.updatePTYSize()
@@ -353,8 +358,10 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
 		time.Sleep(time.Millisecond * 50)
 	}
-	t.in = in
-	t.out = out
+	t.in, t.out = in, out
+	if t.readWriterConfigurator != nil {
+		t.out, t.in = t.readWriterConfigurator.SetupReadWriter(out, in)
+	}
 
 	t.run()
 
@@ -466,4 +473,31 @@ func (t *Terminal) Dragged(d *fyne.DragEvent) {
 // DragEnd is called by fyne when the left mouse is released after a Drag event.
 func (t *Terminal) DragEnd() {
 	t.selecting = false
+}
+
+// SetReadWriter sets the readWriterConfigurator function that will be used when creating a new terminal.
+// The readWriterConfigurator function is responsible for setting up the I/O readers and writers.
+func (t *Terminal) SetReadWriter(mw ReadWriterConfigurator) {
+	t.readWriterConfigurator = mw
+}
+
+// ReadWriterConfigurator is an interface that defines the methods required to set up
+// the input (reader) and output (writer) streams for the terminal.
+// Implementations of this interface can modify or wrap the reader and writer.
+type ReadWriterConfigurator interface {
+	// SetupReadWriter configures the input and output streams for the terminal.
+	// It takes an input reader (r) and an output writer (w) as arguments.
+	// The function returns a possibly modified reader and writer that
+	// the terminal will use for I/O operations.
+	SetupReadWriter(r io.Reader, w io.WriteCloser) (io.Reader, io.WriteCloser)
+}
+
+// ReadWriterConfiguratorFunc is a function type that matches the signature of the
+// SetupReadWriter method in the Middleware interface.
+type ReadWriterConfiguratorFunc func(r io.Reader, w io.WriteCloser) (io.Reader, io.WriteCloser)
+
+// SetupReadWriter allows ReadWriterConfiguratorFunc to satisfy the Middleware interface.
+// It calls the ReadWriterConfiguratorFunc itself.
+func (m ReadWriterConfiguratorFunc) SetupReadWriter(r io.Reader, w io.WriteCloser) (io.Reader, io.WriteCloser) {
+	return m(r, w)
 }
