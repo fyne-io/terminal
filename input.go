@@ -232,3 +232,13 @@ func (t *Terminal) typeCursorKey(key fyne.KeyName) {
 		_, _ = t.in.Write([]byte{asciiEscape, cursorPrefix, 'C'})
 	}
 }
+
+type discardWriter struct{}
+
+func (d discardWriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+func (d discardWriter) Close() error {
+	return nil
+}
