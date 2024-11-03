@@ -465,6 +465,7 @@ func New() *Terminal {
 	t := &Terminal{
 		mouseCursor:      desktop.DefaultCursor,
 		highlightBitMask: 0x55,
+		in:               discardWriter{},
 	}
 	t.ExtendBaseWidget(t)
 	t.content = widget2.NewTermGrid()
