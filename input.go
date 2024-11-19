@@ -22,7 +22,13 @@ func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 		return
 	}
 
-	switch e.Name {
+	keyname := e.Name
+
+	if remap, ok := t.keyRemap[e.Name]; ok {
+		keyname = remap
+	}
+
+	switch keyname {
 	case fyne.KeyReturn:
 		_, _ = t.in.Write([]byte{'\r'})
 	case fyne.KeyEnter:
