@@ -86,6 +86,7 @@ type Terminal struct {
 	printer                Printer
 	cmd                    *exec.Cmd
 	readWriterConfigurator ReadWriterConfigurator
+	keyRemap               map[fyne.KeyName]fyne.KeyName
 }
 
 // Printer is used for spooling print data when its received.
@@ -465,6 +466,7 @@ func New() *Terminal {
 	t := &Terminal{
 		mouseCursor:      desktop.DefaultCursor,
 		highlightBitMask: 0x55,
+		keyRemap:         map[fyne.KeyName]fyne.KeyName{},
 	}
 	t.ExtendBaseWidget(t)
 	t.content = widget2.NewTermGrid()
@@ -547,4 +549,9 @@ type ReadWriterConfiguratorFunc func(r io.Reader, w io.WriteCloser) (io.Reader, 
 // It calls the ReadWriterConfiguratorFunc itself.
 func (m ReadWriterConfiguratorFunc) SetupReadWriter(r io.Reader, w io.WriteCloser) (io.Reader, io.WriteCloser) {
 	return m(r, w)
+}
+
+// RemapKey remaps a key when processing input.
+func (t *Terminal) RemapKey(key fyne.KeyName, remap fyne.KeyName) {
+	t.keyRemap[key] = remap
 }
