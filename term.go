@@ -82,6 +82,7 @@ type Terminal struct {
 	bracketedPasteMode     bool
 	state                  *parseState
 	blinking               bool
+	underlined         bool
 	printData              []byte
 	printer                Printer
 	cmd                    *exec.Cmd
