@@ -520,6 +520,9 @@ func (t *Terminal) Dragged(d *fyne.DragEvent) {
 // DragEnd is called by fyne when the left mouse is released after a Drag event.
 func (t *Terminal) DragEnd() {
 	t.selecting = false
+	if t.hasSelectedText() {
+		t.copySelectedText(fyne.CurrentApp().Clipboard())
+	}
 }
 
 // SetReadWriter sets the readWriterConfigurator function that will be used when creating a new terminal.
