@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"github.com/creack/pty"
 	"image/color"
 	"io"
 	"math"
@@ -86,7 +87,10 @@ type Terminal struct {
 	printer                Printer
 	cmd                    *exec.Cmd
 	readWriterConfigurator ReadWriterConfigurator
+	onResize               ResizeHandler
 }
+
+type ResizeHandler = func(size *pty.Winsize)
 
 // Printer is used for spooling print data when its received.
 type Printer interface {
@@ -548,4 +552,8 @@ type ReadWriterConfiguratorFunc func(r io.Reader, w io.WriteCloser) (io.Reader, 
 // It calls the ReadWriterConfiguratorFunc itself.
 func (m ReadWriterConfiguratorFunc) SetupReadWriter(r io.Reader, w io.WriteCloser) (io.Reader, io.WriteCloser) {
 	return m(r, w)
+}
+
+func (t *Terminal) SetResizeHandler(h ResizeHandler) {
+	t.onResize = h
 }

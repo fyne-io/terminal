@@ -13,7 +13,7 @@ import (
 )
 
 func (t *Terminal) updatePTYSize() {
-	if t.pty == nil { // SSH or other direct connection?
+	if t.pty == nil && t.onResize == nil { // SSH or other direct connection?
 		return
 	}
 	scale := float32(1.0)
@@ -21,9 +21,15 @@ func (t *Terminal) updatePTYSize() {
 	if c != nil {
 		scale = c.Scale()
 	}
-	_ = pty.Setsize(t.pty.(*os.File), &pty.Winsize{
+	ws := &pty.Winsize{
 		Rows: uint16(t.config.Rows), Cols: uint16(t.config.Columns),
-		X: uint16(t.Size().Width * scale), Y: uint16(t.Size().Height * scale)})
+		X: uint16(t.Size().Width * scale), Y: uint16(t.Size().Height * scale)}
+	if t.onResize != nil {
+		t.onResize(ws)
+	}
+	if t.pty != nil {
+		_ = pty.Setsize(t.pty.(*os.File), ws)
+	}
 }
 
 func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
