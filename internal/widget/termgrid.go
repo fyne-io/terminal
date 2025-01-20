@@ -33,6 +33,8 @@ func NewTermGrid() *TermGrid {
 	return grid
 }
 
+// Refresh will be called when this grid should update.
+// We update our blinking status and then call the TextGrid we extended to refresh too.
 func (t *TermGrid) Refresh() {
 	t.refreshBlink(false)
 	t.TextGrid.Refresh()
