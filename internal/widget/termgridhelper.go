@@ -174,6 +174,7 @@ type TermTextGridStyle struct {
 	InvertedBackgroundColor color.Color
 	Highlighted             bool
 	BlinkEnabled            bool
+	blinked                 bool
 }
 
 // Style is the text style a cell should use.
@@ -184,7 +185,16 @@ func (h *TermTextGridStyle) Style() fyne.TextStyle {
 // TextColor returns the color of the text, depending on whether it is highlighted.
 func (h *TermTextGridStyle) TextColor() color.Color {
 	if h.Highlighted {
+		if h.blinked {
+			return h.InvertedBackgroundColor
+		}
 		return h.InvertedTextColor
+	}
+	if h.blinked {
+		if h.OriginalBackgroundColor == nil {
+			return color.Transparent
+		}
+		return h.OriginalBackgroundColor
 	}
 	return h.OriginalTextColor
 }
@@ -195,6 +205,10 @@ func (h *TermTextGridStyle) BackgroundColor() color.Color {
 		return h.InvertedBackgroundColor
 	}
 	return h.OriginalBackgroundColor
+}
+
+func (h *TermTextGridStyle) blink(b bool) {
+	h.blinked = b
 }
 
 // HighlightOption defines a function type that can modify a TermTextGridStyle.
