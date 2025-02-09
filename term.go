@@ -243,7 +243,7 @@ func (t *Terminal) Resize(s fyne.Size) {
 	}
 	t.onConfigure()
 
-	go t.updatePTYSize()
+	t.updatePTYSize()
 }
 
 // SetDebug turns on output about terminal codes and other errors if the parameter is `true`.
@@ -362,8 +362,7 @@ func (t *Terminal) run() {
 				// wait for cmd (shell) to exit, populates ProcessState.ExitCode
 				t.cmd.Wait()
 			}
-			// this is the pre-go 1.13 way to check for the read failing (terminal closed)
-			if err.Error() == "EOF" {
+			if err == io.EOF || err.Error() == "EOF" {
 				break // term exit on macOS
 			} else if err, ok := err.(*os.PathError); ok && err.Err.Error() == "input/output error" {
 				break // broken pipe, terminal exit
@@ -378,10 +377,13 @@ func (t *Terminal) run() {
 			fullBuf = append(leftOver, buf[:num]...)
 			num += lenLeftOver
 		}
-		leftOver = t.handleOutput(fullBuf[:num])
-		if len(leftOver) == 0 {
-			t.Refresh()
-		}
+
+		fyne.DoAndWait(func() {
+			leftOver = t.handleOutput(fullBuf[:num])
+			if len(leftOver) == 0 {
+				t.Refresh()
+			}
+		})
 	}
 }
 
