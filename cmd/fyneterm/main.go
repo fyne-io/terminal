@@ -29,11 +29,13 @@ func setupListener(t *terminal.Terminal, w fyne.Window) {
 		for {
 			config := <-listen
 
-			if config.Title == "" {
-				w.SetTitle(termTitle())
-			} else {
-				w.SetTitle(termTitle() + ": " + config.Title)
-			}
+			fyne.Do(func() {
+				if config.Title == "" {
+					w.SetTitle(termTitle())
+				} else {
+					w.SetTitle(termTitle() + ": " + config.Title)
+				}
+			})
 		}
 	}()
 	t.AddListener(listen)
@@ -74,18 +76,12 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	img.FillMode = canvas.ImageFillContain
 	over := canvas.NewRectangle(th.Color(termOverlay, a.Settings().ThemeVariant()))
 
-	ch := make(chan fyne.Settings)
-	go func() {
-		for {
-			<-ch
-
-			bg.FillColor = theme.Color(theme.ColorNameBackground)
-			bg.Refresh()
-			over.FillColor = th.Color(termOverlay, a.Settings().ThemeVariant())
-			over.Refresh()
-		}
-	}()
-	a.Settings().AddChangeListener(ch)
+	a.Settings().AddListener(func(s fyne.Settings) {
+		bg.FillColor = theme.Color(theme.ColorNameBackground)
+		bg.Refresh()
+		over.FillColor = th.Color(termOverlay, s.ThemeVariant())
+		over.Refresh()
+	})
 
 	t := terminal.New()
 	t.SetDebug(debug)
@@ -121,7 +117,7 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 		if err != nil {
 			fyne.LogError("Failure in terminal", err)
 		}
-		w.Close()
+		fyne.Do(w.Close)
 	}()
 
 	return w
