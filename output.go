@@ -5,6 +5,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
@@ -156,7 +157,6 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			// check to see which charset to use
 			if t.useG1CharSet {
 				t.handleOutputChar(charSetMap[t.g1Charset](r))
-
 			} else {
 				t.handleOutputChar(charSetMap[t.g0Charset](r))
 			}
@@ -266,11 +266,13 @@ func (t *Terminal) handleOutputChar(r rune) {
 
 func (t *Terminal) ringBell() {
 	t.bell = true
-	t.Refresh()
+	fyne.Do(t.Refresh)
 
-	time.Sleep(time.Millisecond * 300)
-	t.bell = false
-	t.Refresh()
+	go func() {
+		time.Sleep(time.Millisecond * 300)
+		t.bell = false
+		fyne.Do(t.Refresh)
+	}()
 }
 
 func (t *Terminal) scrollUp() {
@@ -305,7 +307,7 @@ func handleOutputBackspace(t *Terminal) {
 }
 
 func handleOutputBell(t *Terminal) {
-	go t.ringBell()
+	t.ringBell()
 }
 
 func handleOutputCarriageReturn(t *Terminal) {

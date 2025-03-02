@@ -80,7 +80,9 @@ func (t *TermGrid) runBlink() {
 				return
 			case <-ticker.C:
 				blinking = !blinking
-				t.refreshBlink(blinking)
+				fyne.Do(func() {
+					t.refreshBlink(blinking)
+				})
 			}
 		}
 	}()

@@ -6,3 +6,7 @@
 [Source]
   Repo = "https://github.com/fyne-io/terminal"
   Dir = "cmd/fyneterm"
+
+[Migrations]
+  fyneDo = true
+
