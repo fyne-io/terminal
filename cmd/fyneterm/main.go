@@ -4,6 +4,7 @@ import (
 	"embed"
 	"flag"
 	"image/color"
+	"runtime"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -92,11 +93,14 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
 	w.Canvas().Focus(t)
 
-	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift},
-		func(_ fyne.Shortcut) {
-			w := newTerminalWindow(a, th, debug)
-			w.Show()
-		})
+	newTerm := func(_ fyne.Shortcut) {
+		w := newTerminalWindow(a, th, debug)
+		w.Show()
+	}
+	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift}, newTerm)
+	if runtime.GOOS == "darwin" {
+		t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: fyne.KeyModifierSuper}, newTerm)
+	}
 	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyEqual, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift},
 		func(_ fyne.Shortcut) {
 			sizer.fontSize++
