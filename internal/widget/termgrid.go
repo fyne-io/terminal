@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fyne/v2"
@@ -30,6 +31,8 @@ func (t *TermGrid) CreateRenderer() fyne.WidgetRenderer {
 func NewTermGrid() *TermGrid {
 	grid := &TermGrid{}
 	grid.ExtendBaseWidget(grid)
+
+	grid.Scroll = container.ScrollNone
 	return grid
 }
 
