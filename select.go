@@ -42,7 +42,7 @@ func (t *Terminal) getSelectedRange() (int, int, int, int) {
 
 func (t *Terminal) highlightSelectedText() {
 	sr, sc, er, ec := t.getSelectedRange()
-	widget2.HighlightRange(t.content, t.blockMode, sr, sc, er, ec, t.highlightBitMask)
+	widget2.HighlightRange(t.content, t.blockMode, sr, sc, er, ec, highlightBitMask)
 	t.Refresh()
 }
 
