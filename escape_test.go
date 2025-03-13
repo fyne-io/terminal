@@ -13,6 +13,8 @@ func TestClearScreen(t *testing.T) {
 	term := New()
 	term.config.Columns = 5
 	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
 	term.handleOutput([]byte("Hello"))
 	assert.Equal(t, "Hello", term.content.Text())
 
@@ -28,6 +30,7 @@ func TestScrollBack_Tmux(t *testing.T) {
 	term.debug = true
 	term.config.Columns = 80 // 80 columns (standard terminal width)
 	term.config.Rows = 5     // Doesn't matter
+	term.Refresh()           // ensure visuals set up
 
 	// Step 2: Populate the entire screen with lines using cursor movement
 	for i := 1; i <= 40; i++ {
@@ -88,6 +91,7 @@ func TestScrollBack_With_Zero_Back_Buffer(t *testing.T) {
 			term.debug = true
 			term.config.Columns = 80 // 80 columns (standard terminal width)
 			term.config.Rows = 5     // Doesn't matter
+			term.Refresh()           // ensure visuals set up
 
 			// Step 1: Populate the entire screen with lines using cursor movement
 			for i := 1; i <= tt.linesToAdd; i++ {
@@ -117,6 +121,8 @@ func TestInsertDeleteChars(t *testing.T) {
 	term := New()
 	term.config.Columns = 5
 	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
 	term.handleOutput([]byte("Hello"))
 	assert.Equal(t, "Hello", term.content.Text())
 
@@ -131,6 +137,8 @@ func TestEraseLine(t *testing.T) {
 	term := New()
 	term.config.Columns = 5
 	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
 	term.handleOutput([]byte("Hello"))
 	assert.Equal(t, "Hello", term.content.Text())
 
@@ -143,6 +151,8 @@ func TestCursorMove(t *testing.T) {
 	term := New()
 	term.config.Columns = 5
 	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
 	term.handleOutput([]byte("Hello"))
 	assert.Equal(t, 0, term.cursorRow)
 	assert.Equal(t, 5, term.cursorCol)
@@ -172,6 +182,8 @@ func TestCursorMove_Overflow(t *testing.T) {
 	term := New()
 	term.config.Columns = 2
 	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
 	term.handleEscape("2;2H")
 	assert.Equal(t, 1, term.cursorRow)
 	assert.Equal(t, 1, term.cursorCol)
@@ -326,6 +338,8 @@ func TestTerminalEscapeSequences(t *testing.T) {
 			term := New()
 			term.config.Columns = 10
 			term.config.Rows = 1
+			term.Refresh() // ensure visuals set up
+
 			term.handleOutput([]byte(testCase.input))
 			actual := term.content.Text()
 			if actual != testCase.expected {
