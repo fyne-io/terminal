@@ -15,6 +15,8 @@ import (
 func TestNewTerminal(t *testing.T) {
 	term := New()
 	assert.NotNil(t, term)
+
+	term.Refresh() // ensure visuals set up
 	assert.NotNil(t, term.content)
 }
 
