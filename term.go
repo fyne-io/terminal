@@ -70,7 +70,6 @@ type Terminal struct {
 
 	selStart, selEnd *position
 	blockMode        bool
-	highlightBitMask uint8
 	selecting        bool
 	mouseCursor      desktop.Cursor
 
