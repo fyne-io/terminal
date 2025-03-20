@@ -101,14 +101,14 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	if runtime.GOOS == "darwin" {
 		t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: fyne.KeyModifierSuper}, newTerm)
 	}
-	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyEqual, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift},
+	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyEqual, Modifier: fyne.KeyModifierShortcutDefault | fyne.KeyModifierShift},
 		func(_ fyne.Shortcut) {
 			sizer.fontSize++
 			a.Settings().SetTheme(sizer)
 			t.Refresh()
 			t.Resize(t.Size())
 		})
-	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyMinus, Modifier: fyne.KeyModifierControl},
+	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyMinus, Modifier: fyne.KeyModifierShortcutDefault},
 		func(_ fyne.Shortcut) {
 			sizer.fontSize--
 			a.Settings().SetTheme(sizer)
