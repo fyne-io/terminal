@@ -20,7 +20,8 @@ import (
 )
 
 const (
-	bufLen = 32768 // 32KB buffer for output, to align with modern L1 cache
+	bufLen           = 32768 // 32KB buffer for output, to align with modern L1 cache
+	highlightBitMask = 0x55
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -69,7 +70,6 @@ type Terminal struct {
 
 	selStart, selEnd *position
 	blockMode        bool
-	highlightBitMask uint8
 	selecting        bool
 	mouseCursor      desktop.Cursor
 
@@ -103,6 +103,9 @@ func (p PrinterFunc) Print(d []byte) {
 
 // Cursor is used for displaying a specific cursor.
 func (t *Terminal) Cursor() desktop.Cursor {
+	if t == nil || t.mouseCursor == nil {
+		return desktop.DefaultCursor
+	}
 	return t.mouseCursor
 }
 
@@ -234,7 +237,9 @@ func (t *Terminal) Resize(s fyne.Size) {
 	}
 
 	t.BaseWidget.Resize(s)
-	t.content.Resize(fyne.NewSize(float32(cols)*cellSize.Width, float32(rows)*cellSize.Height))
+	if t.content != nil {
+		t.content.Resize(fyne.NewSize(float32(cols)*cellSize.Width, float32(rows)*cellSize.Height))
+	}
 
 	oldRows := int(t.config.Rows)
 	t.config.Columns, t.config.Rows = cols, rows
@@ -379,6 +384,10 @@ func (t *Terminal) run() {
 		}
 
 		fyne.DoAndWait(func() {
+			if t.content == nil {
+				return
+			}
+
 			leftOver = t.handleOutput(fullBuf[:num])
 			if len(leftOver) == 0 {
 				t.Refresh()
@@ -463,13 +472,10 @@ func (t *Terminal) startingDir() string {
 // New sets up a new terminal instance with the bash shell
 func New() *Terminal {
 	t := &Terminal{
-		mouseCursor:      desktop.DefaultCursor,
-		highlightBitMask: 0x55,
-		in:               discardWriter{},
+		mouseCursor: desktop.DefaultCursor,
+		in:          discardWriter{},
 	}
 	t.ExtendBaseWidget(t)
-	t.content = widget2.NewTermGrid()
-	t.setupShortcuts()
 
 	return t
 }

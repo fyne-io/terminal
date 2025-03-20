@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
+	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
 const cursorWidth = 2
@@ -58,6 +59,11 @@ func (t *Terminal) refreshCursor() {
 
 // CreateRenderer requests a new renderer for this terminal (just a wrapper around the TextGrid)
 func (t *Terminal) CreateRenderer() fyne.WidgetRenderer {
+	t.ExtendBaseWidget(t)
+
+	t.content = widget2.NewTermGrid()
+	t.setupShortcuts()
+
 	t.cursor = canvas.NewRectangle(theme.Color(theme.ColorNamePrimary))
 	t.cursor.Hidden = true
 	t.cursor.Resize(fyne.NewSize(cursorWidth, t.guessCellSize().Height))
