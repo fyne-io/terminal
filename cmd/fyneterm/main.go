@@ -6,6 +6,9 @@ import (
 	"image/color"
 	"runtime"
 
+	"github.com/fyne-io/terminal"
+	"github.com/fyne-io/terminal/cmd/fyneterm/data"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
@@ -13,13 +16,9 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/lang"
 	"fyne.io/fyne/v2/theme"
-	"github.com/fyne-io/terminal"
-	"github.com/fyne-io/terminal/cmd/fyneterm/data"
 )
 
 const termOverlay = fyne.ThemeColorName("termOver")
-
-var sizer *termTheme
 
 //go:embed translation
 var translations embed.FS
@@ -62,15 +61,14 @@ func main() {
 
 	a := app.New()
 	a.SetIcon(data.Icon)
-	sizer = newTermTheme()
-	a.Settings().SetTheme(sizer)
-	w := newTerminalWindow(a, sizer, debug)
+	w := newTerminalWindow(a, debug)
 	w.ShowAndRun()
 }
 
-func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
+func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 	w := a.NewWindow(termTitle())
 	w.SetPadded(false)
+	th := newTermTheme()
 
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameBackground))
 	img := canvas.NewImageFromResource(data.FyneLogo)
@@ -87,14 +85,15 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	t := terminal.New()
 	t.SetDebug(debug)
 	setupListener(t, w)
-	w.SetContent(container.NewStack(bg, img, over, t))
+	sizeOverride := container.NewThemeOverride(container.NewStack(bg, img, over, t), th)
+	w.SetContent(sizeOverride)
 
 	cellSize := guessCellSize()
 	w.Resize(fyne.NewSize(cellSize.Width*80, cellSize.Height*24))
 	w.Canvas().Focus(t)
 
 	newTerm := func(_ fyne.Shortcut) {
-		w := newTerminalWindow(a, th, debug)
+		w := newTerminalWindow(a, debug)
 		w.Show()
 	}
 	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyN, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift}, newTerm)
@@ -103,17 +102,15 @@ func newTerminalWindow(a fyne.App, th fyne.Theme, debug bool) fyne.Window {
 	}
 	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyEqual, Modifier: fyne.KeyModifierShortcutDefault | fyne.KeyModifierShift},
 		func(_ fyne.Shortcut) {
-			sizer.fontSize++
-			a.Settings().SetTheme(sizer)
-			t.Refresh()
-			t.Resize(t.Size())
+			th.fontSize++
+			sizeOverride.Theme = th
+			sizeOverride.Refresh()
 		})
 	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyMinus, Modifier: fyne.KeyModifierShortcutDefault},
 		func(_ fyne.Shortcut) {
-			sizer.fontSize--
-			a.Settings().SetTheme(sizer)
-			t.Refresh()
-			t.Resize(t.Size())
+			th.fontSize--
+			sizeOverride.Theme = th
+			sizeOverride.Refresh()
 		})
 
 	go func() {

@@ -11,12 +11,14 @@ import (
 	"time"
 	"unicode"
 
+	widget2 "github.com/fyne-io/terminal/internal/widget"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/driver/mobile"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
 const (
@@ -353,8 +355,9 @@ func (t *Terminal) guessCellSize() fyne.Size {
 	cell := canvas.NewText("M", color.White)
 	cell.TextStyle.Monospace = true
 
+	scale := t.Theme().Size(theme.SizeNameText) / theme.TextSize()
 	min := cell.MinSize()
-	return fyne.NewSize(float32(math.Round(float64(min.Width))), float32(math.Round(float64(min.Height))))
+	return fyne.NewSize(float32(math.Round(float64(min.Width*scale))), float32(math.Round(float64(min.Height*scale))))
 }
 
 func (t *Terminal) run() {
