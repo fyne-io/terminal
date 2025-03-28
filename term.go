@@ -372,7 +372,8 @@ func (t *Terminal) run() {
 			}
 			if err == io.EOF || err.Error() == "EOF" {
 				break // term exit on macOS
-			} else if err, ok := err.(*os.PathError); ok && err.Err.Error() == "input/output error" {
+			} else if err, ok := err.(*os.PathError); ok &&
+				err.Err.Error() == "input/output error" || err.Err.Error() == "file already closed" {
 				break // broken pipe, terminal exit
 			}
 
