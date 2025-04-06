@@ -197,6 +197,9 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 		} else if _, ok := s.(*fyne.ShortcutPaste); ok {
 			_, _ = t.in.Write([]byte{0x16})
 
+		} else if _, ok := s.(*fyne.ShortcutUndo); ok {
+			_, _ = t.in.Write([]byte{0x1a})
+
 		} else if _, ok := s.(*fyne.ShortcutSelectAll); ok {
 			_, _ = t.in.Write([]byte{0x1})
 
