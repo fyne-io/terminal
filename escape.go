@@ -31,6 +31,7 @@ var escapes = map[rune]func(*Terminal, string){
 	'S': escapeScrollUp,
 	'u': escapeRestoreCursor,
 	'i': escapePrinterMode,
+	'c': escapeDeviceAttribute,
 }
 
 func (t *Terminal) handleEscape(code string) {
@@ -430,6 +431,21 @@ func escapePrinterMode(t *Terminal, code string) {
 	default:
 		if t.debug {
 			log.Println("Unknown printer mode", code)
+		}
+	}
+}
+
+func escapeDeviceAttribute(t *Terminal, code string) {
+	if len(code) == 0 {
+		return
+	}
+
+	if t.debug {
+		switch code[0] {
+		case '>':
+			log.Println("Unhandled secondary device attribute", code[1])
+		case '=':
+			log.Println("Unhandled tertiary device attribute", code[1])
 		}
 	}
 }
