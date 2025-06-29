@@ -32,10 +32,10 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 		shell = "bash"
 	}
 
-	_ = os.Chdir(t.startingDir())
 	env := os.Environ()
 	env = append(env, "TERM=xterm-256color")
 	c := exec.Command(shell)
+	c.Dir = t.startingDir()
 	c.Env = env
 	t.cmd = c
 

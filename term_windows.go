@@ -36,6 +36,7 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 	}
 
 	t.cmd = &exec.Cmd{}
+	t.cmd.Dir = t.startingDir()
 	process, err := os.FindProcess(pid)
 	if err != nil {
 		return nil, nil, nil, err
