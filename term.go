@@ -387,16 +387,14 @@ func (t *Terminal) run() {
 			num += lenLeftOver
 		}
 
-		fyne.DoAndWait(func() {
-			if t.content == nil {
-				return
-			}
+		if t.content == nil {
+			return
+		}
 
-			leftOver = t.handleOutput(fullBuf[:num])
-			if len(leftOver) == 0 {
-				t.Refresh()
-			}
-		})
+		leftOver = t.handleOutput(fullBuf[:num])
+		if len(leftOver) == 0 {
+			fyne.Do(t.Refresh)
+		}
 	}
 }
 
