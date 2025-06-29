@@ -115,10 +115,12 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			break
 		}
 		if r == utf8.RuneError && size == 1 { // not UTF-8
-			if t.debug {
-				log.Println("Invalid UTF-8", buf[0])
+			if !t.state.printing {
+				if t.debug {
+					log.Println("Invalid UTF-8", buf[0])
+				}
+				continue
 			}
-			continue
 		}
 
 		if t.state.printing {
