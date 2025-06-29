@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"bytes"
+	"log"
 	"time"
 	"unicode/utf8"
 
@@ -107,20 +108,23 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 		i    = -1
 	)
 	for {
-		i++
+		i += size
 		buf = buf[size:]
 		r, size = utf8.DecodeRune(buf)
 		if size == 0 {
 			break
 		}
+		if r == utf8.RuneError && size == 1 { // not UTF-8
+			if t.debug {
+				log.Println("Invalid UTF-8", buf[0])
+			}
+			continue
+		}
+
 		if t.state.printing {
 			t.parsePrinting(buf, size)
 			continue
 		}
-		if r == utf8.RuneError && size == 1 {
-			return buf
-		}
-
 		if r == asciiEscape {
 			t.state.esc = i
 			continue
