@@ -40,7 +40,7 @@ func NewTermGrid() *TermGrid {
 // We update our blinking status and then call the TextGrid we extended to refresh too.
 func (t *TermGrid) Refresh() {
 	t.refreshBlink(false)
-	t.TextGrid.Refresh()
+	fyne.Do(t.TextGrid.Refresh)
 }
 
 func (t *TermGrid) refreshBlink(blink bool) {
@@ -56,7 +56,7 @@ func (t *TermGrid) refreshBlink(blink bool) {
 			}
 		}
 	}
-	t.TextGrid.Refresh()
+	fyne.Do(t.TextGrid.Refresh)
 
 	switch {
 	case shouldBlink && t.tickerCancel == nil:
