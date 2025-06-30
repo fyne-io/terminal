@@ -286,7 +286,7 @@ func (t *Terminal) scrollUp() {
 		t.content.Rows[i] = t.content.Row(i - 1)
 	}
 	t.content.Rows[t.scrollTop] = widget.TextGridRow{}
-	t.content.Refresh()
+	fyne.Do(t.content.Refresh)
 }
 
 func (t *Terminal) scrollDown() {
@@ -301,7 +301,7 @@ func (t *Terminal) scrollDown() {
 			t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
 		}
 	}
-	t.content.Refresh()
+	fyne.Do(t.content.Refresh)
 }
 
 func handleOutputBackspace(t *Terminal) {
