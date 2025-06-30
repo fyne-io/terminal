@@ -54,7 +54,7 @@ func (t *Terminal) refreshCursor() {
 		t.cursor.FillColor = theme.Color(theme.ColorNamePrimary)
 	}
 	t.cursor.Resize(fyne.NewSize(cursorWidth, t.guessCellSize().Height))
-	t.cursor.Refresh()
+	fyne.Do(t.cursor.Refresh)
 }
 
 // CreateRenderer requests a new renderer for this terminal (just a wrapper around the TextGrid)
