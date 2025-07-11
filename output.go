@@ -247,8 +247,9 @@ func (t *Terminal) parseOSC(r rune) {
 }
 
 func (t *Terminal) handleOutputChar(r rune) {
-	if t.cursorCol >= int(t.config.Columns) || t.cursorRow >= int(t.config.Rows) {
-		return // TODO handle wrap?
+	if t.cursorCol == int(t.config.Columns) {
+		t.cursorCol = 0
+		handleOutputLineFeed(t)
 	}
 	for len(t.content.Rows)-1 < t.cursorRow {
 		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
@@ -333,7 +334,6 @@ func handleOutputLineFeed(t *Terminal) {
 		return
 	}
 	t.moveCursor(t.cursorRow+1, t.cursorCol)
-
 }
 
 func handleOutputTab(t *Terminal) {
