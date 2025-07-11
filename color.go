@@ -49,6 +49,12 @@ func (t *Terminal) handleColorEscape(message string) {
 		t.blinking = false
 		return
 	}
+	if message[0] == '>' || message[0] == '?' {
+		if t.debug {
+			log.Println("Strange colour mode", message)
+		}
+		return
+	}
 	modes := strings.Split(message, ";")
 	for i := 0; i < len(modes); i++ {
 		mode := modes[i]
