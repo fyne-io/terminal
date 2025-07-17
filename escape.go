@@ -337,7 +337,13 @@ func escapeMoveCursor(t *Terminal, msg string) {
 	t.moveCursor(row-1, col-1)
 }
 
-func escapeRestoreCursor(t *Terminal, _ string) {
+func escapeRestoreCursor(t *Terminal, s string) {
+	if s != "" {
+		if t.debug {
+			log.Println("Corrupt restore cursor escape", s+"u")
+		}
+		return
+	}
 	t.moveCursor(t.savedRow, t.savedCol)
 }
 
