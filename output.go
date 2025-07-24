@@ -94,9 +94,11 @@ type parseState struct {
 }
 
 func (t *Terminal) handleOutput(buf []byte) []byte {
-	if t.hasSelectedText() {
-		t.clearSelectedText()
-	}
+	fyne.DoAndWait(func() {
+		if t.hasSelectedText() {
+			t.clearSelectedText()
+		}
+	})
 	if t.state == nil {
 		t.state = &parseState{
 			esc: noEscape,
@@ -132,7 +134,11 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			continue
 		}
 		if t.state.esc == i-1 {
-			if cont := t.parseEscState(r); cont {
+			var cont bool
+			fyne.DoAndWait(func() {
+				cont = t.parseEscState(r)
+			})
+			if cont {
 				continue
 			}
 			t.state.esc = noEscape
@@ -150,7 +156,9 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			t.state.vt100 = 0
 			continue
 		} else if t.state.esc != noEscape {
-			t.parseEscape(r)
+			fyne.DoAndWait(func() {
+				t.parseEscape(r)
+			})
 			continue
 		}
 
@@ -158,13 +166,19 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			if out == nil {
 				continue
 			}
-			out(t)
+			fyne.DoAndWait(func() {
+				out(t)
+			})
 		} else {
 			// check to see which charset to use
 			if t.useG1CharSet {
-				t.handleOutputChar(charSetMap[t.g1Charset](r))
+				fyne.DoAndWait(func() {
+					t.handleOutputChar(charSetMap[t.g1Charset](r))
+				})
 			} else {
-				t.handleOutputChar(charSetMap[t.g0Charset](r))
+				fyne.DoAndWait(func() {
+					t.handleOutputChar(charSetMap[t.g0Charset](r))
+				})
 			}
 		}
 	}
