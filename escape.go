@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -76,11 +77,14 @@ func (t *Terminal) clearScreenToCursor() {
 	if t.cursorCol < len(row.Cells) {
 		cells = append(cells, row.Cells[t.cursorCol:]...)
 	}
-	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
 
-	for i := 0; i < t.cursorRow-1; i++ {
-		t.content.SetRow(i, widget.TextGridRow{})
-	}
+	fyne.Do(func() {
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
+
+		for i := 0; i < t.cursorRow-1; i++ {
+			t.content.SetRow(i, widget.TextGridRow{})
+		}
+	})
 }
 
 func (t *Terminal) handleVT100(code string) {
@@ -124,7 +128,7 @@ func (t *Terminal) moveCursor(row, col int) {
 	t.cursorRow = row
 
 	if t.cursorMoved != nil {
-		t.cursorMoved()
+		fyne.Do(t.cursorMoved)
 	}
 }
 

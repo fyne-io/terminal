@@ -197,9 +197,9 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 		t.cursorRow = t.savedRow
 		t.cursorCol = t.savedCol
 	case 'D':
-		t.scrollDown()
+		fyne.Do(t.scrollDown)
 	case 'M':
-		t.scrollUp()
+		fyne.Do(t.scrollUp)
 	case '_':
 		t.state.apc = true
 	case '=', '>':
