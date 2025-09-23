@@ -32,8 +32,8 @@ To get the app installed alongside your other applications (with metadata, icons
 use the `fyne` tool, as illustrated below:
 
 ```
-$ go get fyne.io/fyne/v2/cmd/fyne
-$ fyne get github.com/fyne-io/terminal/cmd/fyneterm
+$ go install fyne.io/tools/cmd/fyne@latest
+$ fyne install github.com/fyne-io/terminal/cmd/fyneterm@latest
 ```
 
 # TODO
