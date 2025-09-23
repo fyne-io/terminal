@@ -24,8 +24,10 @@ func (r *render) MinSize() fyne.Size {
 }
 
 func (r *render) Refresh() {
-	r.moveCursor()
-	r.term.refreshCursor()
+	fyne.Do(func() { // TODO fix root cause in refresh on wrong thread
+		r.moveCursor()
+		r.term.refreshCursor()
+	})
 
 	r.term.content.Refresh()
 }

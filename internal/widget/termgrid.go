@@ -55,7 +55,7 @@ func (t *TermGrid) refreshBlink(blink bool) {
 			}
 		}
 	}
-	t.TextGrid.Refresh()
+	fyne.Do(t.TextGrid.Refresh) // TODO fix root cause in refresh on wrong thread
 
 	switch {
 	case shouldBlink && t.tickerCancel == nil:

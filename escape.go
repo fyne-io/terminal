@@ -275,7 +275,7 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 			t.newLineMode = enable
 		case "25":
 			t.cursorHidden = !enable
-			t.refreshCursor()
+			fyne.Do(t.refreshCursor)
 		case "9":
 			if enable {
 				t.onMouseDown = t.handleMouseDownX10
