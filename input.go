@@ -2,14 +2,18 @@ package terminal
 
 import (
 	"runtime"
+	"time"
 	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 )
 
+var lastKeyTime = time.Now()
+
 // TypedRune is called when the user types a visible character
 func (t *Terminal) TypedRune(r rune) {
+	lastKeyTime = time.Now()
 	b := make([]byte, utf8.UTFMax)
 	size := utf8.EncodeRune(b, r)
 	_, _ = t.in.Write(b[:size])
@@ -17,6 +21,7 @@ func (t *Terminal) TypedRune(r rune) {
 
 // TypedKey will be called if a non-printable keyboard event occurs
 func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
+	lastKeyTime = time.Now()
 	if t.keyboardState.shiftPressed {
 		t.keyTypedWithShift(e)
 		return

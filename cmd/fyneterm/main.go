@@ -4,10 +4,13 @@ import (
 	"embed"
 	"flag"
 	"image/color"
+	"os"
 	"runtime"
 
+	"fyne.io/fyne/v2/storage"
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
+	"github.com/fyshos/fancyfs"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -18,7 +21,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 )
 
-const termOverlay = fyne.ThemeColorName("termOver")
+var setDir func(string)
 
 //go:embed translation
 var translations embed.FS
@@ -35,6 +38,8 @@ func setupListener(t *terminal.Terminal, w fyne.Window) {
 				} else {
 					w.SetTitle(termTitle() + ": " + config.Title)
 				}
+
+				setDir(config.PWD)
 			})
 		}
 	}()
@@ -73,19 +78,55 @@ func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameBackground))
 	img := canvas.NewImageFromResource(data.FyneLogo)
 	img.FillMode = canvas.ImageFillContain
-	over := canvas.NewRectangle(th.Color(termOverlay, a.Settings().ThemeVariant()))
+	img.Translucency = 0.8
+	img.FillMode = canvas.ImageFillContain
+
+	setDir = func(pwd string) {
+		ff, err := fancyfs.DetailsForFolder(storage.NewFileURI(pwd))
+		if ff == nil || err != nil {
+			if err != nil && err != fancyfs.ErrNoMetadata {
+				fyne.LogError("Could not read dir metadata", err)
+			}
+
+			// reset
+			img.File = ""
+			img.Resource = data.FyneLogo
+			img.Image = nil
+			img.FillMode = canvas.ImageFillContain
+			img.Refresh()
+
+			return
+		}
+
+		if ff.BackgroundURI != nil {
+			img.File = ff.BackgroundURI.Path()
+		} else {
+			img.File = ""
+		}
+
+		homeStr, _ := os.UserHomeDir()
+		if pwd == homeStr {
+			img.Resource = data.FyneLogo
+		} else {
+			img.Resource = ff.BackgroundResource
+		}
+		img.FillMode = ff.BackgroundFill
+		img.Refresh()
+	}
+	wd, err := os.Getwd()
+	if err == nil {
+		setDir(wd)
+	}
 
 	a.Settings().AddListener(func(s fyne.Settings) {
 		bg.FillColor = theme.Color(theme.ColorNameBackground)
 		bg.Refresh()
-		over.FillColor = th.Color(termOverlay, s.ThemeVariant())
-		over.Refresh()
 	})
 
 	t := terminal.New()
 	t.SetDebug(debug)
 	setupListener(t, w)
-	sizeOverride := container.NewThemeOverride(container.NewStack(bg, img, over, t), th)
+	sizeOverride := container.NewThemeOverride(container.NewStack(bg, img, t), th)
 	w.SetContent(sizeOverride)
 
 	cellSize := guessCellSize()

@@ -31,6 +31,7 @@ const (
 type Config struct {
 	Title         string
 	Rows, Columns uint
+	PWD           string
 }
 
 type charSet int
@@ -400,6 +401,7 @@ func (t *Terminal) run() {
 
 // RunLocalShell starts the terminal by loading a shell and starting to process the input/output.
 func (t *Terminal) RunLocalShell() error {
+	t.config.PWD, _ = os.Getwd()
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
 		time.Sleep(time.Millisecond * 50)
 	}
@@ -415,6 +417,7 @@ func (t *Terminal) RunLocalShell() error {
 
 // RunWithConnection starts the terminal by connecting to an external resource like an SSH connection.
 func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
+	t.config.PWD, _ = os.Getwd()
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
 		time.Sleep(time.Millisecond * 50)
 	}

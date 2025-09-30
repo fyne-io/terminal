@@ -20,14 +20,6 @@ func newTermTheme() *termTheme {
 // Color fixes a bug < 2.1 where theme.DarkTheme() would not override user preference.
 func (t *termTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	switch n {
-	case termOverlay:
-		if c := t.Color("fynedeskPanelBackground", v); c != color.Transparent {
-			return c
-		}
-		if v == theme.VariantLight {
-			return color.NRGBA{R: 0xdd, G: 0xdd, B: 0xdd, A: 0xf6}
-		}
-		return color.NRGBA{R: 0x0a, G: 0x0a, B: 0x0a, A: 0xf6}
 	case theme.ColorNameBackground, theme.ColorNameForeground:
 		return t.Theme.Color(n, v)
 	}

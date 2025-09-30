@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"github.com/creack/pty"
@@ -38,6 +40,21 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 	c.Dir = t.startingDir()
 	c.Env = env
 	t.cmd = c
+
+	go func() {
+		for {
+			time.Sleep(time.Millisecond * 250)
+			if time.Now().Sub(lastKeyTime).Seconds() > 0.5 {
+				continue
+			}
+			wd, _ := os.Readlink("/proc/" + strconv.Itoa(c.Process.Pid) + "/cwd")
+
+			if wd != t.config.PWD {
+				t.config.PWD = wd
+				fyne.Do(t.onConfigure)
+			}
+		}
+	}()
 
 	// Start the command with a pty.
 	f, err := pty.Start(c)
