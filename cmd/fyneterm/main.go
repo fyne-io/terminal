@@ -105,7 +105,7 @@ func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 		}
 
 		homeStr, _ := os.UserHomeDir()
-		if pwd == homeStr {
+		if pwd == "" || pwd == homeStr {
 			img.Resource = data.FyneLogo
 		} else {
 			img.Resource = ff.BackgroundResource
