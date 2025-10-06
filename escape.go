@@ -446,7 +446,9 @@ func escapePrinterMode(t *Terminal, code string) {
 }
 
 func escapeDeviceAttribute(t *Terminal, code string) {
-	if len(code) == 0 {
+	if len(code) == 0 { // query
+		_, _ = t.in.Write([]byte{asciiEscape})
+		_, _ = t.in.Write([]byte("[?2;22c")) // printer; color
 		return
 	}
 
@@ -456,6 +458,8 @@ func escapeDeviceAttribute(t *Terminal, code string) {
 			log.Println("Unhandled secondary device attribute", code[1])
 		case '=':
 			log.Println("Unhandled tertiary device attribute", code[1])
+		default:
+			log.Println("Unknown device attribute", code[0])
 		}
 	}
 }
