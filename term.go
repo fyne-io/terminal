@@ -318,6 +318,9 @@ func (t *Terminal) onConfigure() {
 }
 
 func (t *Terminal) open() error {
+	for t.config.Columns <= 2 { // wait until it has a valid area
+		time.Sleep(time.Millisecond * 10)
+	}
 	in, out, pty, err := t.startPTY()
 	if err != nil {
 		return err

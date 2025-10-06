@@ -3,7 +3,7 @@ module github.com/fyne-io/terminal
 go 1.19
 
 require (
-	fyne.io/fyne/v2 v2.6.2-0.20250928194716-af93936fca00
+	fyne.io/fyne/v2 v2.6.2-0.20250930200528-e0524305d606
 	github.com/ActiveState/termtest/conpty v0.5.0
 	github.com/creack/pty v1.1.21
 	github.com/fyshos/fancyfs v0.0.0-20250930151016-696fe12cefc6
