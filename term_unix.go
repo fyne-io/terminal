@@ -44,7 +44,7 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 	go func() {
 		for {
 			time.Sleep(time.Millisecond * 250)
-			if time.Now().Sub(lastKeyTime).Seconds() > 0.5 {
+			if time.Since(lastKeyTime).Seconds() > 0.5 {
 				continue
 			}
 			wd, _ := os.Readlink("/proc/" + strconv.Itoa(c.Process.Pid) + "/cwd")
