@@ -257,17 +257,15 @@ func (t *Terminal) handleOutputChar(r rune) {
 
 	var cellStyle widget.TextGridStyle
 	cellStyle = &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
-	for len(t.content.Rows[t.cursorRow].Cells)-1 < t.cursorCol {
-		newCell := widget.TextGridCell{
-			Rune:  ' ',
-			Style: cellStyle,
-		}
-		t.content.Rows[t.cursorRow].Cells = append(t.content.Rows[t.cursorRow].Cells, newCell)
-	}
 	if t.blinking {
 		cellStyle = widget2.NewTermTextGridStyle(t.currentFG, t.currentBG, highlightBitMask, t.blinking)
 	}
-	t.content.SetCell(t.cursorRow, t.cursorCol, widget.TextGridCell{Rune: r, Style: cellStyle})
+
+	row, col := t.cursorRow, t.cursorCol
+	cell := widget.TextGridCell{Rune: r, Style: cellStyle}
+	fyne.Do(func() {
+		t.content.SetCell(row, col, cell)
+	})
 	t.cursorCol++
 }
 
@@ -323,7 +321,7 @@ func handleOutputCarriageReturn(t *Terminal) {
 
 func handleOutputLineFeed(t *Terminal) {
 	if t.cursorRow == t.scrollBottom {
-		t.scrollDown()
+		fyne.Do(t.scrollDown)
 		if t.newLineMode {
 			t.moveCursor(t.cursorRow, 0)
 		}
