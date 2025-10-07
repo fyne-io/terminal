@@ -251,9 +251,6 @@ func (t *Terminal) handleOutputChar(r rune) {
 		t.cursorCol = 0
 		handleOutputLineFeed(t)
 	}
-	for len(t.content.Rows)-1 < t.cursorRow {
-		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
-	}
 
 	var cellStyle widget.TextGridStyle
 	cellStyle = &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
@@ -264,7 +261,17 @@ func (t *Terminal) handleOutputChar(r rune) {
 	row, col := t.cursorRow, t.cursorCol
 	cell := widget.TextGridCell{Rune: r, Style: cellStyle}
 	fyne.Do(func() {
+		oldLen := 0
+		if len(t.content.Rows) > row {
+			oldLen = len(t.content.Rows[row].Cells)
+		}
 		t.content.SetCell(row, col, cell)
+
+		for i := oldLen; i < col; i++ {
+			if t.content.Rows[row].Cells[i].Rune == 0 {
+				t.content.Rows[row].Cells[i].Rune = ' '
+			}
+		}
 	})
 	t.cursorCol++
 }
