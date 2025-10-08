@@ -270,7 +270,7 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 	for _, mode := range modes {
 		switch mode {
 		case "7":
-			//TODO wrap around mode
+			t.autoWrapMode = enable
 		case "20":
 			t.newLineMode = enable
 		case "25":

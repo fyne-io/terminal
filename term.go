@@ -83,6 +83,7 @@ type Terminal struct {
 	}
 	newLineMode            bool // new line mode or line feed mode
 	bracketedPasteMode     bool
+	autoWrapMode           bool // auto wrap mode (DECAWM)
 	state                  *parseState
 	blinking               bool
 	printData              []byte
@@ -480,8 +481,9 @@ func (t *Terminal) startingDir() string {
 // New sets up a new terminal instance with the bash shell
 func New() *Terminal {
 	t := &Terminal{
-		mouseCursor: desktop.DefaultCursor,
-		in:          discardWriter{},
+		mouseCursor:   desktop.DefaultCursor,
+		in:           discardWriter{},
+		autoWrapMode: true, // Enable auto wrap by default
 	}
 	t.ExtendBaseWidget(t)
 
