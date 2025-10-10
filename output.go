@@ -248,7 +248,7 @@ func (t *Terminal) parseOSC(r rune) {
 
 func (t *Terminal) handleOutputChar(r rune) {
 	if t.cursorCol == int(t.config.Columns) {
-		if t.autoWrapMode {
+		if !t.disableAutoWrap {
 			t.cursorCol = 0
 			handleOutputLineFeed(t)
 		} else {

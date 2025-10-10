@@ -83,7 +83,7 @@ type Terminal struct {
 	}
 	newLineMode            bool // new line mode or line feed mode
 	bracketedPasteMode     bool
-	autoWrapMode           bool // auto wrap mode (DECAWM)
+	disableAutoWrap        bool // disable auto wrap mode (DECAWM off)
 	state                  *parseState
 	blinking               bool
 	printData              []byte
@@ -483,7 +483,7 @@ func New() *Terminal {
 	t := &Terminal{
 		mouseCursor:  desktop.DefaultCursor,
 		in:           discardWriter{},
-		autoWrapMode: true, // Enable auto wrap by default
+
 	}
 	t.ExtendBaseWidget(t)
 
