@@ -483,7 +483,6 @@ func New() *Terminal {
 	t := &Terminal{
 		mouseCursor: desktop.DefaultCursor,
 		in:          discardWriter{},
-
 	}
 	t.ExtendBaseWidget(t)
 
