@@ -481,8 +481,8 @@ func (t *Terminal) startingDir() string {
 // New sets up a new terminal instance with the bash shell
 func New() *Terminal {
 	t := &Terminal{
-		mouseCursor:  desktop.DefaultCursor,
-		in:           discardWriter{},
+		mouseCursor: desktop.DefaultCursor,
+		in:          discardWriter{},
 
 	}
 	t.ExtendBaseWidget(t)
