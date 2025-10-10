@@ -248,8 +248,13 @@ func (t *Terminal) parseOSC(r rune) {
 
 func (t *Terminal) handleOutputChar(r rune) {
 	if t.cursorCol == int(t.config.Columns) {
-		t.cursorCol = 0
-		handleOutputLineFeed(t)
+		if !t.disableAutoWrap {
+			t.cursorCol = 0
+			handleOutputLineFeed(t)
+		} else {
+			// In non-wrap mode, overwrite the last character
+			t.cursorCol = int(t.config.Columns) - 1
+		}
 	}
 
 	var cellStyle widget.TextGridStyle

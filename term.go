@@ -83,6 +83,7 @@ type Terminal struct {
 	}
 	newLineMode            bool // new line mode or line feed mode
 	bracketedPasteMode     bool
+	disableAutoWrap        bool // disable auto wrap mode (DECAWM off)
 	state                  *parseState
 	blinking               bool
 	printData              []byte
