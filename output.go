@@ -172,7 +172,7 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 					t.handleOutputChar(chr)
 				})
 			} else {
-				chr := charSetMap[t.g1Charset](r)
+				chr := charSetMap[t.g0Charset](r)
 				fyne.Do(func() {
 					t.handleOutputChar(chr)
 				})
