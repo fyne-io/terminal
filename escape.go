@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -78,13 +77,11 @@ func (t *Terminal) clearScreenToCursor() {
 		cells = append(cells, row.Cells[t.cursorCol:]...)
 	}
 
-	fyne.Do(func() {
-		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
+	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
 
-		for i := 0; i < t.cursorRow-1; i++ {
-			t.content.SetRow(i, widget.TextGridRow{})
-		}
-	})
+	for i := 0; i < t.cursorRow-1; i++ {
+		t.content.SetRow(i, widget.TextGridRow{})
+	}
 }
 
 func (t *Terminal) handleVT100(code string) {
@@ -128,7 +125,7 @@ func (t *Terminal) moveCursor(row, col int) {
 	t.cursorRow = row
 
 	if t.cursorMoved != nil {
-		fyne.Do(t.cursorMoved)
+		t.cursorMoved()
 	}
 }
 
@@ -275,7 +272,7 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 			t.newLineMode = enable
 		case "25":
 			t.cursorHidden = !enable
-			fyne.Do(t.refreshCursor)
+			t.refreshCursor()
 		case "9":
 			if enable {
 				t.onMouseDown = t.handleMouseDownX10

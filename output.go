@@ -161,13 +161,21 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			if out == nil {
 				continue
 			}
-			out(t)
+			fyne.Do(func() {
+				out(t)
+			})
 		} else {
 			// check to see which charset to use
 			if t.useG1CharSet {
-				t.handleOutputChar(charSetMap[t.g1Charset](r))
+				chr := charSetMap[t.g1Charset](r)
+				fyne.Do(func() {
+					t.handleOutputChar(chr)
+				})
 			} else {
-				t.handleOutputChar(charSetMap[t.g0Charset](r))
+				chr := charSetMap[t.g1Charset](r)
+				fyne.Do(func() {
+					t.handleOutputChar(chr)
+				})
 			}
 		}
 	}
@@ -185,7 +193,10 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 		return true
 	case '\\':
 		if t.state.osc {
-			t.handleOSC(t.state.code)
+			code := t.state.code
+			fyne.Do(func() {
+				t.handleOSC(code)
+			})
 		}
 		t.state.code = ""
 		t.state.osc = false
@@ -200,9 +211,9 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 		t.cursorRow = t.savedRow
 		t.cursorCol = t.savedCol
 	case 'D':
-		fyne.Do(t.scrollDown)
+		t.scrollDown()
 	case 'M':
-		fyne.Do(t.scrollUp)
+		t.scrollUp()
 	case 'P':
 		t.state.dcs = true
 	case '_':
@@ -215,7 +226,10 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 func (t *Terminal) parseEscape(r rune) {
 	t.state.code += string(r)
 	if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
-		t.handleEscape(t.state.code)
+		code := t.state.code
+		fyne.Do(func() {
+			t.handleEscape(code)
+		})
 		t.state.code = ""
 		t.state.esc = noEscape
 	}
@@ -233,7 +247,10 @@ func (t *Terminal) parsePrinting(buf []byte, size int) {
 
 func (t *Terminal) parseAPC(r rune) {
 	if r == 0 {
-		t.handleAPC(t.state.code)
+		code := t.state.code
+		fyne.Do(func() {
+			t.handleAPC(code)
+		})
 		t.state.code = ""
 		t.state.apc = false
 	} else {
@@ -243,7 +260,10 @@ func (t *Terminal) parseAPC(r rune) {
 
 func (t *Terminal) parseOSC(r rune) {
 	if r == asciiBell || r == 0 {
-		t.handleOSC(t.state.code)
+		code := t.state.code
+		fyne.Do(func() {
+			t.handleOSC(code)
+		})
 		t.state.code = ""
 		t.state.osc = false
 	} else {
@@ -253,7 +273,10 @@ func (t *Terminal) parseOSC(r rune) {
 
 func (t *Terminal) parseDCS(r rune) {
 	if r == '\\' {
-		t.handleDCS(t.state.code)
+		code := t.state.code
+		fyne.Do(func() {
+			t.handleDCS(code)
+		})
 		t.state.code = ""
 		t.state.dcs = false
 	} else {
@@ -280,25 +303,23 @@ func (t *Terminal) handleOutputChar(r rune) {
 
 	row, col := t.cursorRow, t.cursorCol
 	cell := widget.TextGridCell{Rune: r, Style: cellStyle}
-	fyne.Do(func() {
-		oldLen := 0
-		if len(t.content.Rows) > row {
-			oldLen = len(t.content.Rows[row].Cells)
-		}
-		t.content.SetCell(row, col, cell)
+	oldLen := 0
+	if len(t.content.Rows) > row {
+		oldLen = len(t.content.Rows[row].Cells)
+	}
+	t.content.SetCell(row, col, cell)
 
-		for i := oldLen; i < col; i++ {
-			if t.content.Rows[row].Cells[i].Rune == 0 {
-				t.content.Rows[row].Cells[i].Rune = ' '
-			}
+	for i := oldLen; i < col; i++ {
+		if t.content.Rows[row].Cells[i].Rune == 0 {
+			t.content.Rows[row].Cells[i].Rune = ' '
 		}
-	})
+	}
 	t.cursorCol++
 }
 
 func (t *Terminal) ringBell() {
 	t.bell = true
-	fyne.Do(t.Refresh)
+	t.Refresh()
 
 	go func() {
 		time.Sleep(time.Millisecond * 300)
@@ -348,7 +369,7 @@ func handleOutputCarriageReturn(t *Terminal) {
 
 func handleOutputLineFeed(t *Terminal) {
 	if t.cursorRow == t.scrollBottom {
-		fyne.Do(t.scrollDown)
+		t.scrollDown()
 		if t.newLineMode {
 			t.moveCursor(t.cursorRow, 0)
 		}
