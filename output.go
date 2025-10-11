@@ -85,12 +85,11 @@ var decSpecialGraphics = map[rune]rune{
 }
 
 type parseState struct {
-	code     string
-	esc      int
-	osc      bool
-	vt100    rune
-	apc      bool
-	printing bool
+	code          string
+	esc           int
+	osc, apc, dcs bool
+	vt100         rune
+	printing      bool
 }
 
 func (t *Terminal) handleOutput(buf []byte) []byte {
@@ -129,6 +128,10 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 		}
 		if r == asciiEscape {
 			t.state.esc = i
+			continue
+		}
+		if t.state.dcs {
+			t.parseDCS(r)
 			continue
 		}
 		if t.state.esc == i-1 {
@@ -200,6 +203,8 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 		fyne.Do(t.scrollDown)
 	case 'M':
 		fyne.Do(t.scrollUp)
+	case 'P':
+		t.state.dcs = true
 	case '_':
 		t.state.apc = true
 	case '=', '>':
@@ -241,6 +246,16 @@ func (t *Terminal) parseOSC(r rune) {
 		t.handleOSC(t.state.code)
 		t.state.code = ""
 		t.state.osc = false
+	} else {
+		t.state.code += string(r)
+	}
+}
+
+func (t *Terminal) parseDCS(r rune) {
+	if r == '\\' {
+		t.handleDCS(t.state.code)
+		t.state.code = ""
+		t.state.dcs = false
 	} else {
 		t.state.code += string(r)
 	}
