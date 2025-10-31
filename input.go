@@ -188,26 +188,35 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	}
 
 	if runtime.GOOS == "darwin" {
-		// do the default thing for macOS as they separete ctrl/cmd
+		// do the default thing for macOS as they separate ctrl/cmd
 		t.ShortcutHandler.TypedShortcut(s)
 	} else {
 		// we need to override the default ctrl-X/C/V/A for non-mac and do it ourselves
 
-		if _, ok := s.(*fyne.ShortcutCut); ok {
-			_, _ = t.in.Write([]byte{0x18})
-
-		} else if _, ok := s.(*fyne.ShortcutCopy); ok {
-			_, _ = t.in.Write([]byte{0x3})
-
-		} else if _, ok := s.(*fyne.ShortcutPaste); ok {
-			_, _ = t.in.Write([]byte{0x16})
-
+		if ct, ok := s.(*fyne.ShortcutCut); ok {
+			if ct.Secondary {
+				// TODO check this is the right key combo
+				_, _ = t.in.Write([]byte{46}) // shift+del
+			} else {
+				_, _ = t.in.Write([]byte{0x18})
+			}
+		} else if cp, ok := s.(*fyne.ShortcutCopy); ok {
+			if cp.Secondary {
+				// TODO Ctrl insert keys "(0;146)"?
+			} else {
+				_, _ = t.in.Write([]byte{0x3})
+			}
+		} else if ps, ok := s.(*fyne.ShortcutPaste); ok {
+			if ps.Secondary {
+				// TODO check this is the right key combo
+				_, _ = t.in.Write([]byte{48}) // shift+ins
+			} else {
+				_, _ = t.in.Write([]byte{0x16})
+			}
 		} else if _, ok := s.(*fyne.ShortcutUndo); ok {
 			_, _ = t.in.Write([]byte{0x1a})
-
 		} else if _, ok := s.(*fyne.ShortcutSelectAll); ok {
 			_, _ = t.in.Write([]byte{0x1})
-
 		}
 	}
 }
