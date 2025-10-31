@@ -135,11 +135,10 @@ func (t *Terminal) MinSize() fyne.Size {
 // MouseDown handles the down action for desktop mouse events.
 func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 	if t.hasSelectedText() {
-		t.copySelectedText(fyne.CurrentApp().Clipboard())
 		t.clearSelectedText()
 	}
 	if ev.Button == desktop.MouseButtonSecondary {
-		t.pasteText(fyne.CurrentApp().Clipboard())
+		t.pasteText(fyne.CurrentApp().Clipboard(), true)
 	}
 
 	if t.onMouseDown == nil {
@@ -452,8 +451,9 @@ func (t *Terminal) setupShortcuts() {
 		paste = &fyne.ShortcutPaste{} // we look up clipboard later
 	}
 	t.ShortcutHandler.AddShortcut(paste,
-		func(_ fyne.Shortcut) {
-			t.pasteText(fyne.CurrentApp().Clipboard())
+		func(sh fyne.Shortcut) {
+			ps := sh.(*fyne.ShortcutPaste)
+			t.pasteText(fyne.CurrentApp().Clipboard(), ps.Secondary)
 		})
 	var shortcutCopy fyne.Shortcut
 	shortcutCopy = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}

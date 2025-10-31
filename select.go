@@ -70,8 +70,13 @@ func (t *Terminal) copySelectedText(clipboard fyne.Clipboard) {
 	t.clearSelectedText()
 }
 
-func (t *Terminal) pasteText(clipboard fyne.Clipboard) {
-	content := clipboard.Content()
+func (t *Terminal) pasteText(clipboard fyne.Clipboard, secondary bool) {
+	var content string
+	if secondary {
+		content = t.SelectedText()
+	} else {
+		content = clipboard.Content()
+	}
 
 	if t.bracketedPasteMode {
 		_, _ = t.in.Write(append(
