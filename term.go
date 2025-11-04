@@ -238,8 +238,8 @@ func (t *Terminal) Resize(s fyne.Size) {
 	if t.resizeTimer != nil {
 		t.resizeTimer.Stop()
 	}
-	t.resizeTimer = time.AfterFunc(resizeDebounce, func() {
-		fyne.Do(func() {
+	fyne.Do(func() {
+		t.resizeTimer = time.AfterFunc(resizeDebounce, func() {
 			cellSize := t.guessCellSize()
 			cols := uint(math.Floor(float64(s.Width) / float64(cellSize.Width)))
 			rows := uint(math.Floor(float64(s.Height) / float64(cellSize.Height)))
@@ -262,7 +262,6 @@ func (t *Terminal) Resize(s fyne.Size) {
 			t.updatePTYSize()
 		})
 	})
-
 }
 
 // SetDebug turns on output about terminal codes and other errors if the parameter is `true`.
