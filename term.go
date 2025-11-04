@@ -24,6 +24,7 @@ import (
 const (
 	bufLen           = 32768 // 32KB buffer for output, to align with modern L1 cache
 	highlightBitMask = 0x55
+	resizeDebounce   = time.Millisecond * 100
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -90,6 +91,7 @@ type Terminal struct {
 	printer                Printer
 	cmd                    *exec.Cmd
 	readWriterConfigurator ReadWriterConfigurator
+	resizeTimer            *time.Timer // for debouncing resize
 }
 
 // Printer is used for spooling print data when its received.
@@ -233,26 +235,32 @@ func (t *Terminal) RemoveListener(listener chan Config) {
 // Resize is called when this terminal widget has been resized.
 // It ensures that the virtual terminal is within the bounds of the widget.
 func (t *Terminal) Resize(s fyne.Size) {
-	cellSize := t.guessCellSize()
-	cols := uint(math.Floor(float64(s.Width) / float64(cellSize.Width)))
-	rows := uint(math.Floor(float64(s.Height) / float64(cellSize.Height)))
-	if (t.config.Columns == cols) && (t.config.Rows == rows) {
-		return
+	if t.resizeTimer != nil {
+		t.resizeTimer.Stop()
 	}
+	t.resizeTimer = time.AfterFunc(resizeDebounce, func() {
+		cellSize := t.guessCellSize()
+		cols := uint(math.Floor(float64(s.Width) / float64(cellSize.Width)))
+		rows := uint(math.Floor(float64(s.Height) / float64(cellSize.Height)))
+		if (t.config.Columns == cols) && (t.config.Rows == rows) {
+			return
+		}
 
-	t.BaseWidget.Resize(s)
-	if t.content != nil {
-		t.content.Resize(fyne.NewSize(float32(cols)*cellSize.Width, float32(rows)*cellSize.Height))
-	}
+		t.BaseWidget.Resize(s)
+		if t.content != nil {
+			t.content.Resize(fyne.NewSize(float32(cols)*cellSize.Width, float32(rows)*cellSize.Height))
+		}
 
-	oldRows := int(t.config.Rows)
-	t.config.Columns, t.config.Rows = cols, rows
-	if t.scrollBottom == 0 || t.scrollBottom == oldRows-1 {
-		t.scrollBottom = int(t.config.Rows) - 1
-	}
-	t.onConfigure()
+		oldRows := int(t.config.Rows)
+		t.config.Columns, t.config.Rows = cols, rows
+		if t.scrollBottom == 0 || t.scrollBottom == oldRows-1 {
+			t.scrollBottom = int(t.config.Rows) - 1
+		}
+		t.onConfigure()
 
-	t.updatePTYSize()
+		t.updatePTYSize()
+	})
+
 }
 
 // SetDebug turns on output about terminal codes and other errors if the parameter is `true`.
