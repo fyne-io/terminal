@@ -5,6 +5,7 @@ import (
 	"flag"
 	"image/color"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"fyne.io/fyne/v2/storage"
@@ -113,9 +114,20 @@ func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 		img.FillMode = ff.BackgroundFill
 		img.Refresh()
 	}
-	wd, err := os.Getwd()
-	if err == nil {
-		setDir(wd)
+
+	t := terminal.New()
+	t.SetDebug(debug)
+	if len(os.Args) >= 2 {
+		s, err := filepath.Abs(os.Args[1])
+		if err == nil {
+			t.SetStartDir(s)
+			setDir(s)
+		}
+	} else {
+		wd, err := os.Getwd()
+		if err == nil {
+			setDir(wd)
+		}
 	}
 
 	a.Settings().AddListener(func(s fyne.Settings) {
@@ -123,8 +135,6 @@ func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 		bg.Refresh()
 	})
 
-	t := terminal.New()
-	t.SetDebug(debug)
 	setupListener(t, w)
 	sizeOverride := container.NewThemeOverride(container.NewStack(bg, img, t), th)
 	w.SetContent(sizeOverride)

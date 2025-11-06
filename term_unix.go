@@ -40,6 +40,7 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 	c.Dir = t.startingDir()
 	c.Env = env
 	t.cmd = c
+	t.config.PWD = c.Dir
 
 	go func() {
 		for {
