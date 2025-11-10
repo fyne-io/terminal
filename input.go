@@ -192,7 +192,7 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 		t.ShortcutHandler.TypedShortcut(s)
 	} else {
 		// we need to override the default ctrl-X/C/V/A for non-mac and do it ourselves
-  	switch sh := cts.(type) {
+		switch sh := s.(type) {
 		case *fyne.ShortcutCut:
 			if sh.Secondary {
 				// shift+del - cut is no-op
