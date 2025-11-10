@@ -195,19 +195,19 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 
 		if ct, ok := s.(*fyne.ShortcutCut); ok {
 			if ct.Secondary {
-				t.ShortcutHandler.TypedShortcut(s) // shift+del
+				// shift+del - cut is no-op
 			} else {
 				_, _ = t.in.Write([]byte{0x18})
 			}
 		} else if cp, ok := s.(*fyne.ShortcutCopy); ok {
 			if cp.Secondary {
-				t.ShortcutHandler.TypedShortcut(s) // ctrl+ins
+				t.copySelectedText(fyne.CurrentApp().Clipboard()) // ctrl+ins
 			} else {
 				_, _ = t.in.Write([]byte{0x3})
 			}
 		} else if ps, ok := s.(*fyne.ShortcutPaste); ok {
 			if ps.Secondary {
-				t.ShortcutHandler.TypedShortcut(s) // shift+ins
+				t.pasteText(fyne.CurrentApp().Clipboard(), true) // shift+ins
 			} else {
 				_, _ = t.in.Write([]byte{0x16})
 			}

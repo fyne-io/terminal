@@ -452,8 +452,11 @@ func (t *Terminal) setupShortcuts() {
 	}
 	t.ShortcutHandler.AddShortcut(paste,
 		func(sh fyne.Shortcut) {
-			ps := sh.(*fyne.ShortcutPaste)
-			t.pasteText(fyne.CurrentApp().Clipboard(), ps.Secondary)
+			secondary := false
+			if ps, ok := sh.(*fyne.ShortcutPaste); ok {
+				secondary = ps.Secondary
+			}
+			t.pasteText(fyne.CurrentApp().Clipboard(), secondary)
 		})
 	var shortcutCopy fyne.Shortcut
 	shortcutCopy = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
