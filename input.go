@@ -201,6 +201,8 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 			_, _ = t.in.Write([]byte{0x16})
 		case *fyne.ShortcutUndo:
 			_, _ = t.in.Write([]byte{0x1a})
+		case *fyne.ShortcutRedo:
+			_, _ = t.in.Write([]byte{0x19})
 		case *fyne.ShortcutSelectAll:
 			_, _ = t.in.Write([]byte{0x1})
 		}
