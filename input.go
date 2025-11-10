@@ -192,28 +192,30 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 		t.ShortcutHandler.TypedShortcut(s)
 	} else {
 		// we need to override the default ctrl-X/C/V/A for non-mac and do it ourselves
-
-		if ct, ok := s.(*fyne.ShortcutCut); ok {
-			if ct.Secondary {
+  	switch sh := cts.(type) {
+		case *fyne.ShortcutCut:
+			if sh.Secondary {
 				// shift+del - cut is no-op
 			} else {
 				_, _ = t.in.Write([]byte{0x18})
 			}
-		} else if cp, ok := s.(*fyne.ShortcutCopy); ok {
-			if cp.Secondary {
+		case *fyne.ShortcutCopy:
+			if sh.Secondary {
 				t.copySelectedText(fyne.CurrentApp().Clipboard()) // ctrl+ins
 			} else {
 				_, _ = t.in.Write([]byte{0x3})
 			}
-		} else if ps, ok := s.(*fyne.ShortcutPaste); ok {
-			if ps.Secondary {
+		case *fyne.ShortcutPaste:
+			if sh.Secondary {
 				t.pasteText(fyne.CurrentApp().Clipboard(), true) // shift+ins
 			} else {
 				_, _ = t.in.Write([]byte{0x16})
 			}
-		} else if _, ok := s.(*fyne.ShortcutUndo); ok {
+		case *fyne.ShortcutUndo:
 			_, _ = t.in.Write([]byte{0x1a})
-		} else if _, ok := s.(*fyne.ShortcutSelectAll); ok {
+		case *fyne.ShortcutRedo:
+			_, _ = t.in.Write([]byte{0x19})
+		case *fyne.ShortcutSelectAll:
 			_, _ = t.in.Write([]byte{0x1})
 		}
 	}
