@@ -201,13 +201,13 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 			}
 		case *fyne.ShortcutCopy:
 			if sh.Secondary {
-				t.copySelectedText(fyne.CurrentApp().Clipboard()) // ctrl+ins
+				t.copySelectedText(t.selectClipboard()) // ctrl+ins
 			} else {
 				_, _ = t.in.Write([]byte{0x3})
 			}
 		case *fyne.ShortcutPaste:
 			if sh.Secondary {
-				t.pasteText(fyne.CurrentApp().Clipboard(), true) // shift+ins
+				t.pasteText(t.selectClipboard()) // shift+ins
 			} else {
 				_, _ = t.in.Write([]byte{0x16})
 			}
