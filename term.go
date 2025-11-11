@@ -72,6 +72,7 @@ type Terminal struct {
 	useG1CharSet           bool
 
 	selStart, selEnd *position
+	selectClipSource *selectClipboard
 	blockMode        bool
 	selecting        bool
 	mouseCursor      desktop.Cursor
@@ -135,11 +136,10 @@ func (t *Terminal) MinSize() fyne.Size {
 // MouseDown handles the down action for desktop mouse events.
 func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 	if t.hasSelectedText() {
-		t.copySelectedText(fyne.CurrentApp().Clipboard())
 		t.clearSelectedText()
 	}
 	if ev.Button == desktop.MouseButtonSecondary {
-		t.pasteText(fyne.CurrentApp().Clipboard())
+		t.pasteText(t.selectClipboard())
 	}
 
 	if t.onMouseDown == nil {
@@ -210,6 +210,7 @@ func (t *Terminal) DoubleTapped(pe *fyne.PointEvent) {
 	t.selEnd = &position{Row: row, Col: end}
 
 	t.highlightSelectedText()
+	t.selectClipboard().SetContent(t.SelectedText())
 }
 
 // RemoveListener de-registers a Config channel and closes it
@@ -460,8 +461,12 @@ func (t *Terminal) setupShortcuts() {
 		paste = &fyne.ShortcutPaste{} // we look up clipboard later
 	}
 	t.ShortcutHandler.AddShortcut(paste,
-		func(_ fyne.Shortcut) {
-			t.pasteText(fyne.CurrentApp().Clipboard())
+		func(sh fyne.Shortcut) {
+			clip := fyne.CurrentApp().Clipboard()
+			if ps, ok := sh.(*fyne.ShortcutPaste); ok && ps.Secondary {
+				clip = t.selectClipboard()
+			}
+			t.pasteText(clip)
 		})
 	var shortcutCopy fyne.Shortcut
 	shortcutCopy = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierShift | fyne.KeyModifierShortcutDefault}
@@ -543,6 +548,9 @@ func (t *Terminal) Dragged(d *fyne.DragEvent) {
 
 // DragEnd is called by fyne when the left mouse is released after a Drag event.
 func (t *Terminal) DragEnd() {
+	if t.selecting {
+		t.selectClipboard().SetContent(t.SelectedText())
+	}
 	t.selecting = false
 }
 
