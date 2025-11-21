@@ -65,7 +65,6 @@ func (t *Terminal) SelectedText() string {
 func (t *Terminal) copySelectedText(clipboard fyne.Clipboard) {
 	// copy start and end sel to clipboard and clear the sel style
 	text := t.SelectedText()
-	fyne.CurrentApp()
 	clipboard.SetContent(text)
 	t.clearSelectedText()
 }
@@ -87,4 +86,26 @@ func (t *Terminal) pasteText(clipboard fyne.Clipboard) {
 
 func (t *Terminal) hasSelectedText() bool {
 	return t.selStart != nil && t.selEnd != nil
+}
+
+func (t *Terminal) selectClipboard() *selectClipboard {
+	if t.selectClipSource == nil {
+		t.selectClipSource = &selectClipboard{t: t}
+	}
+
+	return t.selectClipSource
+}
+
+type selectClipboard struct {
+	t *Terminal
+
+	content string
+}
+
+func (s *selectClipboard) Content() string {
+	return s.content
+}
+
+func (s *selectClipboard) SetContent(c string) {
+	s.content = c
 }

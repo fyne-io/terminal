@@ -188,17 +188,29 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	}
 
 	if runtime.GOOS == "darwin" {
-		// do the default thing for macOS as they separete ctrl/cmd
+		// do the default thing for macOS as they separate ctrl/cmd
 		t.ShortcutHandler.TypedShortcut(s)
 	} else {
 		// we need to override the default ctrl-X/C/V/A for non-mac and do it ourselves
-		switch s.(type) {
+		switch sh := s.(type) {
 		case *fyne.ShortcutCut:
-			_, _ = t.in.Write([]byte{0x18})
+			if sh.Secondary {
+				// shift+del - cut is no-op
+			} else {
+				_, _ = t.in.Write([]byte{0x18})
+			}
 		case *fyne.ShortcutCopy:
-			_, _ = t.in.Write([]byte{0x3})
+			if sh.Secondary {
+				t.copySelectedText(t.selectClipboard()) // ctrl+ins
+			} else {
+				_, _ = t.in.Write([]byte{0x3})
+			}
 		case *fyne.ShortcutPaste:
-			_, _ = t.in.Write([]byte{0x16})
+			if sh.Secondary {
+				t.pasteText(t.selectClipboard()) // shift+ins
+			} else {
+				_, _ = t.in.Write([]byte{0x16})
+			}
 		case *fyne.ShortcutUndo:
 			_, _ = t.in.Write([]byte{0x1a})
 		case *fyne.ShortcutRedo:
