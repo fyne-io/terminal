@@ -135,7 +135,9 @@ func (t *Terminal) MinSize() fyne.Size {
 
 // MouseDown handles the down action for desktop mouse events.
 func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
-	fyne.CurrentApp().Driver().CanvasForObject(t).Focus(t)
+	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+		c.Focus(t)
+	}
 
 	if t.hasSelectedText() {
 		t.clearSelectedText()
@@ -270,7 +272,9 @@ func (t *Terminal) SetStartDir(path string) {
 
 // Tapped makes sure we ask for focus if user taps us.
 func (t *Terminal) Tapped(ev *fyne.PointEvent) {
-	fyne.CurrentApp().Driver().CanvasForObject(t).Focus(t)
+	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+		c.Focus(t)
+	}
 }
 
 // Text returns the contents of the buffer as a single string joined with `\n` (no style information).
@@ -297,7 +301,9 @@ func (t *Terminal) TouchCancel(ev *mobile.TouchEvent) {
 
 // TouchDown handles the down action for mobile touch events.
 func (t *Terminal) TouchDown(ev *mobile.TouchEvent) {
-	fyne.CurrentApp().Driver().CanvasForObject(t).Focus(t)
+	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+		c.Focus(t)
+	}
 
 	if t.onMouseDown != nil {
 		t.onMouseDown(1, 0, ev.Position)
