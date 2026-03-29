@@ -66,6 +66,12 @@ type Terminal struct {
 	cursorHidden, bufferMode bool // buffer mode is an xterm extension that impacts control keys
 	cursorMoved              func()
 
+	// Alternate screen buffer (used by curses/fullscreen apps via ?1049h/?47h)
+	altSavedGrid   []widget.TextGridRow // saved main screen rows
+	altSavedRow    int                  // saved cursor row
+	altSavedCol    int                  // saved cursor col
+	altBufferActive bool                // true when alternate buffer is in use
+
 	onMouseDown, onMouseUp func(int, fyne.KeyModifier, fyne.Position)
 	g0Charset              charSet
 	g1Charset              charSet
@@ -85,6 +91,7 @@ type Terminal struct {
 	newLineMode            bool // new line mode or line feed mode
 	bracketedPasteMode     bool
 	disableAutoWrap        bool // disable auto wrap mode (DECAWM off)
+	lastChar               rune // last graphic character output (for CSI b REP)
 	state                  *parseState
 	blinking               bool
 	printData              []byte
@@ -408,9 +415,7 @@ func (t *Terminal) run() {
 		}
 
 		leftOver = t.handleOutput(fullBuf[:num])
-		if len(leftOver) == 0 {
-			fyne.Do(t.Refresh)
-		}
+		fyne.Do(t.Refresh)
 	}
 }
 

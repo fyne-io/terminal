@@ -87,6 +87,7 @@ var decSpecialGraphics = map[rune]rune{
 type parseState struct {
 	code          string
 	esc           int
+	escNext       bool // true when ESC was just seen; next char goes to parseEscState
 	osc, apc, dcs bool
 	vt100         rune
 	printing      bool
@@ -128,13 +129,15 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 		}
 		if r == asciiEscape {
 			t.state.esc = i
+			t.state.escNext = true
 			continue
 		}
 		if t.state.dcs {
 			t.parseDCS(r)
 			continue
 		}
-		if t.state.esc == i-1 {
+		if t.state.escNext {
+			t.state.escNext = false
 			if cont := t.parseEscState(r); cont {
 				continue
 			}
@@ -180,10 +183,6 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 		}
 	}
 
-	// record progress for next chunk of buffer
-	if t.state.esc != noEscape {
-		t.state.esc = t.state.esc - i
-	}
 	return buf
 }
 
@@ -314,6 +313,7 @@ func (t *Terminal) handleOutputChar(r rune) {
 			t.content.Rows[row].Cells[i].Rune = ' '
 		}
 	}
+	t.lastChar = r
 	t.cursorCol++
 }
 
