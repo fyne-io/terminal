@@ -301,17 +301,18 @@ func (t *Terminal) handleOutputChar(r rune) {
 		cellStyle = widget2.NewTermTextGridStyle(t.currentFG, t.currentBG, highlightBitMask, t.blinking)
 	}
 
-	row, col := t.cursorRow, t.cursorCol
+	contentRow := t.rowOffset() + t.cursorRow
+	col := t.cursorCol
 	cell := widget.TextGridCell{Rune: r, Style: cellStyle}
 	oldLen := 0
-	if len(t.content.Rows) > row {
-		oldLen = len(t.content.Rows[row].Cells)
+	if len(t.content.Rows) > contentRow {
+		oldLen = len(t.content.Rows[contentRow].Cells)
 	}
-	t.content.SetCell(row, col, cell)
+	t.content.SetCell(contentRow, col, cell)
 
 	for i := oldLen; i < col; i++ {
-		if t.content.Rows[row].Cells[i].Rune == 0 {
-			t.content.Rows[row].Cells[i].Rune = ' '
+		if t.content.Rows[contentRow].Cells[i].Rune == 0 {
+			t.content.Rows[contentRow].Cells[i].Rune = ' '
 		}
 	}
 	t.cursorCol++
@@ -329,30 +330,36 @@ func (t *Terminal) ringBell() {
 }
 
 func (t *Terminal) scrollUp() {
+	off := t.rowOffset()
 	for i := t.scrollBottom; i > t.scrollTop; i-- {
-		t.content.Rows[i] = t.content.Row(i - 1)
+		t.content.Rows[off+i] = t.content.Row(off + i - 1)
 	}
-	t.content.Rows[t.scrollTop] = widget.TextGridRow{}
+	t.content.Rows[off+t.scrollTop] = widget.TextGridRow{}
 	t.content.Refresh()
 }
 
 func (t *Terminal) scrollDown() {
-	i := t.scrollTop
-	for ; i < t.scrollBottom && i < len(t.content.Rows)-1; i++ {
-		t.content.Rows[i] = t.content.Row(i + 1)
-	}
-	for ; i < len(t.content.Rows); i++ {
-		if len(t.content.Rows) > t.scrollBottom {
-			t.content.Rows[t.scrollBottom] = widget.TextGridRow{}
-		} else {
-			t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
+	off := t.rowOffset()
+	fullScreen := t.scrollTop == 0 && t.scrollBottom >= int(t.config.Rows)-1
+
+	if fullScreen {
+		// Append a new row, keeping old rows as scrollback
+		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
+		t.trimScrollback()
+	} else {
+		// Partial scroll region: shift rows within the region
+		for i := off + t.scrollTop; i < off+t.scrollBottom && i < len(t.content.Rows)-1; i++ {
+			t.content.Rows[i] = t.content.Row(i + 1)
+		}
+		if len(t.content.Rows) > off+t.scrollBottom {
+			t.content.Rows[off+t.scrollBottom] = widget.TextGridRow{}
 		}
 	}
 	t.content.Refresh()
 }
 
 func handleOutputBackspace(t *Terminal) {
-	row := t.content.Row(t.cursorRow)
+	row := t.content.Row(t.rowOffset() + t.cursorRow)
 	if len(row.Cells) == 0 {
 		return
 	}

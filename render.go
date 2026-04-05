@@ -5,18 +5,41 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	widget2 "github.com/fyne-io/terminal/internal/widget"
 )
 
 const cursorWidth = 2
 
+// termContentLayout sizes the TextGrid to fill the container while
+// reporting the TextGrid's full content MinSize for scroll bounds.
+// The cursor is positioned manually and not affected by layout.
+type termContentLayout struct {
+	grid *widget2.TermGrid
+}
+
+func (l *termContentLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
+	return l.grid.MinSize()
+}
+
+func (l *termContentLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	for _, o := range objects {
+		if o == l.grid {
+			o.Resize(size)
+			o.Move(fyne.NewPos(0, 0))
+		}
+	}
+}
+
 type render struct {
 	term *Terminal
 }
 
 func (r *render) Layout(s fyne.Size) {
-	r.term.content.Resize(s)
+	if r.term.scrollContainer != nil {
+		r.term.scrollContainer.Resize(s)
+	}
 }
 
 func (r *render) MinSize() fyne.Size {
@@ -37,7 +60,7 @@ func (r *render) BackgroundColor() color.Color {
 }
 
 func (r *render) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{r.term.content, r.term.cursor}
+	return []fyne.CanvasObject{r.term.scrollContainer}
 }
 
 func (r *render) Destroy() {
@@ -45,7 +68,11 @@ func (r *render) Destroy() {
 
 func (r *render) moveCursor() {
 	cell := r.term.guessCellSize()
-	r.term.cursor.Move(fyne.NewPos(cell.Width*float32(r.term.cursorCol), cell.Height*float32(r.term.cursorRow)))
+	contentRow := r.term.rowOffset() + r.term.cursorRow
+
+	// Position cursor at content-relative coordinates;
+	// the scroll container handles making it scroll with the grid.
+	r.term.cursor.Move(fyne.NewPos(cell.Width*float32(r.term.cursorCol), cell.Height*float32(contentRow)))
 }
 
 func (t *Terminal) refreshCursor() {
@@ -69,6 +96,9 @@ func (t *Terminal) CreateRenderer() fyne.WidgetRenderer {
 	t.cursor = canvas.NewRectangle(theme.Color(theme.ColorNamePrimary))
 	t.cursor.Hidden = true
 	t.cursor.Resize(fyne.NewSize(cursorWidth, t.guessCellSize().Height))
+
+	inner := container.New(&termContentLayout{grid: t.content}, t.content, t.cursor)
+	t.scrollContainer = container.NewVScroll(inner)
 
 	r := &render{term: t}
 	t.cursorMoved = r.moveCursor

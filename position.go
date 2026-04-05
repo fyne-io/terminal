@@ -16,6 +16,21 @@ func (r position) String() string {
 
 func (t *Terminal) getTermPosition(pos fyne.Position) position {
 	cell := t.guessCellSize()
+
+	// Adjust for scroll offset to get content-relative coordinates
+	scrollY := float32(0)
+	if t.scrollContainer != nil {
+		scrollY = t.scrollContainer.Offset.Y
+	}
+	col := int(pos.X/cell.Width) + 1
+	row := int((pos.Y+scrollY)/cell.Height) + 1
+	return position{col, row}
+}
+
+// getScreenPosition returns the screen-relative position (ignoring scroll offset).
+// Used for mouse reporting to terminal applications.
+func (t *Terminal) getScreenPosition(pos fyne.Position) position {
+	cell := t.guessCellSize()
 	col := int(pos.X/cell.Width) + 1
 	row := int(pos.Y/cell.Height) + 1
 	return position{col, row}
