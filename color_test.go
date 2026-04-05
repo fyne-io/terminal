@@ -54,24 +54,44 @@ func testColor(t *testing.T, tests map[string]struct {
 
 func TestHandleOutput_Text(t *testing.T) {
 	tests := map[string]struct {
-		inputSeq   string
-		expectBold bool
+		inputSeq      string
+		expectedStyle fyne.TextStyle
 	}{
 		"bold": {
-			inputSeq:   esc("[1m"),
-			expectBold: true,
+			inputSeq:      esc("[1m"),
+			expectedStyle: fyne.TextStyle{Bold: true},
+		},
+		"italic": {
+			inputSeq:      esc("[3m"),
+			expectedStyle: fyne.TextStyle{Italic: true},
+		},
+		"bold and italic": {
+			inputSeq:      esc("[1m") + esc("[3m"),
+			expectedStyle: fyne.TextStyle{Bold: true, Italic: true},
+		},
+		"bold then disable bold": {
+			inputSeq: esc("[1m") + esc("[22m"),
+		},
+		"italic then disable italic": {
+			inputSeq: esc("[3m") + esc("[23m"),
+		},
+		"underline then disable underline": {
+			inputSeq: esc("[4m") + esc("[24m"),
+		},
+		"all styles then reset": {
+			inputSeq: esc("[1m") + esc("[3m") + esc("[4m") + esc("[9m") + esc("[0m"),
 		},
 	}
 
-	// Iterate through the test cases
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			terminal := New()
 			terminal.handleOutput([]byte(test.inputSeq))
 
-			if terminal.bold != test.expectBold {
-				t.Errorf("Bold flag mismatch. Got %v, expected %v", terminal.bold, test.expectBold)
-			}
+			assert.Equal(t, test.expectedStyle.Bold, terminal.bold, "Bold mismatch")
+			assert.Equal(t, test.expectedStyle.Italic, terminal.italic, "Italic mismatch")
+			assert.Equal(t, test.expectedStyle.Underline, terminal.underline, "Underline mismatch")
+			assert.Equal(t, test.expectedStyle.Strikethrough, terminal.strikethrough, "Strikethrough mismatch")
 		})
 	}
 }
