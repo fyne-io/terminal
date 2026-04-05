@@ -67,10 +67,10 @@ type Terminal struct {
 	cursorMoved              func()
 
 	// Alternate screen buffer (used by curses/fullscreen apps via ?1049h/?47h)
-	altSavedGrid   []widget.TextGridRow // saved main screen rows
-	altSavedRow    int                  // saved cursor row
-	altSavedCol    int                  // saved cursor col
-	altBufferActive bool                // true when alternate buffer is in use
+	altSavedGrid    []widget.TextGridRow // saved main screen rows
+	altSavedRow     int                  // saved cursor row
+	altSavedCol     int                  // saved cursor col
+	altBufferActive bool                 // true when alternate buffer is in use
 
 	onMouseDown, onMouseUp func(int, fyne.KeyModifier, fyne.Position)
 	g0Charset              charSet
