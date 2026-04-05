@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,6 +21,24 @@ func TestClearScreen(t *testing.T) {
 
 	term.handleEscape("2J")
 	assert.Equal(t, "", term.content.Text())
+}
+
+func TestClearScrollback(t *testing.T) {
+	term := New()
+	term.config.Columns = 80
+	term.config.Rows = 5
+	term.scrollBottom = int(term.config.Rows) - 1
+	term.Refresh()
+
+	// Fill screen and generate scrollback
+	for i := 1; i <= 10; i++ {
+		term.handleOutput([]byte("Line " + strconv.Itoa(i) + "\r\n"))
+	}
+	assert.Greater(t, len(term.content.Rows), int(term.config.Rows))
+
+	// ESC[3J clears scrollback
+	term.handleEscape("3J")
+	assert.Equal(t, int(term.config.Rows), len(term.content.Rows))
 }
 
 // test clearing the screen by using "scrollback"
@@ -53,16 +72,16 @@ func TestScrollBack_Tmux(t *testing.T) {
 	term.handleOutput([]byte("\x1b(B"))     // Reset character set
 	term.handleOutput([]byte("\x1b[m"))     // Reset all attributes
 
-	// Step 5: Check the final content of the terminal
+	// Step 5: Check the final content of the terminal (visible rows only)
 	expectedContent := "" // After scrolling and clearing, the visible area should be empty
-	for i := 0; i < 46; i++ {
-		expectedContent += "\n" // Each row should be an empty line
+	for i := 0; i < int(term.config.Rows)-1; i++ {
+		expectedContent += "\n" // Each visible row should be an empty line
 	}
 
 	assert.Equal(t, 0, term.cursorRow)
 	assert.Equal(t, 0, term.cursorCol)
 
-	assert.Equal(t, expectedContent, term.content.Text())
+	assert.Equal(t, expectedContent, term.Text())
 }
 
 func TestScrollBack_With_Zero_Back_Buffer(t *testing.T) {
@@ -115,6 +134,64 @@ func TestScrollBack_With_Zero_Back_Buffer(t *testing.T) {
 			assert.Equal(t, tt.expectedCursorCol, term.cursorCol)
 		})
 	}
+}
+
+func TestScrollBack_PreservesHistory(t *testing.T) {
+	term := New()
+	term.config.Columns = 80
+	term.config.Rows = 5
+	term.scrollBottom = int(term.config.Rows) - 1
+	term.Refresh()
+
+	// Write 5 lines filling the visible area
+	for i := 1; i <= 5; i++ {
+		lineText := "Line " + strconv.Itoa(i)
+		escapeMoveCursor := "\x1b[" + strconv.Itoa(i) + ";1H"
+		term.handleOutput([]byte(escapeMoveCursor + lineText))
+	}
+
+	// Scroll down by writing more lines (triggers linefeed at bottom)
+	term.handleOutput([]byte("\x1b[5;1H")) // Move to last row
+	term.handleOutput([]byte("\nLine 6"))  // This should scroll Line 1 into scrollback
+	term.handleOutput([]byte("\nLine 7"))  // This should scroll Line 2 into scrollback
+
+	// Visible area should show Lines 3-7
+	visibleText := strings.TrimRight(term.Text(), "\n")
+	assert.Contains(t, visibleText, "Line 7")
+	assert.NotContains(t, visibleText, "Line 1")
+
+	// Total rows should include scrollback
+	assert.Greater(t, len(term.content.Rows), int(term.config.Rows))
+
+	// Scrollback rows should contain the old content
+	assert.Contains(t, string(rowText(term.content.Rows[0])), "Line 1")
+}
+
+func TestScrollBack_MaxLimit(t *testing.T) {
+	term := New()
+	term.config.Columns = 80
+	term.config.Rows = 5
+	term.scrollBottom = int(term.config.Rows) - 1
+	term.scrollbackMax = 10 // Small limit for testing
+	term.Refresh()
+
+	// Generate enough lines to exceed scrollback limit
+	for i := 1; i <= 20; i++ {
+		lineText := "Line " + strconv.Itoa(i)
+		term.handleOutput([]byte(lineText + "\r\n"))
+	}
+
+	// Total rows should not exceed scrollbackMax + config.Rows
+	maxRows := term.scrollbackMax + int(term.config.Rows)
+	assert.LessOrEqual(t, len(term.content.Rows), maxRows)
+}
+
+func rowText(row widget.TextGridRow) []rune {
+	result := make([]rune, len(row.Cells))
+	for i, c := range row.Cells {
+		result[i] = c.Rune
+	}
+	return result
 }
 
 func TestInsertDeleteChars(t *testing.T) {
