@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -194,7 +195,7 @@ func escapeInsertChars(t *Terminal, msg string) {
 	}
 
 	newCells := make([]widget.TextGridCell, chars)
-	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
+	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG, TextStyle: fyne.TextStyle{Monospace: true}}
 	for i := range newCells {
 		newCells[i] = widget.TextGridCell{
 			Rune:  ' ',

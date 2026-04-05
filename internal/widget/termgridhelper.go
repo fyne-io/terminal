@@ -14,10 +14,12 @@ func HighlightRange(t *TermGrid, blockMode bool, startRow, startCol, endRow, end
 	applyHighlight := func(cell *widget.TextGridCell) {
 		// Check if already highlighted
 		if h, ok := cell.Style.(*TermTextGridStyle); !ok {
+			baseStyle := fyne.TextStyle{Monospace: true}
+
 			if cell.Style != nil {
-				cell.Style = NewTermTextGridStyle(cell.Style.TextColor(), cell.Style.BackgroundColor(), bitmask, false)
+				cell.Style = NewTermTextGridStyle(cell.Style.TextColor(), cell.Style.BackgroundColor(), bitmask, false, baseStyle)
 			} else {
-				cell.Style = NewTermTextGridStyle(nil, nil, bitmask, false)
+				cell.Style = NewTermTextGridStyle(nil, nil, bitmask, false, baseStyle)
 			}
 			cell.Style.(*TermTextGridStyle).Highlighted = true
 
@@ -228,7 +230,7 @@ type HighlightOption func(h *TermTextGridStyle)
 // Returns:
 //
 //	A pointer to a TermTextGridStyle initialized with the provided colors and inversion settings.
-func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool) widget.TextGridStyle {
+func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool, style fyne.TextStyle) widget.TextGridStyle {
 	// calculate the inverted colors
 	var invertedFg, invertedBg color.Color
 	if fg == nil {
@@ -249,6 +251,7 @@ func NewTermTextGridStyle(fg, bg color.Color, bitmask byte, blinkEnabled bool) w
 		InvertedBackgroundColor: invertedBg,
 		Highlighted:             false,
 		BlinkEnabled:            blinkEnabled,
+		TextStyle:               style,
 	}
 }
 
