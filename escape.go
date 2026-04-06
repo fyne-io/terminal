@@ -32,6 +32,11 @@ var escapes = map[rune]func(*Terminal, string){
 	'u': escapeRestoreCursor,
 	'i': escapePrinterMode,
 	'c': escapeDeviceAttribute,
+	'X': escapeEraseChars,
+	'M': escapeDeleteLines,
+	'T': escapeScrollDown,
+	'b': escapeRepeatChar,
+	't': escapeWindowOps,
 }
 
 func (t *Terminal) handleEscape(code string) {
@@ -44,8 +49,51 @@ func (t *Terminal) handleEscape(code string) {
 	if esc, ok := escapes[runes[len(code)-1]]; ok {
 		esc(t, code[:len(code)-1])
 	} else if t.debug {
-		log.Println("Unrecognised Escape:", code)
+		log.Println("Unrecognised Escape:", strconv.QuoteToASCII(code))
 	}
+}
+
+// enterAltBuffer saves the current screen and cursor, clears the display,
+// and enters the alternate screen buffer (used by curses apps).
+func (t *Terminal) enterAltBuffer() {
+	if t.altBufferActive {
+		return
+	}
+	// Save current grid content (deep copy)
+	t.altSavedGrid = make([]widget.TextGridRow, len(t.content.Rows))
+	for i, row := range t.content.Rows {
+		cells := make([]widget.TextGridCell, len(row.Cells))
+		copy(cells, row.Cells)
+		t.altSavedGrid[i] = widget.TextGridRow{Cells: cells}
+	}
+	t.altSavedRow = t.cursorRow
+	t.altSavedCol = t.cursorCol
+	t.altBufferActive = true
+	t.clearScreen()
+}
+
+// exitAltBuffer restores the saved screen and cursor from before
+// enterAltBuffer was called.
+func (t *Terminal) exitAltBuffer() {
+	if !t.altBufferActive {
+		return
+	}
+	t.altBufferActive = false
+	if t.altSavedGrid != nil {
+		// Restore saved grid content
+		for i, row := range t.altSavedGrid {
+			if i < len(t.content.Rows) {
+				t.content.SetRow(i, row)
+			}
+		}
+		// Clear any extra rows beyond the saved content
+		for i := len(t.altSavedGrid); i < len(t.content.Rows); i++ {
+			t.content.SetRow(i, widget.TextGridRow{})
+		}
+		t.altSavedGrid = nil
+	}
+	t.cursorRow = t.altSavedRow
+	t.cursorCol = t.altSavedCol
 }
 
 func (t *Terminal) clearScreen() {
@@ -149,6 +197,77 @@ func escapeDeleteChars(t *Terminal, msg string) {
 	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
 }
 
+// escapeEraseChars handles CSI Ps X (ECH - Erase Character).
+// Replaces Ps characters starting at cursor with blanks.
+func escapeEraseChars(t *Terminal, msg string) {
+	count, _ := strconv.Atoi(msg)
+	if count == 0 {
+		count = 1
+	}
+
+	row := t.content.Row(t.cursorRow)
+	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
+	// Extend row if cursor is beyond current length
+	for len(row.Cells) < t.cursorCol+count {
+		row.Cells = append(row.Cells, widget.TextGridCell{Rune: ' ', Style: cellStyle})
+	}
+	for i := 0; i < count; i++ {
+		row.Cells[t.cursorCol+i] = widget.TextGridCell{Rune: ' ', Style: cellStyle}
+	}
+	t.content.SetRow(t.cursorRow, row)
+}
+
+// escapeDeleteLines handles CSI Ps M (DL - Delete Line).
+// Deletes Ps lines at cursor, scrolling lines below up within the scroll region.
+func escapeDeleteLines(t *Terminal, msg string) {
+	lines, _ := strconv.Atoi(msg)
+	if lines == 0 {
+		lines = 1
+	}
+	for i := t.cursorRow; i <= t.scrollBottom-lines; i++ {
+		t.content.SetRow(i, t.content.Row(i+lines))
+	}
+	for i := t.scrollBottom - lines + 1; i <= t.scrollBottom; i++ {
+		t.content.SetRow(i, widget.TextGridRow{})
+	}
+}
+
+// escapeScrollDown handles CSI Ps T (SD - Scroll Down).
+// Scrolls the scroll region down by Ps lines, inserting blank lines at the top.
+func escapeScrollDown(t *Terminal, msg string) {
+	lines, _ := strconv.Atoi(msg)
+	if lines == 0 {
+		lines = 1
+	}
+	for i := t.scrollBottom; i >= t.scrollTop+lines; i-- {
+		t.content.SetRow(i, t.content.Row(i-lines))
+	}
+	for i := t.scrollTop; i < t.scrollTop+lines && i <= t.scrollBottom; i++ {
+		t.content.SetRow(i, widget.TextGridRow{})
+	}
+}
+
+// escapeRepeatChar handles CSI Ps b (REP - Repeat).
+// Repeats the preceding graphic character Ps times.
+func escapeRepeatChar(t *Terminal, msg string) {
+	count, _ := strconv.Atoi(msg)
+	if count == 0 {
+		count = 1
+	}
+	if t.lastChar == 0 {
+		return
+	}
+	for i := 0; i < count; i++ {
+		t.handleOutputChar(t.lastChar)
+	}
+}
+
+// escapeWindowOps handles CSI Ps;..t (window operations).
+// Most are queries or title save/restore — safe to ignore.
+func escapeWindowOps(_ *Terminal, _ string) {
+	// no-op: title save/restore, window resize queries, etc.
+}
+
 func escapeEraseInLine(t *Terminal, msg string) {
 	mode, _ := strconv.Atoi(msg)
 	switch mode {
@@ -166,12 +285,7 @@ func escapeEraseInLine(t *Terminal, msg string) {
 		cells := make([]widget.TextGridCell, t.cursorCol)
 		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: append(cells, row.Cells[t.cursorCol:]...)})
 	case 2:
-		row := t.content.Row(t.cursorRow)
-		if t.cursorCol >= len(row.Cells) {
-			return
-		}
-		cells := make([]widget.TextGridCell, len(row.Cells))
-		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{})
 	}
 }
 
@@ -291,24 +405,33 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 			}
 		case "1049":
 			t.bufferMode = enable
+			if enable {
+				t.enterAltBuffer()
+			} else {
+				t.exitAltBuffer()
+			}
+		case "1":
+			// DECCKM - cursor key mode (application vs normal)
+			// Affects what sequences arrow keys send; no display impact
+		case "12":
+			// ATT610 - cursor blink mode; no display impact
 		case "2004":
 			t.bracketedPasteMode = enable
 		case "47":
-			// TODO save screen
-			/*
-				if enable {
-					// save screen
-				} else {
-					// restore screen
-				}
-			*/
+			if enable {
+				t.enterAltBuffer()
+			} else {
+				t.exitAltBuffer()
+			}
+		case "":
+			// empty mode, ignore
 		default:
 			m := "l"
 			if enable {
 				m = "h"
 			}
 			if t.debug {
-				log.Println("Unknown private escape code", fmt.Sprintf("%s%s", mode, m))
+				log.Println("Unknown private escape code", fmt.Sprintf("?%s%s", mode, m))
 			}
 		}
 	}
