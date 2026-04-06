@@ -56,11 +56,12 @@ type Terminal struct {
 	in  io.WriteCloser
 	out io.Reader
 
-	bell, bold, debug, focused bool
-	currentFG, currentBG       color.Color
-	cursorRow, cursorCol       int
-	savedRow, savedCol         int
-	scrollTop, scrollBottom    int
+	bell, debug, focused                   bool
+	bold, italic, underline, strikethrough bool
+	currentFG, currentBG                   color.Color
+	cursorRow, cursorCol                   int
+	savedRow, savedCol                     int
+	scrollTop, scrollBottom                int
 
 	cursor                   *canvas.Rectangle
 	cursorHidden, bufferMode bool // buffer mode is an xterm extension that impacts control keys

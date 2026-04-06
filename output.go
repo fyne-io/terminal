@@ -295,9 +295,18 @@ func (t *Terminal) handleOutputChar(r rune) {
 	}
 
 	var cellStyle widget.TextGridStyle
-	cellStyle = &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
+	textStyle := fyne.TextStyle{
+		Monospace: true,
+
+		Bold:          t.bold,
+		Italic:        t.italic,
+		Underline:     t.underline,
+		Strikethrough: t.strikethrough,
+	}
+	cellStyle = &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG,
+		TextStyle: textStyle}
 	if t.blinking {
-		cellStyle = widget2.NewTermTextGridStyle(t.currentFG, t.currentBG, highlightBitMask, t.blinking)
+		cellStyle = widget2.NewTermTextGridStyle(t.currentFG, t.currentBG, highlightBitMask, t.blinking, textStyle)
 	}
 
 	row, col := t.cursorRow, t.cursorCol

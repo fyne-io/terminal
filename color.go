@@ -46,6 +46,9 @@ func (t *Terminal) handleColorEscape(message string) {
 		t.currentBG = nil
 		t.currentFG = nil
 		t.bold = false
+		t.italic = false
+		t.underline = false
+		t.strikethrough = false
 		t.blinking = false
 		return
 	}
@@ -88,9 +91,15 @@ func (t *Terminal) handleColorMode(modeStr string) {
 		t.currentBG, t.currentFG = nil, nil
 		t.bold = false
 		t.blinking = false
+		t.italic = false
+		t.underline = false
+		t.strikethrough = false
 	case 1:
 		t.bold = true
-	case 4, 24: //italic
+	case 3:
+		t.italic = true
+	case 4:
+		t.underline = true
 	case 5:
 		t.blinking = true
 	case 7: // reverse
@@ -105,6 +114,14 @@ func (t *Terminal) handleColorMode(modeStr string) {
 		} else {
 			t.currentFG = bg
 		}
+	case 9:
+		t.strikethrough = true
+	case 22:
+		t.bold = false
+	case 23:
+		t.italic = false
+	case 24:
+		t.underline = false
 	case 27: // reverse off
 		bg, fg := t.currentBG, t.currentFG
 		if fg != nil {
