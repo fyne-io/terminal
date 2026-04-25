@@ -24,7 +24,7 @@ import (
 const (
 	bufLen             = 32768 // 32KB buffer for output, to align with modern L1 cache
 	highlightBitMask   = 0x55
-	maxRefreshInterval = 33 * time.Millisecond
+	maxRefreshInterval = 17 * time.Millisecond
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
