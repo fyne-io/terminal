@@ -555,7 +555,6 @@ func escapePrinterMode(t *Terminal, code string) {
 			} else if t.debug {
 				log.Println("Print data was received but no printer has been set")
 			}
-
 		}
 		t.printData = nil
 	default:

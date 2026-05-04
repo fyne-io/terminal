@@ -21,7 +21,8 @@ func testColor(t *testing.T, tests map[string]struct {
 	expectedFg   color.Color
 	expectedBg   color.Color
 	expectedBold bool
-}) {
+},
+) {
 	// Iterate through the test cases
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {

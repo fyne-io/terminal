@@ -90,7 +90,7 @@ func (t *Terminal) handleColorMode(modeStr string) {
 		t.blinking = false
 	case 1:
 		t.bold = true
-	case 4, 24: //italic
+	case 4, 24: // italic
 	case 5:
 		t.blinking = true
 	case 7: // reverse

@@ -168,7 +168,6 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 
 // MouseUp handles the up action for desktop mouse events.
 func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
-
 	if t.onMouseDown == nil {
 		return
 	}

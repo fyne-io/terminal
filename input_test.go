@@ -105,7 +105,6 @@ func TestTerminal_TypedKey_LineMode(t *testing.T) {
 		newLineMode bool
 		want        []byte
 	}{
-
 		"Enter":                 {fyne.KeyEnter, false, []byte{'\n'}},
 		"Enter with line mode":  {fyne.KeyEnter, true, []byte{'\r'}},
 		"Return":                {fyne.KeyReturn, false, []byte{'\r'}},
@@ -137,37 +136,43 @@ func TestTerminal_TypedShortcut(t *testing.T) {
 		"LeftOption+U": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierAlt,
-				KeyName:  fyne.KeyU},
+				KeyName:  fyne.KeyU,
+			},
 			want: []byte{},
 		},
 		"Control+@": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  "@"},
+				KeyName:  "@",
+			},
 			want: []byte{0},
 		},
 		"Control+Space": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  fyne.KeySpace},
+				KeyName:  fyne.KeySpace,
+			},
 			want: []byte{0},
 		},
 		"Control+C": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  fyne.KeyC},
+				KeyName:  fyne.KeyC,
+			},
 			want: []byte{3},
 		},
 		"Control+_": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  "_"},
+				KeyName:  "_",
+			},
 			want: []byte{31},
 		},
 		"Control+X": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  fyne.KeyX},
+				KeyName:  fyne.KeyX,
+			},
 			want: []byte{24},
 		},
 	}
