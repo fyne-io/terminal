@@ -9,3 +9,6 @@ Dir = "cmd/fyneterm"
 
 [Migrations]
 fyneDo = true
+
+[CanOpen]
+MimeTypes = "inode/directory"
