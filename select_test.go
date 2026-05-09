@@ -115,14 +115,32 @@ func TestDoubleTapped(t *testing.T) {
 	grid := widget2.NewTermGrid()
 	grid.Rows = []widget.TextGridRow{
 		{Cells: []widget.TextGridCell{
-			{Rune: 'H'}, {Rune: 'e'}, {Rune: 'l'}, {Rune: 'l'}, {Rune: 'o'},
-			{Rune: ' '}, {Rune: 'W'}, {Rune: 'o'}, {Rune: 'r'}, {Rune: 'l'},
-			{Rune: 'd'}, {Rune: '!'},
+			{Rune: 'H'},
+			{Rune: 'e'},
+			{Rune: 'l'},
+			{Rune: 'l'},
+			{Rune: 'o'},
+			{Rune: ' '},
+			{Rune: 'W'},
+			{Rune: 'o'},
+			{Rune: 'r'},
+			{Rune: 'l'},
+			{Rune: 'd'},
+			{Rune: '!'},
 		}},
 		{Cells: []widget.TextGridCell{
-			{Rune: 'T'}, {Rune: 'e'}, {Rune: 's'}, {Rune: 't'}, {Rune: 'i'},
-			{Rune: 'n'}, {Rune: 'g'}, {Rune: ' '}, {Rune: '1'}, {Rune: '2'},
-			{Rune: '3'}, {Rune: '.'},
+			{Rune: 'T'},
+			{Rune: 'e'},
+			{Rune: 's'},
+			{Rune: 't'},
+			{Rune: 'i'},
+			{Rune: 'n'},
+			{Rune: 'g'},
+			{Rune: ' '},
+			{Rune: '1'},
+			{Rune: '2'},
+			{Rune: '3'},
+			{Rune: '.'},
 		}},
 	}
 

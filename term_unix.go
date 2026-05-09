@@ -25,7 +25,8 @@ func (t *Terminal) updatePTYSize() {
 	}
 	_ = pty.Setsize(t.pty.(*os.File), &pty.Winsize{
 		Rows: uint16(t.config.Rows), Cols: uint16(t.config.Columns),
-		X: uint16(t.Size().Width * scale), Y: uint16(t.Size().Height * scale)})
+		X: uint16(t.Size().Width * scale), Y: uint16(t.Size().Height * scale),
+	})
 }
 
 func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
@@ -36,6 +37,7 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 
 	env := os.Environ()
 	env = append(env, "TERM=xterm-256color")
+	env = append(env, "COLORTERM=truecolor")
 	c := exec.Command(shell)
 	c.Dir = t.startingDir()
 	c.Env = env

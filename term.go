@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	bufLen           = 32768 // 32KB buffer for output, to align with modern L1 cache
-	highlightBitMask = 0x55
+	bufLen             = 32768 // 32KB buffer for output, to align with modern L1 cache
+	highlightBitMask   = 0x55
+	maxRefreshInterval = 17 * time.Millisecond
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -67,6 +68,12 @@ type Terminal struct {
 	cursorHidden, bufferMode bool // buffer mode is an xterm extension that impacts control keys
 	cursorMoved              func()
 
+	// Alternate screen buffer (used by curses/fullscreen apps via ?1049h/?47h)
+	altSavedGrid    []widget.TextGridRow // saved main screen rows
+	altSavedRow     int                  // saved cursor row
+	altSavedCol     int                  // saved cursor col
+	altBufferActive bool                 // true when alternate buffer is in use
+
 	onMouseDown, onMouseUp func(int, fyne.KeyModifier, fyne.Position)
 	g0Charset              charSet
 	g1Charset              charSet
@@ -86,7 +93,9 @@ type Terminal struct {
 	newLineMode            bool // new line mode or line feed mode
 	bracketedPasteMode     bool
 	disableAutoWrap        bool // disable auto wrap mode (DECAWM off)
+	lastChar               rune // last graphic character output (for CSI b REP)
 	state                  *parseState
+	lastRefresh            time.Time
 	blinking               bool
 	printData              []byte
 	printer                Printer
@@ -160,7 +169,6 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 
 // MouseUp handles the up action for desktop mouse events.
 func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
-
 	if t.onMouseDown == nil {
 		return
 	}
@@ -409,8 +417,9 @@ func (t *Terminal) run() {
 		}
 
 		leftOver = t.handleOutput(fullBuf[:num])
-		if len(leftOver) == 0 {
-			fyne.Do(t.Refresh)
+		if len(leftOver) == 0 || time.Since(t.lastRefresh) > maxRefreshInterval {
+			t.lastRefresh = time.Now()
+			fyne.DoAndWait(t.Refresh)
 		}
 	}
 }
