@@ -1,3 +1,5 @@
+//go:generate fyne bundle -package main -o fonts.go font
+
 package main
 
 import (
@@ -14,7 +16,7 @@ type termTheme struct {
 }
 
 func newTermTheme() *termTheme {
-	return &termTheme{Theme: fyne.CurrentApp().Settings().Theme(), fontSize: 12}
+	return &termTheme{Theme: theme.DefaultTheme(), fontSize: 12}
 }
 
 // Color fixes a bug < 2.1 where theme.DarkTheme() would not override user preference.
@@ -32,4 +34,21 @@ func (t *termTheme) Size(n fyne.ThemeSizeName) float32 {
 	}
 
 	return t.Theme.Size(n)
+}
+
+func (t *termTheme) Font(s fyne.TextStyle) fyne.Resource {
+	if !s.Monospace {
+		return t.Theme.Font(s)
+	}
+
+	if s.Bold {
+		if s.Italic {
+			return resourceHackBoldItalicTtf
+		}
+		return resourceHackBoldTtf
+	} else if s.Italic {
+		return resourceHackItalicTtf
+	}
+
+	return resourceHackRegularTtf
 }
