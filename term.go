@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	widget2 "github.com/fyne-io/terminal/internal/widget"
+	"github.com/mattn/go-runewidth"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -599,4 +600,37 @@ type ReadWriterConfiguratorFunc func(r io.Reader, w io.WriteCloser) (io.Reader, 
 // It calls the ReadWriterConfiguratorFunc itself.
 func (m ReadWriterConfiguratorFunc) SetupReadWriter(r io.Reader, w io.WriteCloser) (io.Reader, io.WriteCloser) {
 	return m(r, w)
+}
+
+func (t *Terminal) cellStart(row, col int) int {
+	if col <= 0 {
+		return 0
+	}
+	r := t.content.Row(row)
+	if col >= len(r.Cells) {
+		return col
+	}
+	if r.Cells[col].Rune != 0 {
+		return col
+	}
+	for col > 0 && r.Cells[col].Rune == 0 {
+		col--
+	}
+	return col
+}
+
+func (t *Terminal) cellEnd(row, col int) int {
+	if col < 0 {
+		return 0
+	}
+	start := t.cellStart(row, col)
+	r := t.content.Row(row)
+	if start >= len(r.Cells) {
+		return start
+	}
+	w := runewidth.RuneWidth(r.Cells[start].Rune)
+	if w <= 0 {
+		return start + 1
+	}
+	return start + w
 }

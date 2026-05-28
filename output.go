@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 	widget2 "github.com/fyne-io/terminal/internal/widget"
+	"github.com/mattn/go-runewidth"
 )
 
 const (
@@ -284,12 +285,22 @@ func (t *Terminal) parseDCS(r rune) {
 }
 
 func (t *Terminal) handleOutputChar(r rune) {
-	if t.cursorCol == int(t.config.Columns) {
+	w := runewidth.RuneWidth(r)
+	if w == 0 {
+		// Zero-width runes get their own cell as a best-effort.
+		w = 1
+	}
+
+	// Wrap if the character does not fit on the current line.
+	if t.cursorCol+w > int(t.config.Columns) {
 		if !t.disableAutoWrap {
 			t.cursorCol = 0
 			handleOutputLineFeed(t)
 		} else {
-			// In non-wrap mode, overwrite the last character
+			// Drop wide chars that do not fit when auto-wrap is disabled.
+			if w > 1 {
+				return
+			}
 			t.cursorCol = int(t.config.Columns) - 1
 		}
 	}
@@ -297,7 +308,6 @@ func (t *Terminal) handleOutputChar(r rune) {
 	var cellStyle widget.TextGridStyle
 	textStyle := fyne.TextStyle{
 		Monospace: true,
-
 		Bold:          t.bold,
 		Italic:        t.italic,
 		Underline:     t.underline,
@@ -322,8 +332,14 @@ func (t *Terminal) handleOutputChar(r rune) {
 			t.content.Rows[row].Cells[i].Rune = ' '
 		}
 	}
+
+	// Fill continuation cells for wide chars.
+	for i := 1; i < w; i++ {
+		t.content.SetCell(row, col+i, widget.TextGridCell{Rune: 0, Style: cellStyle})
+	}
+
 	t.lastChar = r
-	t.cursorCol++
+	t.cursorCol += w
 }
 
 func (t *Terminal) ringBell() {
