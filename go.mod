@@ -3,7 +3,7 @@ module github.com/fyne-io/terminal
 go 1.19
 
 require (
-	fyne.io/fyne/v2 v2.7.4-0.20260404155105-c53f9d6e424e
+	fyne.io/fyne/v2 v2.7.5-0.20260529084154-f5f48d2ab76e
 	github.com/ActiveState/termtest/conpty v0.5.0
 	github.com/creack/pty v1.1.21
 	github.com/fyshos/fancyfs v0.0.0-20250930151016-696fe12cefc6
@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	fyne.io/systray v1.12.0 // indirect
+	fyne.io/systray v1.12.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/anthonynsimon/bild v0.13.0 // indirect

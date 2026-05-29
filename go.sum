@@ -1,7 +1,7 @@
-fyne.io/fyne/v2 v2.7.4-0.20260404155105-c53f9d6e424e h1:Ggo8QND2+dE1yAGndQtk0vBxl+12Bza7ktXwn2k+gk0=
-fyne.io/fyne/v2 v2.7.4-0.20260404155105-c53f9d6e424e/go.mod h1:3FRSe4wPFsT9iFAH/HKZf6b7zqBQXupvIRJ9mTz/k90=
-fyne.io/systray v1.12.0 h1:CA1Kk0e2zwFlxtc02L3QFSiIbxJ/P0n582YrZHT7aTM=
-fyne.io/systray v1.12.0/go.mod h1:RVwqP9nYMo7h5zViCBHri2FgjXF7H2cub7MAq4NSoLs=
+fyne.io/fyne/v2 v2.7.5-0.20260529084154-f5f48d2ab76e h1:Ngr2LsjSW7Gr/lfaAUlBEkV7mYa9JUSPQCuRQ8BmdIc=
+fyne.io/fyne/v2 v2.7.5-0.20260529084154-f5f48d2ab76e/go.mod h1:MEWwWTgsffhd9B79f31GXZLPfnrlXJVavETgNPzrsG0=
+fyne.io/systray v1.12.1 h1:ygBD6aZXwiOmZoY5N+ukbH9pih0Kq6fYgVeMYbr5skQ=
+fyne.io/systray v1.12.1/go.mod h1:RVwqP9nYMo7h5zViCBHri2FgjXF7H2cub7MAq4NSoLs=
 github.com/ActiveState/termtest/conpty v0.5.0 h1:JLUe6YDs4Jw4xNPCU+8VwTpniYOGeKzQg4SM2YHQNA8=
 github.com/ActiveState/termtest/conpty v0.5.0/go.mod h1:LO4208FLsxw6DcNZ1UtuGUMW+ga9PFtX4ntv8Ymg9og=
 github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 h1:w+iIsaOQNcT7OZ575w+acHgRric5iCyQh+xv+KJ4HB8=
