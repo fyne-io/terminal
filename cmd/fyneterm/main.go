@@ -190,33 +190,35 @@ func newTab(tabs *container.DocTabs, refresh func(bool), debug bool, th *termThe
 	sizeOverride := container.NewThemeOverride(container.NewStack(bg, img, t), th)
 	tabItem := container.NewTabItem(termTitle(), sizeOverride)
 
-	listen := make(chan terminal.Config)
-	go func() {
-		for config := range listen {
-			fyne.Do(func() {
-				title := config.Title
-				if title == "" {
-					tabItem.Text = termTitle()
-				} else {
-					tabItem.Text = title
-				}
-				if len(tabs.Items) > 1 {
-					tabs.Refresh()
-				}
-
-				if tabs.Selected() == tabItem {
+	if runShell {
+		listen := make(chan terminal.Config)
+		go func() {
+			for config := range listen {
+				fyne.Do(func() {
+					title := config.Title
 					if title == "" {
-						w.SetTitle(termTitle())
+						tabItem.Text = termTitle()
 					} else {
-						w.SetTitle(termTitle() + ": " + title)
+						tabItem.Text = title
 					}
-				}
+					if len(tabs.Items) > 1 {
+						tabs.Refresh()
+					}
 
-				setDir(config.PWD)
-			})
-		}
-	}()
-	t.AddListener(listen)
+					if tabs.Selected() == tabItem {
+						if title == "" {
+							w.SetTitle(termTitle())
+						} else {
+							w.SetTitle(termTitle() + ": " + title)
+						}
+					}
+
+					setDir(config.PWD)
+				})
+			}
+		}()
+		t.AddListener(listen)
+	}
 
 	// New window shortcut
 	newWin := func(_ fyne.Shortcut) {
