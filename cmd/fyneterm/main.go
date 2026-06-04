@@ -64,6 +64,14 @@ func findTerminal(item *container.TabItem) *terminal.Terminal {
 }
 
 func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
+	w, _, _ := buildTerminalWindow(a, debug, true)
+	return w
+}
+
+// buildTerminalWindow constructs the terminal window and returns the window,
+// its DocTabs and the updateView callback so the tab/resize behaviour can be
+// exercised from tests.
+func buildTerminalWindow(a fyne.App, debug, runShell bool) (fyne.Window, *container.DocTabs, func(bool)) {
 	w := a.NewWindow(termTitle())
 	w.SetPadded(false)
 	th := newTermTheme()
@@ -74,26 +82,28 @@ func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 	// updateView swaps between showing DocTabs (2+ tabs) or the
 	// single tab's content directly (1 tab, no tab bar visible).
 	// It adjusts the window height to compensate for the tab bar.
-	updateView := func() {
+	updateView := func(adding bool) {
 		barHeight := tabs.MinSize().Height - tabs.Selected().Content.MinSize().Height
 		size := w.Canvas().Size()
-		if len(tabs.Items) == 1 {
+		if !adding && len(tabs.Items) == 1 {
 			wrapper.Objects = []fyne.CanvasObject{tabs.Items[0].Content}
 			w.Resize(fyne.NewSize(size.Width, size.Height-barHeight))
-		} else {
+		} else if adding && len(tabs.Items) == 2 {
 			wrapper.Objects = []fyne.CanvasObject{tabs}
 			w.Resize(fyne.NewSize(size.Width, size.Height+barHeight))
+		} else {
+			wrapper.Objects = []fyne.CanvasObject{tabs}
 		}
 		wrapper.Refresh()
 	}
 
-	firstTab := newTab(tabs, updateView, debug, th, w, a)
+	firstTab := newTab(tabs, updateView, debug, th, w, a, runShell)
 	tabs.Append(firstTab)
 	tabs.CreateTab = func() *container.TabItem {
-		tab := newTab(tabs, updateView, debug, th, w, a)
+		tab := newTab(tabs, updateView, debug, th, w, a, true)
 		// updateView after DocTabs finishes appending the new tab
 		defer func() {
-			updateView()
+			updateView(true)
 			w.Canvas().Focus(findTerminal(tab))
 		}()
 		return tab
@@ -117,10 +127,10 @@ func newTerminalWindow(a fyne.App, debug bool) fyne.Window {
 
 	w.Canvas().Focus(findTerminal(firstTab))
 
-	return w
+	return w, tabs, updateView
 }
 
-func newTab(tabs *container.DocTabs, refresh func(), debug bool, th *termTheme, w fyne.Window, a fyne.App) *container.TabItem {
+func newTab(tabs *container.DocTabs, refresh func(bool), debug bool, th *termTheme, w fyne.Window, a fyne.App, runShell bool) *container.TabItem {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameBackground))
 	img := canvas.NewImageFromResource(data.FyneLogo)
 	img.FillMode = canvas.ImageFillContain
@@ -220,10 +230,10 @@ func newTab(tabs *container.DocTabs, refresh func(), debug bool, th *termTheme, 
 
 	// New tab shortcut
 	newTabShortcut := func(_ fyne.Shortcut) {
-		item := newTab(tabs, refresh, debug, th, w, a)
+		item := newTab(tabs, refresh, debug, th, w, a, true)
 		tabs.Append(item)
 		tabs.Select(item)
-		refresh()
+		refresh(true)
 		w.Canvas().Focus(findTerminal(item))
 	}
 	t.AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyT, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift}, newTabShortcut)
@@ -248,21 +258,23 @@ func newTab(tabs *container.DocTabs, refresh func(), debug bool, th *termTheme, 
 			refreshAllTabs()
 		})
 
-	go func() {
-		err := t.RunLocalShell()
-		if err != nil {
-			fyne.LogError("Failure in terminal", err)
-		}
-		fyne.Do(func() {
-			tabs.Remove(tabItem)
-			if len(tabs.Items) == 0 {
-				w.Close()
-				return
+	if runShell {
+		go func() {
+			err := t.RunLocalShell()
+			if err != nil {
+				fyne.LogError("Failure in terminal", err)
 			}
-			refresh()
-			w.Canvas().Focus(findTerminal(tabs.Selected()))
-		})
-	}()
+			fyne.Do(func() {
+				tabs.Remove(tabItem)
+				if len(tabs.Items) == 0 {
+					w.Close()
+					return
+				}
+				refresh(false)
+				w.Canvas().Focus(findTerminal(tabs.Selected()))
+			})
+		}()
+	}
 
 	return tabItem
 }
