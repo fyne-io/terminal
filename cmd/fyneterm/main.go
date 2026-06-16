@@ -101,11 +101,7 @@ func buildTerminalWindow(a fyne.App, debug, runShell bool) (fyne.Window, *contai
 	tabs.Append(firstTab)
 	tabs.CreateTab = func() *container.TabItem {
 		tab := newTab(tabs, updateView, debug, th, w, a, true)
-		// updateView after DocTabs finishes appending the new tab
-		defer func() {
-			updateView(true)
-			w.Canvas().Focus(findTerminal(tab))
-		}()
+		w.Canvas().Focus(findTerminal(tab))
 		return tab
 	}
 
