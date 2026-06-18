@@ -12,3 +12,6 @@ fyneDo = true
 
 [CanOpen]
 MimeTypes = "inode/directory"
+
+[LinuxAndBSD]
+Categories = ["System"]
