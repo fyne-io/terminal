@@ -195,3 +195,58 @@ func TestDoubleTapped(t *testing.T) {
 		})
 	}
 }
+
+func TestDragged(t *testing.T) {
+	newTerm := func() *Terminal {
+		grid := widget2.NewTermGrid()
+		grid.SetText("Hello World!\nTesting 123.\nThird row...")
+
+		term := &Terminal{content: grid}
+		term.Resize(fyne.NewSize(500, 500))
+		return term
+	}
+
+	tests := map[string]struct {
+		path     []position // pointer positions, the first is where the mouse went down
+		expected string
+	}{
+		"forwards on one row": {
+			path:     []position{{Row: 1, Col: 1}, {Row: 1, Col: 3}, {Row: 1, Col: 5}},
+			expected: "Hello",
+		},
+		"backwards on one row": {
+			path:     []position{{Row: 1, Col: 8}, {Row: 1, Col: 5}, {Row: 1, Col: 2}},
+			expected: "ello Wo",
+		},
+		"forwards over rows": {
+			path:     []position{{Row: 1, Col: 7}, {Row: 2, Col: 3}, {Row: 3, Col: 5}},
+			expected: "World!\nTesting 123.\nThird",
+		},
+		"backwards over rows": {
+			path:     []position{{Row: 3, Col: 5}, {Row: 2, Col: 3}, {Row: 1, Col: 7}},
+			expected: "World!\nTesting 123.\nThird",
+		},
+		"single event drag": {
+			path:     []position{{Row: 2, Col: 1}, {Row: 2, Col: 7}},
+			expected: "Testing",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := newTerm()
+
+			prev := term.getTextPosition(tc.path[0])
+			for _, step := range tc.path[1:] {
+				pos := term.getTextPosition(step)
+				term.Dragged(&fyne.DragEvent{
+					PointEvent: fyne.PointEvent{Position: pos},
+					Dragged:    fyne.NewDelta(pos.X-prev.X, pos.Y-prev.Y),
+				})
+				prev = pos
+			}
+
+			assert.Equal(t, tc.expected, term.SelectedText())
+		})
+	}
+}

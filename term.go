@@ -545,24 +545,22 @@ func (t *Terminal) sanitizePosition(p fyne.Position) *fyne.Position {
 
 // Dragged is called by fyne when the left mouse is down and moved whilst over the widget.
 func (t *Terminal) Dragged(d *fyne.DragEvent) {
-	pos := t.sanitizePosition(d.Position)
-	if !t.selecting {
-		if t.keyboardState.altPressed {
-			t.blockMode = true
-		}
-		p := t.getTermPosition(*pos)
-		t.selStart = &p
-		t.selEnd = nil
+	if t.selecting {
+		// clear the highlight applied by the previous drag event
+		sr, sc, er, ec := t.getSelectedRange()
+		widget2.ClearHighlightRange(t.content, t.blockMode, sr, sc, er, ec)
+	} else {
+		// the first drag event arrives after the pointer has already moved, so
+		// take away the delta to find the cell the drag actually started from
+		start := t.getTermPosition(*t.sanitizePosition(d.Position.Subtract(d.Dragged)))
+		t.selStart = &start
+		t.blockMode = t.keyboardState.altPressed
+		t.selecting = true
 	}
-	// clear any previous selection
-	sr, sc, er, ec := t.getSelectedRange()
-	widget2.ClearHighlightRange(t.content, t.blockMode, sr, sc, er, ec)
 
-	// make sure that x,y,x1,y1 are always positive
-	t.selecting = true
 	t.mouseCursor = desktop.TextCursor
-	p := t.getTermPosition(*pos)
-	t.selEnd = &p
+	end := t.getTermPosition(*t.sanitizePosition(d.Position))
+	t.selEnd = &end
 	t.highlightSelectedText()
 }
 
