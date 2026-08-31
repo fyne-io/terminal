@@ -2,16 +2,18 @@
 Icon = "data/Icon.png"
 Name = "FyneTerm"
 ID = "io.fyne.terminal"
+Version = "0.1.0"
+Build = 4
 
 [Source]
 Repo = "https://github.com/fyne-io/terminal"
 Dir = "cmd/fyneterm"
-
-[Migrations]
-fyneDo = true
 
 [CanOpen]
 MimeTypes = "inode/directory"
 
 [LinuxAndBSD]
 Categories = ["System"]
+
+[Migrations]
+fyneDo = true
