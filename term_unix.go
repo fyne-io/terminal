@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"syscall"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -26,6 +27,14 @@ func (t *Terminal) updatePTYSize() {
 		Rows: uint16(t.config.Rows), Cols: uint16(t.config.Columns),
 		X: uint16(t.Size().Width * scale), Y: uint16(t.Size().Height * scale),
 	})
+}
+
+// hangup tells the shell that its terminal has gone away.
+func (t *Terminal) hangup() {
+	if t.cmd == nil || t.cmd.Process == nil {
+		return // SSH or other direct connection
+	}
+	_ = t.cmd.Process.Signal(syscall.SIGHUP)
 }
 
 func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
@@ -49,9 +58,17 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 		return nil, nil, nil, err
 	}
 
+	done := make(chan struct{})
+	t.dirWatchDone = done
 	go func() {
+		tick := time.NewTicker(time.Millisecond * 250)
+		defer tick.Stop()
 		for {
-			time.Sleep(time.Millisecond * 250)
+			select {
+			case <-done:
+				return
+			case <-tick.C:
+			}
 			if time.Since(lastKeyTime).Seconds() > 0.5 {
 				continue
 			}

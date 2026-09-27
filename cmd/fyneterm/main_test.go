@@ -86,3 +86,32 @@ func TestTabStartDir(t *testing.T) {
 	dirs[tabs.Selected()] = file
 	assert.Equal(t, "", currentDir(tabs, dirs))
 }
+
+// TestTabClose verifies that closing a tab with its close button tidies up
+// in the same way as the shell exiting, hiding the tab bar for a single tab.
+func TestTabClose(t *testing.T) {
+	a := test.NewApp()
+	defer test.NewApp() // reset the global app after the test
+
+	w, tabs, updateView := buildTerminalWindow(a, false, false)
+	th := newTermTheme()
+	dirs := make(map[*container.TabItem]string)
+	single := w.Canvas().Size().Height
+
+	item := newTab(tabs, dirs, updateView, false, th, w, a, false)
+	item.Text = "Closing"
+	tabs.Append(item)
+	tabs.Select(item)
+	updateView(true)
+	assert.Equal(t, termTitle()+": Closing", w.Title())
+	assert.Greater(t, w.Canvas().Size().Height, single)
+
+	// this is what the close button of a tab does
+	tabs.Remove(item)
+	tabs.OnClosed(item)
+
+	assert.Equal(t, 1, len(tabs.Items))
+	assert.Equal(t, single, w.Canvas().Size().Height)
+	assert.Equal(t, termTitle(), w.Title())
+	assert.Equal(t, findTerminal(tabs.Items[0]), w.Canvas().Focused())
+}

@@ -4,9 +4,13 @@
 package terminal
 
 import (
+	"errors"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -51,4 +55,59 @@ func TestProcessDir_MissingProcess(t *testing.T) {
 	assert.NoError(t, cmd.Run())
 
 	assert.Equal(t, "", processDir(cmd.Process.Pid))
+}
+
+func TestTerminal_Close(t *testing.T) {
+	term := New()
+	term.Resize(fyne.NewSize(45, 45))
+	done := make(chan error)
+	go func() {
+		done <- term.RunLocalShell()
+	}()
+
+	// a program that will not exit by itself, or respond to input
+	err := errors.New("NotYet")
+	for err != nil {
+		time.Sleep(50 * time.Millisecond)
+		_, err = term.Write([]byte("sleep 600\n"))
+	}
+	child := 0
+	assert.Eventually(t, func() bool {
+		out, _ := exec.Command("pgrep", "-P", strconv.Itoa(term.cmd.Process.Pid), "sleep").Output()
+		child, _ = strconv.Atoi(strings.TrimSpace(string(out)))
+		return child != 0
+	}, time.Second*5, time.Millisecond*20)
+	running := func() bool {
+		return syscall.Kill(child, 0) == nil
+	}
+	assert.True(t, running())
+
+	term.Close()
+	select {
+	case err := <-done:
+		assert.NoError(t, err)
+	case <-time.After(time.Second * 5):
+		t.Fatal("Terminal did not stop after Close")
+	}
+	assert.Eventually(t, func() bool { return !running() }, time.Second*2, time.Millisecond*20)
+	assert.Nil(t, term.dirWatchDone)
+
+	term.Close() // closing again is harmless
+}
+
+func TestTerminal_Close_BeforeOpen(t *testing.T) {
+	term := New() // without a size the shell will not start
+	done := make(chan error)
+	go func() {
+		done <- term.RunLocalShell()
+	}()
+
+	term.Close()
+	select {
+	case err := <-done:
+		assert.NoError(t, err)
+	case <-time.After(time.Second * 5):
+		t.Fatal("Terminal did not stop after Close")
+	}
+	assert.Nil(t, term.cmd)
 }

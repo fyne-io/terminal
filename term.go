@@ -100,6 +100,9 @@ type Terminal struct {
 	printData              []byte
 	printer                Printer
 	cmd                    *exec.Cmd
+	dirWatchDone           chan struct{} // closed to stop checking the working directory of cmd
+	closeLock              sync.Mutex
+	connected, stopping    bool
 	readWriterConfigurator ReadWriterConfigurator
 }
 
@@ -344,6 +347,9 @@ func (t *Terminal) onConfigure() {
 
 func (t *Terminal) open() error {
 	for t.config.Columns <= 2 { // wait until it has a valid area
+		if t.isStopping() {
+			return nil
+		}
 		time.Sleep(time.Millisecond * 10)
 	}
 	in, out, pty, err := t.startPTY()
@@ -357,9 +363,25 @@ func (t *Terminal) open() error {
 	}
 
 	t.pty = pty
+	t.setConnected()
 
 	t.updatePTYSize()
 	return nil
+}
+
+// Close stops this terminal, hanging up the connection so that anything running in it will exit.
+// Unlike Exit this does not rely on the running program responding to input.
+// A terminal cannot be run again after it has been closed.
+func (t *Terminal) Close() {
+	t.closeLock.Lock()
+	t.stopping = true
+	connected := t.connected
+	t.closeLock.Unlock()
+
+	if connected {
+		t.hangup()
+	}
+	_ = t.close()
 }
 
 // Exit requests that this terminal exits.
@@ -369,6 +391,17 @@ func (t *Terminal) Exit() {
 }
 
 func (t *Terminal) close() error {
+	t.closeLock.Lock()
+	defer t.closeLock.Unlock()
+	if !t.connected {
+		return nil // never opened, or Close got here first
+	}
+	t.connected = false
+
+	if t.dirWatchDone != nil {
+		close(t.dirWatchDone)
+		t.dirWatchDone = nil
+	}
 	if t.in != t.pty {
 		_ = t.in.Close() // we may already be closed
 	}
@@ -377,6 +410,20 @@ func (t *Terminal) close() error {
 	}
 
 	return t.pty.Close()
+}
+
+func (t *Terminal) isStopping() bool {
+	t.closeLock.Lock()
+	defer t.closeLock.Unlock()
+
+	return t.stopping
+}
+
+func (t *Terminal) setConnected() {
+	t.closeLock.Lock()
+	defer t.closeLock.Unlock()
+
+	t.connected = true
 }
 
 // don't call often - should we cache?
@@ -432,11 +479,17 @@ func (t *Terminal) run() {
 func (t *Terminal) RunLocalShell() error {
 	t.config.PWD = t.startingDir()
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
+		if t.isStopping() {
+			return nil
+		}
 		time.Sleep(time.Millisecond * 50)
 	}
 	err := t.open()
 	if err != nil {
 		return err
+	}
+	if t.isStopping() { // closed whilst we were opening
+		return t.close()
 	}
 
 	t.run()
@@ -452,11 +505,18 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
 		t.config.PWD, _ = os.Getwd()
 	}
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
+		if t.isStopping() {
+			return nil
+		}
 		time.Sleep(time.Millisecond * 50)
 	}
 	t.in, t.out = in, out
 	if t.readWriterConfigurator != nil {
 		t.out, t.in = t.readWriterConfigurator.SetupReadWriter(out, in)
+	}
+	t.setConnected()
+	if t.isStopping() { // closed whilst we were connecting
+		return t.close()
 	}
 
 	t.run()

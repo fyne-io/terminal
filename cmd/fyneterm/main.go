@@ -107,6 +107,16 @@ func buildTerminalWindow(a fyne.App, debug, runShell bool) (fyne.Window, *contai
 		return tab
 	}
 
+	tabs.OnClosed = func(item *container.TabItem) {
+		findTerminal(item).Close()
+		delete(dirs, item)
+		if len(tabs.Items) == 0 {
+			w.Close()
+			return
+		}
+		updateView(false)
+	}
+
 	tabs.OnSelected = func(item *container.TabItem) {
 		if item.Text == "" || item.Text == termTitle() {
 			w.SetTitle(termTitle())
@@ -207,8 +217,9 @@ func newTab(tabs *container.DocTabs, dirs map[*container.TabItem]string, refresh
 	tabItem := container.NewTabItem(termTitle(), sizeOverride)
 	dirs[tabItem] = startDir
 
+	var listen chan terminal.Config
 	if runShell {
-		listen := make(chan terminal.Config)
+		listen = make(chan terminal.Config)
 		go func() {
 			for config := range listen {
 				fyne.Do(func() {
@@ -231,7 +242,7 @@ func newTab(tabs *container.DocTabs, dirs map[*container.TabItem]string, refresh
 					}
 
 					setDir(config.PWD)
-					if config.PWD != "" {
+					if _, ok := dirs[tabItem]; ok && config.PWD != "" {
 						dirs[tabItem] = config.PWD
 					}
 				})
@@ -286,7 +297,11 @@ func newTab(tabs *container.DocTabs, dirs map[*container.TabItem]string, refresh
 			if err != nil {
 				fyne.LogError("Failure in terminal", err)
 			}
+			t.RemoveListener(listen)
 			fyne.Do(func() {
+				if _, ok := dirs[tabItem]; !ok {
+					return
+				}
 				delete(dirs, tabItem)
 				tabs.Remove(tabItem)
 				if len(tabs.Items) == 0 {

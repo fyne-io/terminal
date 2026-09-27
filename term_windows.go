@@ -17,6 +17,10 @@ func (t *Terminal) updatePTYSize() {
 	_ = t.pty.(*conpty.ConPty).Resize(uint16(t.config.Columns), uint16(t.config.Rows))
 }
 
+// hangup does nothing on Windows, closing the console will end its processes.
+func (t *Terminal) hangup() {
+}
+
 func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 	cpty, err := conpty.New(80, 25)
 	if err != nil {
