@@ -163,9 +163,10 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 		return
 	}
 
-	if ev.Button == desktop.MouseButtonPrimary {
+	switch ev.Button {
+	case desktop.MouseButtonPrimary:
 		t.onMouseDown(1, ev.Modifier, ev.Position)
-	} else if ev.Button == desktop.MouseButtonSecondary {
+	case desktop.MouseButtonSecondary:
 		t.onMouseDown(2, ev.Modifier, ev.Position)
 	}
 }
@@ -176,9 +177,10 @@ func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
 		return
 	}
 
-	if ev.Button == desktop.MouseButtonPrimary {
+	switch ev.Button {
+	case desktop.MouseButtonPrimary:
 		t.onMouseUp(1, ev.Modifier, ev.Position)
-	} else if ev.Button == desktop.MouseButtonSecondary {
+	case desktop.MouseButtonSecondary:
 		t.onMouseUp(2, ev.Modifier, ev.Position)
 	}
 }
@@ -444,7 +446,7 @@ func (t *Terminal) run() {
 		if err != nil {
 			if t.cmd != nil {
 				// wait for cmd (shell) to exit, populates ProcessState.ExitCode
-				t.cmd.Wait()
+				_ = t.cmd.Wait()
 			}
 			if err == io.EOF || err.Error() == "EOF" {
 				break // term exit on macOS
@@ -540,7 +542,7 @@ func (t *Terminal) setupShortcuts() {
 	if runtime.GOOS == "darwin" {
 		paste = &fyne.ShortcutPaste{} // we look up clipboard later
 	}
-	t.ShortcutHandler.AddShortcut(paste,
+	t.AddShortcut(paste,
 		func(sh fyne.Shortcut) {
 			clip := fyne.CurrentApp().Clipboard()
 			if ps, ok := sh.(*fyne.ShortcutPaste); ok && ps.Secondary {
@@ -554,7 +556,7 @@ func (t *Terminal) setupShortcuts() {
 		shortcutCopy = &fyne.ShortcutCopy{} // we look up clipboard later
 	}
 
-	t.ShortcutHandler.AddShortcut(shortcutCopy,
+	t.AddShortcut(shortcutCopy,
 		func(_ fyne.Shortcut) {
 			t.copySelectedText(fyne.CurrentApp().Clipboard())
 		})

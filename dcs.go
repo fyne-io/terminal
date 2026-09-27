@@ -9,7 +9,7 @@ func (t *Terminal) handleDCS(code string) {
 	if len(code) >= 2 && code[:2] == "+q" {
 		query, _ := hex.DecodeString(code[2:]) // strip the +q
 		if t.debug {
-			log.Println("unhandled DCS query", query)
+			log.Println("unhandled DCS query", string(query))
 		}
 
 		_, _ = t.in.Write([]byte{asciiEscape})

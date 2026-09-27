@@ -303,8 +303,10 @@ func (t *Terminal) handleOutputChar(r rune) {
 		Underline:     t.underline,
 		Strikethrough: t.strikethrough,
 	}
-	cellStyle = &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG,
-		TextStyle: textStyle}
+	cellStyle = &widget.CustomTextGridStyle{
+		FGColor: t.currentFG, BGColor: t.currentBG,
+		TextStyle: textStyle,
+	}
 	if t.blinking {
 		cellStyle = widget2.NewTermTextGridStyle(t.currentFG, t.currentBG, highlightBitMask, t.blinking, textStyle)
 	}

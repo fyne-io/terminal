@@ -42,12 +42,12 @@ func (t *Terminal) setDirectory(uri string) {
 			}
 
 		}
-		os.Chdir(uri[off:])
+		_ = os.Chdir(uri[off:])
 		return
 	}
 
 	// fallback to guessing it's a path
-	os.Chdir(u.Path())
+	_ = os.Chdir(u.Path())
 }
 
 func (t *Terminal) setTitle(title string) {

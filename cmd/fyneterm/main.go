@@ -44,7 +44,7 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "Show terminal debug messages")
 	flag.Parse()
 
-	lang.AddTranslationsFS(translations, "translation")
+	_ = lang.AddTranslationsFS(translations, "translation")
 
 	a := app.New()
 	a.SetIcon(data.Icon)

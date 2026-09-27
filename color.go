@@ -182,9 +182,10 @@ func (t *Terminal) handleColorModeMap(mode, ids string) {
 		log.Println("Invalid colour map ID", id)
 	}
 
-	if mode == "38" {
+	switch mode {
+	case "38":
 		t.currentFG = c
-	} else if mode == "48" {
+	case "48":
 		t.currentBG = c
 	}
 }
@@ -195,9 +196,10 @@ func (t *Terminal) handleColorModeRGB(mode, rs, gs, bs string) {
 	b, _ := strconv.Atoi(bs)
 	c := &color.RGBA{uint8(r), uint8(g), uint8(b), 255}
 
-	if mode == "38" {
+	switch mode {
+	case "38":
 		t.currentFG = c
-	} else if mode == "48" {
+	case "48":
 		t.currentBG = c
 	}
 }
