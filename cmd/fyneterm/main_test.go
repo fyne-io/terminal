@@ -1,8 +1,11 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
 
 	"github.com/stretchr/testify/assert"
@@ -17,9 +20,10 @@ func TestTabResize(t *testing.T) {
 
 	w, tabs, updateView := buildTerminalWindow(a, false, false)
 	th := newTermTheme()
+	dirs := make(map[*container.TabItem]string)
 
 	addTab := func() {
-		item := newTab(tabs, updateView, false, th, w, a, false)
+		item := newTab(tabs, dirs, updateView, false, th, w, a, false)
 		tabs.Append(item)
 		tabs.Select(item)
 		updateView(true)
@@ -53,4 +57,32 @@ func TestTabResize(t *testing.T) {
 	removeLastTab()
 	assert.Equal(t, 1, len(tabs.Items))
 	assert.Equal(t, single, w.Canvas().Size().Height)
+}
+
+// TestTabStartDir verifies a new tab opens in the working directory of the
+// selected tab, ignoring a directory that has since been removed.
+func TestTabStartDir(t *testing.T) {
+	a := test.NewApp()
+	defer test.NewApp() // reset the global app after the test
+
+	w, tabs, updateView := buildTerminalWindow(a, false, false)
+	th := newTermTheme()
+	dirs := make(map[*container.TabItem]string)
+
+	dir := t.TempDir()
+	dirs[tabs.Selected()] = dir
+	item := newTab(tabs, dirs, updateView, false, th, w, a, false)
+	assert.Equal(t, dir, dirs[item])
+	assert.Equal(t, dir, currentDir(tabs, dirs))
+
+	missing := filepath.Join(dir, "missing")
+	dirs[tabs.Selected()] = missing
+	item = newTab(tabs, dirs, updateView, false, th, w, a, false)
+	assert.NotEqual(t, missing, dirs[item])
+	assert.Equal(t, "", currentDir(tabs, dirs))
+
+	file := filepath.Join(dir, "file")
+	assert.NoError(t, os.WriteFile(file, []byte{}, 0o600))
+	dirs[tabs.Selected()] = file
+	assert.Equal(t, "", currentDir(tabs, dirs))
 }

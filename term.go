@@ -430,11 +430,7 @@ func (t *Terminal) run() {
 
 // RunLocalShell starts the terminal by loading a shell and starting to process the input/output.
 func (t *Terminal) RunLocalShell() error {
-	if t.startDir != "" {
-		t.config.PWD = t.startDir
-	} else {
-		t.config.PWD, _ = os.Getwd()
-	}
+	t.config.PWD = t.startingDir()
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
 		time.Sleep(time.Millisecond * 50)
 	}

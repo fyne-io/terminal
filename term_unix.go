@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -44,22 +43,26 @@ func (t *Terminal) startPTY() (io.WriteCloser, io.Reader, io.Closer, error) {
 	t.cmd = c
 	t.config.PWD = c.Dir
 
+	// Start the command with a pty.
+	f, err := pty.Start(c)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	go func() {
 		for {
 			time.Sleep(time.Millisecond * 250)
 			if time.Since(lastKeyTime).Seconds() > 0.5 {
 				continue
 			}
-			wd, _ := os.Readlink("/proc/" + strconv.Itoa(c.Process.Pid) + "/cwd")
+			wd := processDir(c.Process.Pid)
 
-			if wd != t.config.PWD {
+			if wd != "" && wd != t.config.PWD {
 				t.config.PWD = wd
 				fyne.Do(t.onConfigure)
 			}
 		}
 	}()
 
-	// Start the command with a pty.
-	f, err := pty.Start(c)
-	return f, f, f, err
+	return f, f, f, nil
 }

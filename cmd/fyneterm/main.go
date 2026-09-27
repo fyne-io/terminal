@@ -78,6 +78,8 @@ func buildTerminalWindow(a fyne.App, debug, runShell bool) (fyne.Window, *contai
 
 	var wrapper *fyne.Container
 	tabs := container.NewDocTabs()
+	// dirs tracks the working directory of each tab so new tabs can open in the same place
+	dirs := make(map[*container.TabItem]string)
 
 	// updateView swaps between showing DocTabs (2+ tabs) or the
 	// single tab's content directly (1 tab, no tab bar visible).
@@ -97,10 +99,10 @@ func buildTerminalWindow(a fyne.App, debug, runShell bool) (fyne.Window, *contai
 		wrapper.Refresh()
 	}
 
-	firstTab := newTab(tabs, updateView, debug, th, w, a, runShell)
+	firstTab := newTab(tabs, dirs, updateView, debug, th, w, a, runShell)
 	tabs.Append(firstTab)
 	tabs.CreateTab = func() *container.TabItem {
-		tab := newTab(tabs, updateView, debug, th, w, a, true)
+		tab := newTab(tabs, dirs, updateView, debug, th, w, a, true)
 		w.Canvas().Focus(findTerminal(tab))
 		return tab
 	}
@@ -126,7 +128,20 @@ func buildTerminalWindow(a fyne.App, debug, runShell bool) (fyne.Window, *contai
 	return w, tabs, updateView
 }
 
-func newTab(tabs *container.DocTabs, refresh func(bool), debug bool, th *termTheme, w fyne.Window, a fyne.App, runShell bool) *container.TabItem {
+// currentDir returns the working directory of the selected tab,
+// or an empty string if it is not known or no longer exists.
+func currentDir(tabs *container.DocTabs, dirs map[*container.TabItem]string) string {
+	pwd := dirs[tabs.Selected()]
+	if pwd == "" {
+		return ""
+	}
+	if info, err := os.Stat(pwd); err != nil || !info.IsDir() {
+		return ""
+	}
+	return pwd
+}
+
+func newTab(tabs *container.DocTabs, dirs map[*container.TabItem]string, refresh func(bool), debug bool, th *termTheme, w fyne.Window, a fyne.App, runShell bool) *container.TabItem {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameBackground))
 	img := canvas.NewImageFromResource(data.FyneLogo)
 	img.FillMode = canvas.ImageFillContain
@@ -165,9 +180,14 @@ func newTab(tabs *container.DocTabs, refresh func(bool), debug bool, th *termThe
 
 	t := terminal.New()
 	t.SetDebug(debug)
-	if len(os.Args) >= 2 {
+	startDir := currentDir(tabs, dirs)
+	if startDir != "" {
+		t.SetStartDir(startDir)
+		setDir(startDir)
+	} else if len(os.Args) >= 2 {
 		s, err := filepath.Abs(os.Args[1])
 		if err == nil {
+			startDir = s
 			t.SetStartDir(s)
 			setDir(s)
 		}
@@ -185,6 +205,7 @@ func newTab(tabs *container.DocTabs, refresh func(bool), debug bool, th *termThe
 
 	sizeOverride := container.NewThemeOverride(container.NewStack(bg, img, t), th)
 	tabItem := container.NewTabItem(termTitle(), sizeOverride)
+	dirs[tabItem] = startDir
 
 	if runShell {
 		listen := make(chan terminal.Config)
@@ -210,6 +231,9 @@ func newTab(tabs *container.DocTabs, refresh func(bool), debug bool, th *termThe
 					}
 
 					setDir(config.PWD)
+					if config.PWD != "" {
+						dirs[tabItem] = config.PWD
+					}
 				})
 			}
 		}()
@@ -228,7 +252,7 @@ func newTab(tabs *container.DocTabs, refresh func(bool), debug bool, th *termThe
 
 	// New tab shortcut
 	newTabShortcut := func(_ fyne.Shortcut) {
-		item := newTab(tabs, refresh, debug, th, w, a, true)
+		item := newTab(tabs, dirs, refresh, debug, th, w, a, true)
 		tabs.Append(item)
 		tabs.Select(item)
 		refresh(true)
@@ -263,6 +287,7 @@ func newTab(tabs *container.DocTabs, refresh func(bool), debug bool, th *termThe
 				fyne.LogError("Failure in terminal", err)
 			}
 			fyne.Do(func() {
+				delete(dirs, tabItem)
 				tabs.Remove(tabItem)
 				if len(tabs.Items) == 0 {
 					w.Close()
