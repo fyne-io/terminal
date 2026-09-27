@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/FyshOS/fancyfs"
 	"github.com/fyne-io/terminal"
 	"github.com/fyne-io/terminal/cmd/fyneterm/data"
-	"github.com/fyshos/fancyfs"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"

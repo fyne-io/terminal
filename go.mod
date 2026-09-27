@@ -5,8 +5,8 @@ go 1.19
 require (
 	fyne.io/fyne/v2 v2.7.5-0.20260529084154-f5f48d2ab76e
 	github.com/ActiveState/termtest/conpty v0.5.0
+	github.com/FyshOS/fancyfs v0.0.1
 	github.com/creack/pty v1.1.21
-	github.com/fyshos/fancyfs v0.0.0-20250930151016-696fe12cefc6
 	github.com/stretchr/testify v1.11.1
 )
 
@@ -31,7 +31,6 @@ require (
 	github.com/hack-pad/safejs v0.1.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade // indirect
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.17 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.5.1 // indirect
