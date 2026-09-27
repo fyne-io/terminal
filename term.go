@@ -264,6 +264,10 @@ func (t *Terminal) Resize(s fyne.Size) {
 	if t.scrollBottom == 0 || t.scrollBottom == oldRows-1 {
 		t.scrollBottom = int(t.config.Rows) - 1
 	}
+	if cols > 0 && t.cursorCol > int(cols) {
+		// we got narrower, keep the cursor on screen so that output will wrap
+		t.moveCursor(t.cursorRow, int(cols)-1)
+	}
 	t.onConfigure()
 
 	t.updatePTYSize()

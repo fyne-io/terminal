@@ -205,6 +205,13 @@ func escapeEraseChars(t *Terminal, msg string) {
 	if count == 0 {
 		count = 1
 	}
+	// there is nothing to erase past the right edge
+	if room := int(t.config.Columns) - t.cursorCol; count > room {
+		count = room
+	}
+	if count <= 0 {
+		return
+	}
 
 	row := t.content.Row(t.cursorRow)
 	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
@@ -307,6 +314,14 @@ func escapeInsertChars(t *Terminal, msg string) {
 	if chars == 0 {
 		chars = 1
 	}
+	// cells pushed past the right edge are lost, so only insert what can fit
+	cols := int(t.config.Columns)
+	if room := cols - t.cursorCol; chars > room {
+		chars = room
+	}
+	if chars <= 0 {
+		return
+	}
 
 	newCells := make([]widget.TextGridCell, chars)
 	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG, TextStyle: fyne.TextStyle{Monospace: true}}
@@ -319,6 +334,9 @@ func escapeInsertChars(t *Terminal, msg string) {
 
 	row := &t.content.Rows[t.cursorRow]
 	row.Cells = append(row.Cells[:t.cursorCol], append(newCells, row.Cells[t.cursorCol:]...)...)
+	if len(row.Cells) > cols {
+		row.Cells = row.Cells[:cols]
+	}
 }
 
 func escapeInsertLines(t *Terminal, msg string) {

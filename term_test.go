@@ -54,6 +54,28 @@ func TestTerminal_Resize(t *testing.T) {
 	assert.Equal(t, uint(2), term.config.Rows)
 }
 
+func TestTerminal_Resize_Narrower(t *testing.T) {
+	term := New()
+	term.Resize(fyne.NewSize(85, 45))
+	assert.Equal(t, uint(10), term.config.Columns)
+
+	term.handleOutput([]byte("12345678"))
+	assert.Equal(t, 8, term.cursorCol)
+
+	term.Resize(fyne.NewSize(45, 45))
+	assert.Equal(t, uint(5), term.config.Columns)
+	assert.Equal(t, 4, term.cursorCol)
+
+	term.handleOutput([]byte("abcdefgh"))
+	assert.LessOrEqual(t, term.cursorCol, 5)
+	for i, row := range term.content.Rows {
+		if i == 0 {
+			continue // written before we got narrower
+		}
+		assert.LessOrEqual(t, len(row.Cells), 5)
+	}
+}
+
 func TestTerminal_AddListener(t *testing.T) {
 	term := New()
 	listen := make(chan Config, 1)

@@ -284,7 +284,7 @@ func (t *Terminal) parseDCS(r rune) {
 }
 
 func (t *Terminal) handleOutputChar(r rune) {
-	if t.cursorCol == int(t.config.Columns) {
+	if t.cursorCol >= int(t.config.Columns) { // may be beyond the edge if restored from a wider terminal
 		if !t.disableAutoWrap {
 			t.cursorCol = 0
 			handleOutputLineFeed(t)

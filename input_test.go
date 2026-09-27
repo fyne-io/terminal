@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/test"
 )
 
 // NopCloser returns a WriteCloser with a no-op Close method wrapping
@@ -190,5 +192,29 @@ func TestTerminal_TypedShortcut(t *testing.T) {
 				t.Errorf("TypedShortcut() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestTerminal_TypedKey_ModifierHeldOnFocusChange(t *testing.T) {
+	buf1 := bytes.NewBuffer([]byte{})
+	term1 := New()
+	term1.in = NopCloser(buf1)
+	term2 := New()
+
+	w := test.NewTempWindow(t, container.NewGridWithColumns(2, term1, term2))
+	w.Canvas().Focus(term1)
+
+	// a shortcut like ctrl+shift+T moves focus whilst the modifier is still down
+	term1.KeyDown(&fyne.KeyEvent{Name: desktop.KeyShiftLeft})
+	w.Canvas().Focus(term2)
+	term2.KeyUp(&fyne.KeyEvent{Name: desktop.KeyShiftLeft})
+
+	w.Canvas().Focus(term1)
+	term1.TypedKey(&fyne.KeyEvent{Name: fyne.KeyReturn})
+
+	got := buf1.Bytes()
+	want := []byte{'\r'}
+	if !bytes.Equal(got, want) {
+		t.Errorf("TypedKey() = %v, want %v", got, want)
 	}
 }
