@@ -34,7 +34,7 @@ func testExitCodeN(t *testing.T, n int) {
 	err := errors.New("NotYet")
 	for err != nil {
 		time.Sleep(50 * time.Millisecond)
-		_, _ = fmt.Fprintf(term, "exit %d\n", n)
+		_, err = fmt.Fprintf(term, "exit %d\n", n)
 	}
 	for term.ExitCode() == -1 {
 		time.Sleep(50 * time.Millisecond)
