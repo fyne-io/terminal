@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -46,9 +47,11 @@ func (t *Terminal) handleEscape(code string) {
 		return
 	}
 
-	runes := []rune(code)
-	if esc, ok := escapes[runes[len(code)-1]]; ok {
-		esc(t, code[:len(code)-1])
+	// The final character can be any rune: indexing the runes with the length in bytes
+	// panicked when it was not ASCII ("ESC [ é").
+	final, size := utf8.DecodeLastRuneInString(code)
+	if esc, ok := escapes[final]; ok {
+		esc(t, code[:len(code)-size])
 	} else if t.debug {
 		log.Println("Unrecognised Escape:", strconv.QuoteToASCII(code))
 	}

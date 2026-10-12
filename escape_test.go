@@ -377,3 +377,13 @@ func TestTerminalEscapeSequences(t *testing.T) {
 		})
 	}
 }
+
+func TestHandleEscape_NonASCIIFinal(t *testing.T) {
+	term := New()
+	term.config.Columns = 10
+	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("\x1b[é\x1b[1;2€ok"))
+	assert.Equal(t, "ok", term.content.Text())
+}
