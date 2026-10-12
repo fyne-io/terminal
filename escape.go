@@ -475,11 +475,39 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 }
 
 func escapePrivateModeOff(t *Terminal, msg string) {
-	escapePrivateMode(t, msg[1:], false)
+	escapeMode(t, msg, false)
 }
 
 func escapePrivateModeOn(t *Terminal, msg string) {
-	escapePrivateMode(t, msg[1:], true)
+	escapeMode(t, msg, true)
+}
+
+// escapeMode handles CSI Pm h and CSI Pm l (SM and RM), and their DEC private forms with "?".
+// The first character used to be dropped without checking that it was "?": without a parameter
+// ("ESC [ h") that panicked, and with one the ANSI mode was read as a private mode without its
+// first digit (ANSI mode 20, new line mode, became private mode 0).
+func escapeMode(t *Terminal, msg string, enable bool) {
+	if strings.HasPrefix(msg, "?") {
+		escapePrivateMode(t, msg[1:], enable)
+		return
+	}
+
+	for _, mode := range strings.Split(msg, ";") {
+		switch mode {
+		case "20":
+			t.newLineMode = enable // LNM - new line mode
+		case "":
+			// empty mode, ignore
+		default:
+			if t.debug {
+				m := "l"
+				if enable {
+					m = "h"
+				}
+				log.Println("Unknown mode escape code", fmt.Sprintf("%s%s", mode, m))
+			}
+		}
+	}
 }
 
 func escapeMoveCursor(t *Terminal, msg string) {
