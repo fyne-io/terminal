@@ -276,6 +276,18 @@ func escapeRepeatChar(t *Terminal, msg string) {
 	if t.lastChar == 0 {
 		return
 	}
+	// After a screenful and a line of the same character, from wherever the cursor started, each
+	// further line of it leaves the screen and the cursor as they were, so the whole lines past
+	// that are skipped; the loop ran for as long as the count. Without columns every character
+	// leaves the same state.
+	cols, rows := int(t.config.Columns), int(t.config.Rows)
+	if limit := (cols + 1) * (rows + 2); count > limit {
+		period := cols
+		if period == 0 {
+			period = 1
+		}
+		count = limit + (count-limit)%period
+	}
 	for i := 0; i < count; i++ {
 		t.handleOutputChar(t.lastChar)
 	}
