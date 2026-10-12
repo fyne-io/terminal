@@ -159,7 +159,11 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			t.parseOSC(r)
 			continue
 		} else if t.state.vt100 != 0 {
-			t.handleVT100(string([]rune{t.state.vt100, r}))
+			// the character sets are designated and used on the main goroutine, see below
+			code := string([]rune{t.state.vt100, r})
+			fyne.Do(func() {
+				t.handleVT100(code)
+			})
 			t.state.vt100 = 0
 			continue
 		} else if t.state.esc != noEscape {
@@ -175,22 +179,24 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 				out(t)
 			})
 		} else {
-			// check to see which charset to use
-			if t.useG1CharSet {
-				chr := charSetMap[t.g1Charset](r)
-				fyne.Do(func() {
-					t.handleOutputChar(chr)
-				})
-			} else {
-				chr := charSetMap[t.g0Charset](r)
-				fyne.Do(func() {
-					t.handleOutputChar(chr)
-				})
-			}
+			// Shift in and shift out switch the character set on the main goroutine, so the
+			// set in use is looked up there.
+			chr := r
+			fyne.Do(func() {
+				t.handleOutputChar(t.mapCharset(chr))
+			})
 		}
 	}
 
 	return buf
+}
+
+// mapCharset returns r in the character set in use.
+func (t *Terminal) mapCharset(r rune) rune {
+	if t.useG1CharSet {
+		return charSetMap[t.g1Charset](r)
+	}
+	return charSetMap[t.g0Charset](r)
 }
 
 func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
