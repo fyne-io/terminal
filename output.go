@@ -245,7 +245,15 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 func (t *Terminal) parseEscape(r rune) {
 	t.state.addCode(r)
 	if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
-		if code, ok := t.state.takeCode(); ok {
+		code, ok := t.state.takeCode()
+		switch {
+		case !ok:
+		case r == 'i':
+			// Media copy decides how the output after it is parsed, here, so it is handled
+			// here; on the main goroutine, the next characters could be parsed as text before
+			// the printing state was set.
+			escapePrinterMode(t, trimLeftZeros(code[:len(code)-1]))
+		default:
 			fyne.Do(func() {
 				t.handleEscape(code)
 			})

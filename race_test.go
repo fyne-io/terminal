@@ -44,3 +44,24 @@ func TestRace_CharacterSets(t *testing.T) {
 	}
 	loop.flush()
 }
+
+func TestRace_MediaCopy(t *testing.T) {
+	loop := useMainLoop(t)
+	term := New()
+	loop.do(func() { term.Resize(fyne.NewSize(100, 100)) })
+	var printed []byte
+	term.SetPrinterFunc(func(d []byte) { printed = append(printed, d...) })
+
+	// the output after CSI 5 i goes to the printer, so how it is parsed is decided here, on the
+	// goroutine reading it, before the next character
+	for i := 0; i < 50; i++ {
+		term.handleOutput([]byte("\x1b[5ihidden\x1b[4i"))
+	}
+	term.handleOutput([]byte("shown"))
+	loop.flush()
+	loop.do(func() {
+		if text := term.content.Text(); text != "shown" {
+			t.Errorf("the screen shows %q", text)
+		}
+	})
+}
