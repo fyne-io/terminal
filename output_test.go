@@ -32,3 +32,14 @@ func TestTerminal_WrapBeyondEdge(t *testing.T) {
 		assert.LessOrEqual(t, len(row.Cells), 5)
 	}
 }
+
+func TestTerminal_TabAtTheRightMargin(t *testing.T) {
+	term := New()
+	term.Resize(fyne.NewSize(45, 45))
+	assert.Equal(t, uint(5), term.config.Columns)
+
+	term.handleOutput([]byte("ab\tc"))
+	assert.Equal(t, "ab  c", term.content.Text())
+	term.handleOutput([]byte("\r\n\t\tx"))
+	assert.Equal(t, "ab  c\n    x", term.content.Text())
+}
