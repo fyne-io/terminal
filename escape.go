@@ -649,14 +649,16 @@ func escapeDeviceAttribute(t *Terminal, code string) {
 		return
 	}
 
+	// The secondary and tertiary queries usually have no parameter ("ESC [ > c", as vim sends
+	// it): logging code[1] panicked whenever debug output was on.
 	if t.debug {
 		switch code[0] {
 		case '>':
-			log.Println("Unhandled secondary device attribute", code[1])
+			log.Println("Unhandled secondary device attribute", code[1:])
 		case '=':
-			log.Println("Unhandled tertiary device attribute", code[1])
+			log.Println("Unhandled tertiary device attribute", code[1:])
 		default:
-			log.Println("Unknown device attribute", code[0])
+			log.Println("Unknown device attribute", code)
 		}
 	}
 }
