@@ -98,9 +98,12 @@ type parseState struct {
 }
 
 func (t *Terminal) handleOutput(buf []byte) []byte {
-	if t.hasSelectedText() {
-		t.clearSelectedText()
-	}
+	// The selection belongs to the main goroutine, where the mouse changes it.
+	fyne.Do(func() {
+		if t.hasSelectedText() {
+			t.clearSelectedText()
+		}
+	})
 	if t.state == nil {
 		t.state = &parseState{
 			esc: noEscape,
