@@ -528,6 +528,19 @@ func escapeSetScrollArea(t *Terminal, msg string) {
 		}
 	}
 
+	// Margins are clamped to the screen, and a region whose top is not above its bottom (a
+	// bottom of 0, for instance) resets to the full screen; scrolling indexed out of range in
+	// regions accepted as sent.
+	rows := int(t.config.Rows)
+	if start < 0 {
+		start = 0
+	}
+	if end > rows-1 {
+		end = rows - 1
+	}
+	if start >= end {
+		start, end = 0, rows-1
+	}
 	t.scrollTop = start
 	t.scrollBottom = end
 }

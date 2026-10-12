@@ -54,8 +54,10 @@ func TestScrollBack_Tmux(t *testing.T) {
 	term.handleOutput([]byte("\x1b[m"))     // Reset all attributes
 
 	// Step 5: Check the final content of the terminal
+	// The scroll margins are clamped to the screen, so the grid holds its own rows, empty, rather
+	// than the 46 an unclamped region of 1;47 grew it to.
 	expectedContent := "" // After scrolling and clearing, the visible area should be empty
-	for i := 0; i < 46; i++ {
+	for i := 0; i < int(term.config.Rows)-1; i++ {
 		expectedContent += "\n" // Each row should be an empty line
 	}
 
@@ -433,6 +435,31 @@ func TestInsertChars_PastTheRow(t *testing.T) {
 			term.Refresh() // ensure visuals set up
 			term.handleOutput([]byte(test.input))
 			assert.Equal(t, test.expected, term.content.Text())
+		})
+	}
+}
+
+func TestSetScrollArea_Invalid(t *testing.T) {
+	tests := map[string]struct {
+		input       string
+		top, bottom int
+	}{
+		"top below bottom": {input: "\x1b[3;1r\x1bD\x1bM", top: 0, bottom: 4},
+		"past the screen":  {input: "\x1b[1;47r\x1bM", top: 0, bottom: 4},
+		"bottom past":      {input: "\x1b[4;9r\x1b[4;1H\x1bM", top: 3, bottom: 4},
+		"bottom of zero":   {input: "\x1b[1;0r\x1b[5;1H\n\n", top: 0, bottom: 4},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := New()
+			term.config.Columns = 5
+			term.config.Rows = 5
+			term.scrollBottom = 4
+			term.Refresh() // ensure visuals set up
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.top, term.scrollTop)
+			assert.Equal(t, test.bottom, term.scrollBottom)
 		})
 	}
 }
