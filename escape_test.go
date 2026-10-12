@@ -593,3 +593,19 @@ func TestLineCounts_Overflow(t *testing.T) {
 		})
 	}
 }
+
+func TestRestoreCursor_AfterResize(t *testing.T) {
+	term := New()
+	term.config.Columns = 10
+	term.config.Rows = 10
+	term.scrollBottom = 9
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("\x1b[10;10H\x1b7"))
+	term.config.Columns = 5
+	term.config.Rows = 5
+	term.scrollBottom = 4
+	term.handleOutput([]byte("\x1b8"))
+	assert.Equal(t, 4, term.cursorRow)
+	assert.Equal(t, 4, term.cursorCol)
+}
