@@ -395,6 +395,11 @@ func handleOutputLineFeed(t *Terminal) {
 
 func handleOutputTab(t *Terminal) {
 	end := t.cursorCol - t.cursorCol%tabWidth + tabWidth
+	// A tab stops at the right margin and never wraps: unclamped, the loop below wrapped to
+	// column 0 before it reached end, and never finished.
+	if cols := int(t.config.Columns); end > cols-1 {
+		end = cols - 1
+	}
 	for t.cursorCol < end {
 		t.handleOutputChar(' ')
 	}
