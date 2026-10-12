@@ -536,3 +536,34 @@ func TestRepeatChar_LargeCount(t *testing.T) {
 	term.handleOutput([]byte("x\x1b[9223372036854775807b"))
 	assert.Equal(t, 23, term.cursorRow)
 }
+
+// newLinesTerm returns a 5x5 terminal showing the lines 1 to 5.
+func newLinesTerm() *Terminal {
+	term := New()
+	term.config.Columns = 5
+	term.config.Rows = 5
+	term.scrollBottom = 4
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("1\r\n2\r\n3\r\n4\r\n5"))
+	return term
+}
+
+func TestInsertLines(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"one line":         {input: "\x1b[2;1H\x1b[L", expected: "1\n\n2\n3\n4"},
+		"two lines":        {input: "\x1b[2;1H\x1b[2L", expected: "1\n\n\n2\n3"},
+		"in scroll region": {input: "\x1b[2;4r\x1b[3;1H\x1b[2L", expected: "1\n2\n\n\n5"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := newLinesTerm()
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.expected, term.content.Text())
+		})
+	}
+}
