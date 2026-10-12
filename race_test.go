@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"io"
 	"testing"
 	"time"
 
@@ -90,4 +91,25 @@ func TestRace_SaveRestoreAndIndex(t *testing.T) {
 		term.handleOutput([]byte("ab\x1b7cd\x1bD\x1b8ef\x1bM"))
 	}
 	loop.flush()
+}
+
+func TestRace_RunWithConnection(t *testing.T) {
+	loop := useMainLoop(t)
+	term := New()
+	inR, inW := io.Pipe()
+	outR, outW := io.Pipe()
+	go func() { _, _ = io.Copy(io.Discard, inR) }()
+	done := make(chan error, 1)
+	go func() { done <- term.RunWithConnection(inW, outR) }()
+
+	// the size arrives, and the user types, on the main goroutine while it connects
+	loop.do(func() { term.Resize(fyne.NewSize(100, 100)) })
+	for i := 0; i < 20; i++ {
+		loop.do(func() { term.TypedRune('x') })
+		time.Sleep(5 * time.Millisecond)
+	}
+	_ = outW.Close()
+	if err := <-done; err != nil {
+		t.Error(err)
+	}
 }
