@@ -386,8 +386,10 @@ func (t *Terminal) ringBell() {
 
 	go func() {
 		time.Sleep(time.Millisecond * 300)
-		t.bell = false
-		fyne.Do(t.Refresh)
+		fyne.Do(func() { // the cursor reads the bell when it is drawn, on the main goroutine
+			t.bell = false
+			t.Refresh()
+		})
 	}()
 }
 

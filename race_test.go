@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"testing"
+	"time"
 
 	"fyne.io/fyne/v2"
 )
@@ -64,4 +65,16 @@ func TestRace_MediaCopy(t *testing.T) {
 			t.Errorf("the screen shows %q", text)
 		}
 	})
+}
+
+func TestRace_Bell(t *testing.T) {
+	loop := useMainLoop(t)
+	term := New()
+	loop.do(func() { term.Resize(fyne.NewSize(100, 100)) })
+
+	term.handleOutput([]byte("\a"))
+	for i := 0; i < 50; i++ { // the cursor is drawn while the bell clears itself
+		loop.do(term.refreshCursor)
+		time.Sleep(10 * time.Millisecond)
+	}
 }
