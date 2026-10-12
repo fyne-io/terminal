@@ -463,3 +463,23 @@ func TestSetScrollArea_Invalid(t *testing.T) {
 		})
 	}
 }
+
+func TestSetMode_WithoutPrivateMarker(t *testing.T) {
+	term := New()
+	term.config.Columns = 10
+	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("\x1b[h\x1b[l\x1b[;h\x1b[4h\x1b[4l"))
+	assert.False(t, term.newLineMode)
+
+	term.handleOutput([]byte("\x1b[20h"))
+	assert.True(t, term.newLineMode)
+	term.handleOutput([]byte("\x1b[20l"))
+	assert.False(t, term.newLineMode)
+
+	term.handleOutput([]byte("\x1b[125l")) // not the private mode 25
+	assert.False(t, term.cursorHidden)
+	term.handleOutput([]byte("\x1b[?25l"))
+	assert.True(t, term.cursorHidden)
+}
