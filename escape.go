@@ -343,7 +343,14 @@ func escapeInsertChars(t *Terminal, msg string) {
 		}
 	}
 
+	// On a fresh screen the cursor's row may not exist yet, and a row may end before the cursor.
+	for len(t.content.Rows) <= t.cursorRow {
+		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
+	}
 	row := &t.content.Rows[t.cursorRow]
+	for len(row.Cells) < t.cursorCol {
+		row.Cells = append(row.Cells, widget.TextGridCell{Rune: ' ', Style: cellStyle})
+	}
 	row.Cells = append(row.Cells[:t.cursorCol], append(newCells, row.Cells[t.cursorCol:]...)...)
 	if len(row.Cells) > cols {
 		row.Cells = row.Cells[:cols]

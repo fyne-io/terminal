@@ -413,3 +413,26 @@ func TestDeleteChars(t *testing.T) {
 		})
 	}
 }
+
+func TestInsertChars_PastTheRow(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"fresh screen":     {input: "\x1b[2;3H\x1b[2@x", expected: "\n  x "},
+		"past a short row": {input: "ab\x1b[1;5H\x1b[@x", expected: "ab  x"},
+		"within the row":   {input: "abc\x1b[1;2H\x1b[@x", expected: "axbc"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := New()
+			term.config.Columns = 10
+			term.config.Rows = 2
+			term.scrollBottom = 1
+			term.Refresh() // ensure visuals set up
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.expected, term.content.Text())
+		})
+	}
+}
