@@ -483,3 +483,14 @@ func TestSetMode_WithoutPrivateMarker(t *testing.T) {
 	term.handleOutput([]byte("\x1b[?25l"))
 	assert.True(t, term.cursorHidden)
 }
+
+func TestDeviceAttributes_Debug(t *testing.T) {
+	term := New()
+	term.debug = true
+	term.config.Columns = 10
+	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("\x1b[>c\x1b[=c\x1b[>0c\x1b[?1c"))
+	assert.Equal(t, "", term.content.Text())
+}
