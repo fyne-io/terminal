@@ -31,3 +31,16 @@ func TestRace_SelectionClearedByOutput(t *testing.T) {
 	<-done
 	loop.flush()
 }
+
+func TestRace_CharacterSets(t *testing.T) {
+	loop := useMainLoop(t)
+	term := New()
+	loop.do(func() { term.Resize(fyne.NewSize(100, 100)) })
+
+	// shift out and shift in switch the character set on the main goroutine; designations and
+	// the text in between are parsed on this one
+	for i := 0; i < 50; i++ {
+		term.handleOutput([]byte("\x1b)0\x0eqqq\x0fqqq\x1b(B"))
+	}
+	loop.flush()
+}
