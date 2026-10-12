@@ -232,6 +232,14 @@ func escapeDeleteLines(t *Terminal, msg string) {
 	if lines == 0 {
 		lines = 1
 	}
+	// Only the lines from the cursor to the bottom of the scroll region can be deleted. A larger
+	// count blanked lines above the cursor, and looped for as long as the count.
+	if limit := t.scrollBottom - t.cursorRow + 1; lines > limit {
+		lines = limit
+	}
+	if lines <= 0 {
+		return
+	}
 	for i := t.cursorRow; i <= t.scrollBottom-lines; i++ {
 		t.content.SetRow(i, t.content.Row(i+lines))
 	}
@@ -246,6 +254,14 @@ func escapeScrollDown(t *Terminal, msg string) {
 	lines, _ := strconv.Atoi(msg)
 	if lines == 0 {
 		lines = 1
+	}
+	// At most the scroll region's height. A larger count overflowed scrollTop+lines when the
+	// region did not start at the top, and the loop below then ran for as long as the count.
+	if limit := t.scrollBottom - t.scrollTop + 1; lines > limit {
+		lines = limit
+	}
+	if lines <= 0 {
+		return
 	}
 	for i := t.scrollBottom; i >= t.scrollTop+lines; i-- {
 		t.content.SetRow(i, t.content.Row(i-lines))
@@ -355,6 +371,14 @@ func escapeInsertLines(t *Terminal, msg string) {
 	rows, _ := strconv.Atoi(msg)
 	if rows == 0 {
 		rows = 1
+	}
+	// Only the lines from the cursor to the bottom of the scroll region can be pushed down. A
+	// larger count overflowed cursorRow+rows, and the loop below then ran for as long as the count.
+	if limit := t.scrollBottom - t.cursorRow + 1; rows > limit {
+		rows = limit
+	}
+	if rows <= 0 {
+		return
 	}
 	i := t.scrollBottom
 	// The lines move down by rows from the cursor's line on, so the copying stops above the rows
@@ -537,6 +561,11 @@ func escapeScrollUp(t *Terminal, msg string) {
 	// Ensure we are within the scrollable area
 	if t.cursorRow < t.scrollTop || t.cursorRow > t.scrollBottom {
 		return
+	}
+	// At most the scroll region's height. A larger count blanked lines above the region, and the
+	// loop below ran for as long as the count.
+	if limit := t.scrollBottom - t.scrollTop + 1; lines > limit {
+		lines = limit
 	}
 
 	// Calculate new cursor position after scrolling

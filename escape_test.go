@@ -440,6 +440,34 @@ func TestInsertLines(t *testing.T) {
 		"one line":         {input: "\x1b[2;1H\x1b[L", expected: "1\n\n2\n3\n4"},
 		"two lines":        {input: "\x1b[2;1H\x1b[2L", expected: "1\n\n\n2\n3"},
 		"in scroll region": {input: "\x1b[2;4r\x1b[3;1H\x1b[2L", expected: "1\n2\n\n\n5"},
+		"below the region": {input: "\x1b[2;3r\x1b[5;1H\x1b[2L", expected: "1\n2\n3\n4\n5"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := newLinesTerm()
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.expected, term.content.Text())
+		})
+	}
+}
+
+func TestLineCounts_Overflow(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"delete lines":               {input: "\x1b[2;1H\x1b[9M", expected: "1\n\n\n\n"},
+		"delete lines, largest":      {input: "\x1b[2;1H\x1b[9223372036854775807M", expected: "1\n\n\n\n"},
+		"delete lines below region":  {input: "\x1b[2;3r\x1b[5;1H\x1b[9M", expected: "1\n2\n3\n4\n5"},
+		"delete lines, whole screen": {input: "\x1b[1;1H\x1b[9223372036854775807M", expected: "\n\n\n\n"},
+		"insert lines":               {input: "\x1b[2;1H\x1b[9L", expected: "1\n\n\n\n"},
+		"insert lines, largest":      {input: "\x1b[3;1H\x1b[9223372036854775807L", expected: "1\n2\n\n\n"},
+		"scroll up":                  {input: "\x1b[2;4r\x1b[3;1H\x1b[9S", expected: "1\n\n\n\n5"},
+		"scroll up, largest":         {input: "\x1b[2;4r\x1b[3;1H\x1b[9223372036854775807S", expected: "1\n\n\n\n5"},
+		"scroll down":                {input: "\x1b[2;4r\x1b[9T", expected: "1\n\n\n\n5"},
+		"scroll down, largest":       {input: "\x1b[2;4r\x1b[9223372036854775807T", expected: "1\n\n\n\n5"},
+		"scroll down, whole screen":  {input: "\x1b[9223372036854775807T", expected: "\n\n\n\n"},
 	}
 
 	for name, test := range tests {
