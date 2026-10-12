@@ -387,3 +387,29 @@ func TestHandleEscape_NonASCIIFinal(t *testing.T) {
 	term.handleOutput([]byte("\x1b[é\x1b[1;2€ok"))
 	assert.Equal(t, "ok", term.content.Text())
 }
+
+func TestDeleteChars(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"within the row":   {input: "\x1b[1;3H\x1b[2P", expected: "abef\n2"},
+		"past the row":     {input: "\x1b[1;3H\x1b[9P", expected: "ab\n2"},
+		"cursor past row":  {input: "\x1b[1;9H\x1b[P", expected: "abcdef\n2"},
+		"largest":          {input: "\x1b[1;3H\x1b[9223372036854775807P", expected: "ab\n2"},
+		"largest, at last": {input: "\x1b[1;6H\x1b[9223372036854775807P", expected: "abcde\n2"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := New()
+			term.config.Columns = 10
+			term.config.Rows = 2
+			term.scrollBottom = 1
+			term.Refresh() // ensure visuals set up
+			term.handleOutput([]byte("abcdef\r\n2"))
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.expected, term.content.Text())
+		})
+	}
+}

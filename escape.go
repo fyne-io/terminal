@@ -190,9 +190,17 @@ func escapeDeleteChars(t *Terminal, msg string) {
 	if i == 0 {
 		i = 1
 	}
-	right := t.cursorCol + i
 
 	row := t.content.Row(t.cursorRow)
+	// The cursor can be past the row's cells (a short row, a cleared line).
+	if t.cursorCol >= len(row.Cells) {
+		return
+	}
+	// At most the cells right of the cursor: a count near MaxInt overflowed cursorCol+i.
+	if room := len(row.Cells) - t.cursorCol; i > room {
+		i = room
+	}
+	right := t.cursorCol + i
 	cells := row.Cells[:t.cursorCol]
 	if right < len(row.Cells) {
 		cells = append(cells, row.Cells[right:]...)
