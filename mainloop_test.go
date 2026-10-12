@@ -91,6 +91,16 @@ func (l *mainLoop) flush() {
 	}
 }
 
+// panicked returns the panic of a function the main loop ran since the last call, if any.
+func (l *mainLoop) panicked() string {
+	select {
+	case msg := <-l.panics:
+		return msg
+	default:
+		return ""
+	}
+}
+
 func (l *mainLoop) push(f func()) {
 	l.mu.Lock()
 	l.queue = append(l.queue, f)
