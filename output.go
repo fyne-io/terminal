@@ -223,16 +223,20 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 		t.state.osc = true
 	case '(', ')':
 		t.state.vt100 = r
+	// These four change the screen, which belongs to the main goroutine, where the CSI
+	// sequences and the text are handled too; a restored cursor is clamped to the screen, which
+	// may have been resized since it was saved.
 	case '7':
-		t.savedRow = t.cursorRow
-		t.savedCol = t.cursorCol
+		fyne.Do(func() {
+			t.savedRow = t.cursorRow
+			t.savedCol = t.cursorCol
+		})
 	case '8':
-		t.cursorRow = t.savedRow
-		t.cursorCol = t.savedCol
+		fyne.Do(func() { t.moveCursor(t.savedRow, t.savedCol) })
 	case 'D':
-		t.scrollDown()
+		fyne.Do(t.scrollDown)
 	case 'M':
-		t.scrollUp()
+		fyne.Do(t.scrollUp)
 	case 'P':
 		t.state.dcs = true
 	case '_':

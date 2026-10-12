@@ -78,3 +78,16 @@ func TestRace_Bell(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
+
+func TestRace_SaveRestoreAndIndex(t *testing.T) {
+	loop := useMainLoop(t)
+	term := New()
+	loop.do(func() { term.Resize(fyne.NewSize(100, 100)) })
+
+	// the text is written on the main goroutine; saving and restoring the cursor, index and
+	// reverse index must not change the screen from this one
+	for i := 0; i < 50; i++ {
+		term.handleOutput([]byte("ab\x1b7cd\x1bD\x1b8ef\x1bM"))
+	}
+	loop.flush()
+}
