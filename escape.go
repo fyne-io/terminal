@@ -357,7 +357,9 @@ func escapeInsertLines(t *Terminal, msg string) {
 		rows = 1
 	}
 	i := t.scrollBottom
-	for ; i > t.cursorRow-rows+1; i-- {
+	// The lines move down by rows from the cursor's line on, so the copying stops above the rows
+	// lines that become blank.
+	for ; i > t.cursorRow+rows-1; i-- {
 		t.content.SetRow(i, t.content.Row(i-rows))
 	}
 	for ; i >= t.cursorRow; i-- {
