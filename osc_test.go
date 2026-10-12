@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -40,4 +41,25 @@ func TestOSC_LongStrings(t *testing.T) {
 	assert.Equal(t, long, term.config.Title)
 	assert.Equal(t, "shown", term.content.Text())
 	assert.Less(t, time.Since(start), 10*time.Second)
+}
+
+func TestOSC_Directory(t *testing.T) {
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	dir := t.TempDir()
+	term := New()
+	configured := make(chan Config, 1)
+	term.AddListener(configured)
+
+	term.handleOSC("7;file://" + dir)
+	assert.Equal(t, dir, term.config.PWD)
+	assert.Equal(t, dir, (<-configured).PWD)
+	now, err := os.Getwd()
+	assert.NoError(t, err)
+	assert.Equal(t, wd, now, "the process's working directory changed")
+
+	term.handleOSC("7;file://some-host" + dir)
+	assert.Equal(t, dir, term.config.PWD)
+	term.handleOSC("7;file:///tmp/with%20space")
+	assert.Equal(t, "/tmp/with space", term.config.PWD)
 }

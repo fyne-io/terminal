@@ -2,9 +2,7 @@ package terminal
 
 import (
 	"log"
-	"os"
-
-	"fyne.io/fyne/v2/storage"
+	"net/url"
 )
 
 func (t *Terminal) handleOSC(code string) {
@@ -29,25 +27,21 @@ func (t *Terminal) handleOSC(code string) {
 	}
 }
 
+// setDirectory records the directory the shell reports (OSC 7) in the configuration. It does
+// not change the working directory of the process, which the terminal shares with the app it is
+// embedded in (and with every other terminal in it): output from a remote shell must not move it.
 func (t *Terminal) setDirectory(uri string) {
-	u, err := storage.ParseURI(uri)
-	if err != nil {
-		// working around a Fyne bug where file URI does not parse host
-		off := 4
-		count := 0
-		for count < 3 && off < len(uri) {
-			off++
-			if uri[off] == '/' {
-				count++
-			}
+	t.config.PWD = directoryOf(uri)
+	t.onConfigure()
+}
 
-		}
-		_ = os.Chdir(uri[off:])
-		return
+// directoryOf returns the path of the file URI OSC 7 reports ("file://host/path", the path
+// percent-encoded), or the text as it is when it is not one.
+func directoryOf(uri string) string {
+	if u, err := url.Parse(uri); err == nil && u.Scheme == "file" {
+		return u.Path
 	}
-
-	// fallback to guessing it's a path
-	_ = os.Chdir(u.Path())
+	return uri
 }
 
 func (t *Terminal) setTitle(title string) {
