@@ -84,8 +84,12 @@ var decSpecialGraphics = map[rune]rune{
 	'~': '·', // centered dot
 }
 
+// maxCodeLen bounds the escape sequence or string being parsed; a longer one is dropped.
+const maxCodeLen = 1 << 20
+
 type parseState struct {
-	code          string
+	code          []byte
+	codeTooLong   bool
 	esc           int
 	escNext       bool // true when ESC was just seen; next char goes to parseEscState
 	osc, apc, dcs bool
@@ -191,13 +195,12 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 	case '[':
 		return true
 	case '\\':
-		if t.state.osc {
-			code := t.state.code
+		code, ok := t.state.takeCode()
+		if t.state.osc && ok {
 			fyne.Do(func() {
 				t.handleOSC(code)
 			})
 		}
-		t.state.code = ""
 		t.state.osc = false
 	case ']':
 		t.state.osc = true
@@ -223,15 +226,39 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 }
 
 func (t *Terminal) parseEscape(r rune) {
-	t.state.code += string(r)
+	t.state.addCode(r)
 	if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
-		code := t.state.code
-		fyne.Do(func() {
-			t.handleEscape(code)
-		})
-		t.state.code = ""
+		if code, ok := t.state.takeCode(); ok {
+			fyne.Do(func() {
+				t.handleEscape(code)
+			})
+		}
 		t.state.esc = noEscape
 	}
+}
+
+// addCode adds r to the escape sequence or string being parsed. The sequence was a string
+// extended with +=, which copies all of it every time: an unterminated OSC, APC or DCS string, or
+// a long CSI, took time quadratic in its length (about a minute for 1 MiB, in which nothing else
+// was shown), and memory without a bound. It is a buffer now, and one longer than maxCodeLen is
+// dropped.
+func (s *parseState) addCode(r rune) {
+	if len(s.code) >= maxCodeLen {
+		s.codeTooLong = true
+		return
+	}
+	s.code = utf8.AppendRune(s.code, r)
+}
+
+// takeCode returns the sequence parsed so far and starts a new one. It reports false if the
+// sequence was longer than maxCodeLen.
+func (s *parseState) takeCode() (string, bool) {
+	code, ok := string(s.code), !s.codeTooLong
+	s.code, s.codeTooLong = s.code[:0], false
+	if cap(s.code) > 4096 {
+		s.code = nil // let a long one go
+	}
+	return code, ok
 }
 
 func (t *Terminal) parsePrinting(buf []byte, size int) {
@@ -246,40 +273,40 @@ func (t *Terminal) parsePrinting(buf []byte, size int) {
 
 func (t *Terminal) parseAPC(r rune) {
 	if r == 0 {
-		code := t.state.code
-		fyne.Do(func() {
-			t.handleAPC(code)
-		})
-		t.state.code = ""
+		if code, ok := t.state.takeCode(); ok {
+			fyne.Do(func() {
+				t.handleAPC(code)
+			})
+		}
 		t.state.apc = false
 	} else {
-		t.state.code += string(r)
+		t.state.addCode(r)
 	}
 }
 
 func (t *Terminal) parseOSC(r rune) {
 	if r == asciiBell || r == 0 {
-		code := t.state.code
-		fyne.Do(func() {
-			t.handleOSC(code)
-		})
-		t.state.code = ""
+		if code, ok := t.state.takeCode(); ok {
+			fyne.Do(func() {
+				t.handleOSC(code)
+			})
+		}
 		t.state.osc = false
 	} else {
-		t.state.code += string(r)
+		t.state.addCode(r)
 	}
 }
 
 func (t *Terminal) parseDCS(r rune) {
 	if r == '\\' {
-		code := t.state.code
-		fyne.Do(func() {
-			t.handleDCS(code)
-		})
-		t.state.code = ""
+		if code, ok := t.state.takeCode(); ok {
+			fyne.Do(func() {
+				t.handleDCS(code)
+			})
+		}
 		t.state.dcs = false
 	} else {
-		t.state.code += string(r)
+		t.state.addCode(r)
 	}
 }
 
