@@ -251,7 +251,14 @@ func (t *Terminal) parseEscape(r rune) {
 	// ECMA-48 CSI: parameter bytes 0x30-0x3F and intermediate bytes 0x20-0x2F
 	// are collected, anything else (normally a final byte 0x40-0x7E) dispatches.
 	if r < 0x20 || r > 0x3f {
-		if code, ok := t.state.takeCode(); ok {
+		code, ok := t.state.takeCode()
+		switch {
+		case !ok:
+		case r == 'i':
+			// Media copy decides how the output after it is parsed, so it is handled here,
+			// before the next character.
+			escapePrinterMode(t, trimLeftZeros(code[:len(code)-1]))
+		default:
 			fyne.Do(func() {
 				t.handleEscape(code)
 			})
