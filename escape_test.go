@@ -377,3 +377,45 @@ func TestTerminalEscapeSequences(t *testing.T) {
 		})
 	}
 }
+
+func TestRepeatChar_LargeCount(t *testing.T) {
+	newTerm := func(cols, rows uint) *Terminal {
+		term := New()
+		term.config.Columns = cols
+		term.config.Rows = rows
+		term.scrollBottom = int(rows) - 1
+		term.Refresh() // ensure visuals set up
+		return term
+	}
+	sizes := []struct{ cols, rows uint }{{5, 3}, {3, 1}, {1, 1}, {0, 2}, {4, 0}}
+	prefixes := map[string]string{
+		"top left":        "",
+		"after text":      "ab\r\ncd",
+		"scroll region":   "1\r\n2\r\n3\x1b[2;3r\x1b[2;2H",
+		"below region":    "\x1b[1;2r\x1b[3;1H",
+		"without wrap":    "\x1b[?7l",
+		"line drawing":    "\x1b(0",
+		"past the margin": "\x1b[1;5Hxy",
+	}
+
+	// repeating a character must look the same as writing it that many times
+	for _, size := range sizes {
+		for name, prefix := range prefixes {
+			for _, count := range []int{1, 14, 15, 16, 29, 30, 31, 47, 100, 1001} {
+				written := newTerm(size.cols, size.rows)
+				written.handleOutput([]byte(prefix + strings.Repeat("q", count+1)))
+				repeated := newTerm(size.cols, size.rows)
+				repeated.handleOutput([]byte(prefix + "q\x1b[" + strconv.Itoa(count) + "b"))
+
+				where := name + " " + strconv.Itoa(int(size.cols)) + "x" + strconv.Itoa(int(size.rows)) + " " + strconv.Itoa(count)
+				assert.Equal(t, written.content.Text(), repeated.content.Text(), where)
+				assert.Equal(t, written.cursorRow, repeated.cursorRow, where)
+				assert.Equal(t, written.cursorCol, repeated.cursorCol, where)
+			}
+		}
+	}
+
+	term := newTerm(80, 24)
+	term.handleOutput([]byte("x\x1b[9223372036854775807b"))
+	assert.Equal(t, 23, term.cursorRow)
+}
