@@ -84,8 +84,12 @@ var decSpecialGraphics = map[rune]rune{
 	'~': '·', // centered dot
 }
 
+// maxCodeLen bounds the escape sequence or string being parsed; a longer one is dropped.
+const maxCodeLen = 1 << 20
+
 type parseState struct {
-	code          string
+	code          []byte
+	codeTooLong   bool
 	esc           int
 	escNext       bool // true when ESC was just seen; next char goes to parseEscState
 	osc, apc, dcs bool
@@ -94,9 +98,12 @@ type parseState struct {
 }
 
 func (t *Terminal) handleOutput(buf []byte) []byte {
-	if t.hasSelectedText() {
-		t.clearSelectedText()
-	}
+	// The selection belongs to the main goroutine, where the mouse changes it.
+	fyne.Do(func() {
+		if t.hasSelectedText() {
+			t.clearSelectedText()
+		}
+	})
 	if t.state == nil {
 		t.state = &parseState{
 			esc: noEscape,
@@ -152,7 +159,11 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			t.parseOSC(r)
 			continue
 		} else if t.state.vt100 != 0 {
-			t.handleVT100(string([]rune{t.state.vt100, r}))
+			// the character sets are designated and used on the main goroutine, see below
+			code := string([]rune{t.state.vt100, r})
+			fyne.Do(func() {
+				t.handleVT100(code)
+			})
 			t.state.vt100 = 0
 			continue
 		} else if t.state.esc != noEscape {
@@ -168,22 +179,24 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 				out(t)
 			})
 		} else {
-			// check to see which charset to use
-			if t.useG1CharSet {
-				chr := charSetMap[t.g1Charset](r)
-				fyne.Do(func() {
-					t.handleOutputChar(chr)
-				})
-			} else {
-				chr := charSetMap[t.g0Charset](r)
-				fyne.Do(func() {
-					t.handleOutputChar(chr)
-				})
-			}
+			// Shift in and shift out switch the character set on the main goroutine, so the
+			// set in use is looked up there.
+			chr := r
+			fyne.Do(func() {
+				t.handleOutputChar(t.mapCharset(chr))
+			})
 		}
 	}
 
 	return buf
+}
+
+// mapCharset returns r in the character set in use.
+func (t *Terminal) mapCharset(r rune) rune {
+	if t.useG1CharSet {
+		return charSetMap[t.g1Charset](r)
+	}
+	return charSetMap[t.g0Charset](r)
 }
 
 func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
@@ -191,28 +204,39 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 	case '[':
 		return true
 	case '\\':
-		if t.state.osc {
-			code := t.state.code
+		code, ok := t.state.takeCode()
+		if t.state.osc && ok {
 			fyne.Do(func() {
 				t.handleOSC(code)
 			})
 		}
-		t.state.code = ""
+		// ST ends an APC string as well; without it, all later output was added to the APC
+		// instead of being shown, until a NUL arrived.
+		if t.state.apc && ok {
+			fyne.Do(func() {
+				t.handleAPC(code)
+			})
+		}
 		t.state.osc = false
+		t.state.apc = false
 	case ']':
 		t.state.osc = true
 	case '(', ')':
 		t.state.vt100 = r
+	// These four change the screen, which belongs to the main goroutine, where the CSI
+	// sequences and the text are handled too; a restored cursor is clamped to the screen, which
+	// may have been resized since it was saved.
 	case '7':
-		t.savedRow = t.cursorRow
-		t.savedCol = t.cursorCol
+		fyne.Do(func() {
+			t.savedRow = t.cursorRow
+			t.savedCol = t.cursorCol
+		})
 	case '8':
-		t.cursorRow = t.savedRow
-		t.cursorCol = t.savedCol
+		fyne.Do(func() { t.moveCursor(t.savedRow, t.savedCol) })
 	case 'D':
-		t.scrollDown()
+		fyne.Do(t.scrollDown)
 	case 'M':
-		t.scrollUp()
+		fyne.Do(t.scrollUp)
 	case 'P':
 		t.state.dcs = true
 	case '_':
@@ -223,15 +247,47 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 }
 
 func (t *Terminal) parseEscape(r rune) {
-	t.state.code += string(r)
+	t.state.addCode(r)
 	if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
-		code := t.state.code
-		fyne.Do(func() {
-			t.handleEscape(code)
-		})
-		t.state.code = ""
+		code, ok := t.state.takeCode()
+		switch {
+		case !ok:
+		case r == 'i':
+			// Media copy decides how the output after it is parsed, here, so it is handled
+			// here; on the main goroutine, the next characters could be parsed as text before
+			// the printing state was set.
+			escapePrinterMode(t, trimLeftZeros(code[:len(code)-1]))
+		default:
+			fyne.Do(func() {
+				t.handleEscape(code)
+			})
+		}
 		t.state.esc = noEscape
 	}
+}
+
+// addCode adds r to the escape sequence or string being parsed. The sequence was a string
+// extended with +=, which copies all of it every time: an unterminated OSC, APC or DCS string, or
+// a long CSI, took time quadratic in its length (about a minute for 1 MiB, in which nothing else
+// was shown), and memory without a bound. It is a buffer now, and one longer than maxCodeLen is
+// dropped.
+func (s *parseState) addCode(r rune) {
+	if len(s.code) >= maxCodeLen {
+		s.codeTooLong = true
+		return
+	}
+	s.code = utf8.AppendRune(s.code, r)
+}
+
+// takeCode returns the sequence parsed so far and starts a new one. It reports false if the
+// sequence was longer than maxCodeLen.
+func (s *parseState) takeCode() (string, bool) {
+	code, ok := string(s.code), !s.codeTooLong
+	s.code, s.codeTooLong = s.code[:0], false
+	if cap(s.code) > 4096 {
+		s.code = nil // let a long one go
+	}
+	return code, ok
 }
 
 func (t *Terminal) parsePrinting(buf []byte, size int) {
@@ -246,40 +302,40 @@ func (t *Terminal) parsePrinting(buf []byte, size int) {
 
 func (t *Terminal) parseAPC(r rune) {
 	if r == 0 {
-		code := t.state.code
-		fyne.Do(func() {
-			t.handleAPC(code)
-		})
-		t.state.code = ""
+		if code, ok := t.state.takeCode(); ok {
+			fyne.Do(func() {
+				t.handleAPC(code)
+			})
+		}
 		t.state.apc = false
 	} else {
-		t.state.code += string(r)
+		t.state.addCode(r)
 	}
 }
 
 func (t *Terminal) parseOSC(r rune) {
 	if r == asciiBell || r == 0 {
-		code := t.state.code
-		fyne.Do(func() {
-			t.handleOSC(code)
-		})
-		t.state.code = ""
+		if code, ok := t.state.takeCode(); ok {
+			fyne.Do(func() {
+				t.handleOSC(code)
+			})
+		}
 		t.state.osc = false
 	} else {
-		t.state.code += string(r)
+		t.state.addCode(r)
 	}
 }
 
 func (t *Terminal) parseDCS(r rune) {
 	if r == '\\' {
-		code := t.state.code
-		fyne.Do(func() {
-			t.handleDCS(code)
-		})
-		t.state.code = ""
+		if code, ok := t.state.takeCode(); ok {
+			fyne.Do(func() {
+				t.handleDCS(code)
+			})
+		}
 		t.state.dcs = false
 	} else {
-		t.state.code += string(r)
+		t.state.addCode(r)
 	}
 }
 
@@ -334,12 +390,21 @@ func (t *Terminal) ringBell() {
 
 	go func() {
 		time.Sleep(time.Millisecond * 300)
-		t.bell = false
-		fyne.Do(t.Refresh)
+		fyne.Do(func() { // the cursor reads the bell when it is drawn, on the main goroutine
+			t.bell = false
+			t.Refresh()
+		})
 	}()
 }
 
 func (t *Terminal) scrollUp() {
+	// The region may reach past the rows written so far; an invalid one is ignored.
+	if t.scrollTop < 0 || t.scrollBottom < t.scrollTop {
+		return
+	}
+	for len(t.content.Rows) <= t.scrollBottom {
+		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
+	}
 	for i := t.scrollBottom; i > t.scrollTop; i-- {
 		t.content.Rows[i] = t.content.Row(i - 1)
 	}
@@ -348,6 +413,10 @@ func (t *Terminal) scrollUp() {
 }
 
 func (t *Terminal) scrollDown() {
+	// An invalid region is ignored rather than indexed.
+	if t.scrollTop < 0 || t.scrollBottom < t.scrollTop {
+		return
+	}
 	i := t.scrollTop
 	for ; i < t.scrollBottom && i < len(t.content.Rows)-1; i++ {
 		t.content.Rows[i] = t.content.Row(i + 1)
@@ -395,6 +464,11 @@ func handleOutputLineFeed(t *Terminal) {
 
 func handleOutputTab(t *Terminal) {
 	end := t.cursorCol - t.cursorCol%tabWidth + tabWidth
+	// A tab stops at the right margin and never wraps: unclamped, the loop below wrapped to
+	// column 0 before it reached end, and never finished.
+	if cols := int(t.config.Columns); end > cols-1 {
+		end = cols - 1
+	}
 	for t.cursorCol < end {
 		t.handleOutputChar(' ')
 	}

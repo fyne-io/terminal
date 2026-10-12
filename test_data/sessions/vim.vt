@@ -1,0 +1,33 @@
+[?1049h[>4;2m[?1h=[?2004h[?1004h[1;24r[?12h[?12l[22;2t[22;1t[27m[23m[29m[m[H[2J[?25l[24;1H"demo.yaml" 20L, 323B[2;1H▽[6n[2;1H  [3;1HPzz\[0%m[6n[3;1H           [1;1H[>c[1;1H[36mapiVersion[m[35m:[m apps/v1
+[36mkind[m[35m:[m Deployment[2;17H[K[3;1H[36mmetadata[m[35m:[m[3;10H[K[4;3H[36mname[m[35m:[m web
+  [36mnamespace[m[35m:[m shop
+[36mspec[m[35m:[m
+  [36mreplicas[m[35m:[m [31m3[m
+  [36mselector[m[35m:[m
+    [36mmatchLabels[m[35m:[m[10;7H[36mapp[m[35m:[m web
+  [36mtemplate[m[35m:[m
+    [36mmetadata[m[35m:[m[13;7H[36mlabels[m[35m:[m[14;9H[36mapp[m[35m:[m web
+    [36mspec[m[35m:[m[16;7H[36mcontainers[m[35m:[m[17;9H[38;5;130m-[m [36mname[m[35m:[m web[18;11H[36mimage[m[35m:[m nginx:1.27[19;11H[36mports[m[35m:[m[20;13H[38;5;130m-[m [36mcontainerPort[m[35m:[m [31m80[m
+[94m~                                                                               [22;1H~                                                                               [m[23;1H[1m[7mdemo.yaml                                                     1,1            All[1;1H[?25h[?4m[?25l[23;63H2,[2;1H[?25h[?25l[23;63H3,[3;1H[?25h[?25l[23;63H4,[4;1H[?25h[?25l[23;63H5,[5;1H[?25h[?25l[m[24;70Hdd[5;1H[24;70H  [5;1H[5;22r[22;1H
+[1;24r[22;1H[94m~                                                                               [m[23;11H[1m[7m[+][m[24;1H[K[5;1H[?25h[?25l[24;1H[1m-- INSERT --[m[24;1H[K[5;10H[5;22r[5;1H[L[1;24r[5;1Hadded line[24;1H[1m-- INSERT --[5;11H[m[24;70H^[[5;10H[?25h[?25l[24;70H  [5;11H[24;1H[K[23;66H[1m[7m0[5;10H[?25h[?25l[24;1H[m:set nu[1;1H[38;5;130m  1 [m[36mapiVersion[m[35m:[m apps/v1
+[38;5;130m  2 [m[36mkind[m[35m:[m Deployment
+[38;5;130m  3 [m[36mmetadata[m[35m:[m
+[38;5;130m  4 [m  [36mname[m[35m:[m web
+[38;5;130m  5 [madded line
+[38;5;130m  6 [m[36mspec[m[35m:[m
+[38;5;130m  7 [m  [36mreplicas[m[35m:[m [31m3[m
+[38;5;130m  8 [m  [36mselector[m[35m:[m
+[38;5;130m  9 [m    [36mmatchLabels[m[35m:[m
+[38;5;130m 10 [m      [36mapp[m[35m:[m web
+[38;5;130m 11 [m  [36mtemplate[m[35m:[m
+[38;5;130m 12 [m    [36mmetadata[m[35m:[m
+[38;5;130m 13 [m      [1C[36mabels[m[35m:[m
+[38;5;130m 14 [m        [36mapp[m[35m:[m web
+[38;5;130m 15 [m    [36mspec[m[35m:[m
+[38;5;130m 16 [m      [36mcontainers[m[35m:[m
+[38;5;130m 17 [m        [38;5;130m-[m [36mname[m[35m:[m web
+[38;5;130m 18 [m          [36mimage[m[35m:[m nginx:1.27
+[38;5;130m 19 [m          [36mports[m[35m:[m
+[38;5;130m 20 [m[8C    [38;5;130m-[m [36mcontainerPort[m[35m:[m [31m80[5;14H[?25h[?25l[m[24;70HG[5;14H[24;70H [20;17H[23;63H[1m[7m20,13[20;17H[?25h[?25l[m[24;1H[K[24;1H/image[31msearch hit BOTTOM, continuing at TOP[m[23;63H[1m[7m18,11 [18;15H[?25h[?25l[m[24;70HP[18;15H[24;70H [18;15H[18;22r[18;1H[L[1;24r[18;1H[38;5;130m 18 [m[10C[36mimage[m[35m:[m nginx:1.27[19;3H[38;5;130m9
+ 20
+ 21[m[24;1H[K[18;15H[?25h[?25l[24;1H:q![?2004l[>4;m[23;2t[23;1t[24;1H[K[24;1H[?1004l[?2004l[?1l>[?1049l[?25h[>4;m

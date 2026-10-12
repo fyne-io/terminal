@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -46,9 +47,11 @@ func (t *Terminal) handleEscape(code string) {
 		return
 	}
 
-	runes := []rune(code)
-	if esc, ok := escapes[runes[len(code)-1]]; ok {
-		esc(t, code[:len(code)-1])
+	// The final character can be any rune: indexing the runes with the length in bytes
+	// panicked when it was not ASCII ("ESC [ é").
+	final, size := utf8.DecodeLastRuneInString(code)
+	if esc, ok := escapes[final]; ok {
+		esc(t, code[:len(code)-size])
 	} else if t.debug {
 		log.Println("Unrecognised Escape:", strconv.QuoteToASCII(code))
 	}
@@ -187,9 +190,17 @@ func escapeDeleteChars(t *Terminal, msg string) {
 	if i == 0 {
 		i = 1
 	}
-	right := t.cursorCol + i
 
 	row := t.content.Row(t.cursorRow)
+	// The cursor can be past the row's cells (a short row, a cleared line).
+	if t.cursorCol >= len(row.Cells) {
+		return
+	}
+	// At most the cells right of the cursor: a count near MaxInt overflowed cursorCol+i.
+	if room := len(row.Cells) - t.cursorCol; i > room {
+		i = room
+	}
+	right := t.cursorCol + i
 	cells := row.Cells[:t.cursorCol]
 	if right < len(row.Cells) {
 		cells = append(cells, row.Cells[right:]...)
@@ -232,6 +243,14 @@ func escapeDeleteLines(t *Terminal, msg string) {
 	if lines == 0 {
 		lines = 1
 	}
+	// Only the lines from the cursor to the bottom of the scroll region can be deleted. A larger
+	// count blanked lines above the cursor, and looped for as long as the count.
+	if limit := t.scrollBottom - t.cursorRow + 1; lines > limit {
+		lines = limit
+	}
+	if lines <= 0 {
+		return
+	}
 	for i := t.cursorRow; i <= t.scrollBottom-lines; i++ {
 		t.content.SetRow(i, t.content.Row(i+lines))
 	}
@@ -246,6 +265,14 @@ func escapeScrollDown(t *Terminal, msg string) {
 	lines, _ := strconv.Atoi(msg)
 	if lines == 0 {
 		lines = 1
+	}
+	// At most the scroll region's height. A larger count overflowed scrollTop+lines when the
+	// region did not start at the top, and the loop below then ran for as long as the count.
+	if limit := t.scrollBottom - t.scrollTop + 1; lines > limit {
+		lines = limit
+	}
+	if lines <= 0 {
+		return
 	}
 	for i := t.scrollBottom; i >= t.scrollTop+lines; i-- {
 		t.content.SetRow(i, t.content.Row(i-lines))
@@ -264,6 +291,18 @@ func escapeRepeatChar(t *Terminal, msg string) {
 	}
 	if t.lastChar == 0 {
 		return
+	}
+	// After a screenful and a line of the same character, from wherever the cursor started, each
+	// further line of it leaves the screen and the cursor as they were, so the whole lines past
+	// that are skipped; the loop ran for as long as the count. Without columns every character
+	// leaves the same state.
+	cols, rows := int(t.config.Columns), int(t.config.Rows)
+	if limit := (cols + 1) * (rows + 2); count > limit {
+		period := cols
+		if period == 0 {
+			period = 1
+		}
+		count = limit + (count-limit)%period
 	}
 	for i := 0; i < count; i++ {
 		t.handleOutputChar(t.lastChar)
@@ -332,7 +371,14 @@ func escapeInsertChars(t *Terminal, msg string) {
 		}
 	}
 
+	// On a fresh screen the cursor's row may not exist yet, and a row may end before the cursor.
+	for len(t.content.Rows) <= t.cursorRow {
+		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
+	}
 	row := &t.content.Rows[t.cursorRow]
+	for len(row.Cells) < t.cursorCol {
+		row.Cells = append(row.Cells, widget.TextGridCell{Rune: ' ', Style: cellStyle})
+	}
 	row.Cells = append(row.Cells[:t.cursorCol], append(newCells, row.Cells[t.cursorCol:]...)...)
 	if len(row.Cells) > cols {
 		row.Cells = row.Cells[:cols]
@@ -344,8 +390,18 @@ func escapeInsertLines(t *Terminal, msg string) {
 	if rows == 0 {
 		rows = 1
 	}
+	// Only the lines from the cursor to the bottom of the scroll region can be pushed down. A
+	// larger count overflowed cursorRow+rows, and the loop below then ran for as long as the count.
+	if limit := t.scrollBottom - t.cursorRow + 1; rows > limit {
+		rows = limit
+	}
+	if rows <= 0 {
+		return
+	}
 	i := t.scrollBottom
-	for ; i > t.cursorRow-rows+1; i-- {
+	// The lines move down by rows from the cursor's line on, so the copying stops above the rows
+	// lines that become blank.
+	for ; i > t.cursorRow+rows-1; i-- {
 		t.content.SetRow(i, t.content.Row(i-rows))
 	}
 	for ; i >= t.cursorRow; i-- {
@@ -457,11 +513,39 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 }
 
 func escapePrivateModeOff(t *Terminal, msg string) {
-	escapePrivateMode(t, msg[1:], false)
+	escapeMode(t, msg, false)
 }
 
 func escapePrivateModeOn(t *Terminal, msg string) {
-	escapePrivateMode(t, msg[1:], true)
+	escapeMode(t, msg, true)
+}
+
+// escapeMode handles CSI Pm h and CSI Pm l (SM and RM), and their DEC private forms with "?".
+// The first character used to be dropped without checking that it was "?": without a parameter
+// ("ESC [ h") that panicked, and with one the ANSI mode was read as a private mode without its
+// first digit (ANSI mode 20, new line mode, became private mode 0).
+func escapeMode(t *Terminal, msg string, enable bool) {
+	if strings.HasPrefix(msg, "?") {
+		escapePrivateMode(t, msg[1:], enable)
+		return
+	}
+
+	for _, mode := range strings.Split(msg, ";") {
+		switch mode {
+		case "20":
+			t.newLineMode = enable // LNM - new line mode
+		case "":
+			// empty mode, ignore
+		default:
+			if t.debug {
+				m := "l"
+				if enable {
+					m = "h"
+				}
+				log.Println("Unknown mode escape code", fmt.Sprintf("%s%s", mode, m))
+			}
+		}
+	}
 }
 
 func escapeMoveCursor(t *Terminal, msg string) {
@@ -510,6 +594,19 @@ func escapeSetScrollArea(t *Terminal, msg string) {
 		}
 	}
 
+	// Margins are clamped to the screen, and a region whose top is not above its bottom (a
+	// bottom of 0, for instance) resets to the full screen; scrolling indexed out of range in
+	// regions accepted as sent.
+	rows := int(t.config.Rows)
+	if start < 0 {
+		start = 0
+	}
+	if end > rows-1 {
+		end = rows - 1
+	}
+	if start >= end {
+		start, end = 0, rows-1
+	}
 	t.scrollTop = start
 	t.scrollBottom = end
 }
@@ -523,6 +620,11 @@ func escapeScrollUp(t *Terminal, msg string) {
 	// Ensure we are within the scrollable area
 	if t.cursorRow < t.scrollTop || t.cursorRow > t.scrollBottom {
 		return
+	}
+	// At most the scroll region's height. A larger count blanked lines above the region, and the
+	// loop below ran for as long as the count.
+	if limit := t.scrollBottom - t.scrollTop + 1; lines > limit {
+		lines = limit
 	}
 
 	// Calculate new cursor position after scrolling
@@ -590,14 +692,16 @@ func escapeDeviceAttribute(t *Terminal, code string) {
 		return
 	}
 
+	// The secondary and tertiary queries usually have no parameter ("ESC [ > c", as vim sends
+	// it): logging code[1] panicked whenever debug output was on.
 	if t.debug {
 		switch code[0] {
 		case '>':
-			log.Println("Unhandled secondary device attribute", code[1])
+			log.Println("Unhandled secondary device attribute", code[1:])
 		case '=':
-			log.Println("Unhandled tertiary device attribute", code[1])
+			log.Println("Unhandled tertiary device attribute", code[1:])
 		default:
-			log.Println("Unknown device attribute", code[0])
+			log.Println("Unknown device attribute", code)
 		}
 	}
 }
