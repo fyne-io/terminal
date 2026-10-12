@@ -34,3 +34,18 @@ func TestAPC(t *testing.T) {
 		})
 	}
 }
+
+func TestAPC_StringTerminator(t *testing.T) {
+	var APCString string
+
+	RegisterAPCHandler("set apcterminated:", func(terminal *Terminal, s string) {
+		APCString = s
+	})
+
+	term := New()
+	term.Resize(fyne.NewSize(50, 50))
+	term.handleOutput([]byte("\x1b_set apcterminated:Hello\x1b\\shown"))
+
+	assert.Equal(t, "Hello", APCString)
+	assert.Equal(t, "shown", term.content.Text())
+}

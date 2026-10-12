@@ -201,7 +201,15 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 				t.handleOSC(code)
 			})
 		}
+		// ST ends an APC string as well; without it, all later output was added to the APC
+		// instead of being shown, until a NUL arrived.
+		if t.state.apc && ok {
+			fyne.Do(func() {
+				t.handleAPC(code)
+			})
+		}
 		t.state.osc = false
+		t.state.apc = false
 	case ']':
 		t.state.osc = true
 	case '(', ')':
