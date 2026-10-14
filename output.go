@@ -235,7 +235,9 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 
 func (t *Terminal) parseEscape(r rune) {
 	t.state.code += string(r)
-	if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
+	// ECMA-48 CSI: parameter bytes 0x30-0x3F and intermediate bytes 0x20-0x2F
+	// are collected, anything else (normally a final byte 0x40-0x7E) dispatches.
+	if r < 0x20 || r > 0x3f {
 		code := t.state.code
 		fyne.Do(func() {
 			t.handleEscape(code)
@@ -272,7 +274,7 @@ func (t *Terminal) parseOSC(r rune) {
 	if r == asciiBell || r == 0 {
 		code := t.state.code
 		fyne.Do(func() {
-			t.handleOSC(code)
+			t.handleOSCTerm(code, oscTerminatorBell)
 		})
 		t.state.code = ""
 		t.state.osc = false
