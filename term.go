@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 	"unicode"
@@ -15,6 +16,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/theme"
@@ -73,6 +75,9 @@ type Terminal struct {
 	altSavedRow     int                  // saved cursor row
 	altSavedCol     int                  // saved cursor col
 	altBufferActive bool                 // true when alternate buffer is in use
+
+	scrollbackMax   int
+	scrollContainer *container.Scroll
 
 	onMouseDown, onMouseUp func(int, fyne.KeyModifier, fyne.Position)
 	g0Charset              charSet
@@ -260,9 +265,6 @@ func (t *Terminal) Resize(s fyne.Size) {
 	}
 
 	t.BaseWidget.Resize(s)
-	if t.content != nil {
-		t.content.Resize(fyne.NewSize(float32(cols)*cellSize.Width, float32(rows)*cellSize.Height))
-	}
 
 	oldRows := int(t.config.Rows)
 	t.config.Columns, t.config.Rows = cols, rows
@@ -295,9 +297,23 @@ func (t *Terminal) Tapped(ev *fyne.PointEvent) {
 	}
 }
 
-// Text returns the contents of the buffer as a single string joined with `\n` (no style information).
+// Text returns the visible contents of the terminal as a single string joined with `\n` (no style information).
 func (t *Terminal) Text() string {
-	return t.content.Text()
+	off := t.rowOffset()
+	end := off + int(t.config.Rows)
+	if end > len(t.content.Rows) {
+		end = len(t.content.Rows)
+	}
+	var b strings.Builder
+	for i := off; i < end; i++ {
+		if i > off {
+			b.WriteByte('\n')
+		}
+		for _, c := range t.content.Rows[i].Cells {
+			b.WriteRune(c.Rune)
+		}
+	}
+	return b.String()
 }
 
 // ExitCode returns the exit code from the terminal's shell.
@@ -472,7 +488,12 @@ func (t *Terminal) run() {
 		leftOver = t.handleOutput(fullBuf[:num])
 		if len(leftOver) == 0 || time.Since(t.lastRefresh) > maxRefreshInterval {
 			t.lastRefresh = time.Now()
-			fyne.DoAndWait(t.Refresh)
+			fyne.Do(func() {
+				if t.scrollContainer != nil {
+					t.scrollContainer.ScrollToBottom()
+				}
+				t.Refresh()
+			})
 		}
 	}
 }
@@ -576,12 +597,33 @@ func (t *Terminal) startingDir() string {
 // New sets up a new terminal instance with the bash shell
 func New() *Terminal {
 	t := &Terminal{
-		mouseCursor: desktop.DefaultCursor,
-		in:          discardWriter{},
+		mouseCursor:   desktop.DefaultCursor,
+		in:            discardWriter{},
+		scrollbackMax: 1000,
 	}
 	t.ExtendBaseWidget(t)
 
 	return t
+}
+
+// rowOffset returns the number of scrollback rows above the visible terminal area.
+func (t *Terminal) rowOffset() int {
+	if t.content == nil {
+		return 0
+	}
+	off := len(t.content.Rows) - int(t.config.Rows)
+	if off < 0 {
+		return 0
+	}
+	return off
+}
+
+// trimScrollback removes excess scrollback rows beyond the configured maximum.
+func (t *Terminal) trimScrollback() {
+	excess := len(t.content.Rows) - int(t.config.Rows) - t.scrollbackMax
+	if excess > 0 {
+		t.content.Rows = t.content.Rows[excess:]
+	}
 }
 
 // sanitizePosition ensures that the given position p is within the bounds of the terminal.
