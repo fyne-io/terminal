@@ -196,7 +196,7 @@ func rowText(row widget.TextGridRow) []rune {
 
 func TestInsertDeleteChars(t *testing.T) {
 	term := New()
-	term.config.Columns = 5
+	term.config.Columns = 10
 	term.config.Rows = 2
 	term.Refresh() // ensure visuals set up
 
@@ -208,6 +208,35 @@ func TestInsertDeleteChars(t *testing.T) {
 	assert.Equal(t, "He  llo", term.content.Text())
 	term.handleEscape("3P")
 	assert.Equal(t, "Helo", term.content.Text())
+}
+
+func TestInsertChars_Overflow(t *testing.T) {
+	term := New()
+	term.config.Columns = 5
+	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("Hello"))
+	term.moveCursor(0, 2)
+	term.handleEscape("2@")
+	assert.Equal(t, "He  l", term.content.Text())
+
+	term.handleEscape("60000@")
+	assert.Equal(t, "He   ", term.content.Text())
+	assert.Equal(t, 5, len(term.content.Rows[0].Cells))
+}
+
+func TestEraseChars_Overflow(t *testing.T) {
+	term := New()
+	term.config.Columns = 5
+	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("Hello"))
+	term.moveCursor(0, 2)
+	term.handleEscape("60000X")
+	assert.Equal(t, "He   ", term.content.Text())
+	assert.Equal(t, 5, len(term.content.Rows[0].Cells))
 }
 
 func TestEraseLine(t *testing.T) {

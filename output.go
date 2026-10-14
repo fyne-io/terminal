@@ -87,6 +87,7 @@ var decSpecialGraphics = map[rune]rune{
 type parseState struct {
 	code          string
 	esc           int
+	escNext       bool // true when ESC was just seen; next char goes to parseEscState
 	osc, apc, dcs bool
 	vt100         rune
 	printing      bool
@@ -128,17 +129,19 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 		}
 		if r == asciiEscape {
 			t.state.esc = i
+			t.state.escNext = true
 			continue
 		}
-		if t.state.dcs {
-			t.parseDCS(r)
-			continue
-		}
-		if t.state.esc == i-1 {
+		if t.state.escNext {
+			t.state.escNext = false
 			if cont := t.parseEscState(r); cont {
 				continue
 			}
 			t.state.esc = noEscape
+			continue
+		}
+		if t.state.dcs {
+			t.parseDCS(r)
 			continue
 		}
 		if t.state.apc {
@@ -180,10 +183,6 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 		}
 	}
 
-	// record progress for next chunk of buffer
-	if t.state.esc != noEscape {
-		t.state.esc = t.state.esc - i
-	}
 	return buf
 }
 
@@ -191,15 +190,26 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 	switch r {
 	case '[':
 		return true
-	case '\\':
-		if t.state.osc {
-			code := t.state.code
+	case '\\': // ST - string terminator for OSC, APC and DCS
+		code := t.state.code
+		switch {
+		case t.state.osc:
 			fyne.Do(func() {
-				t.handleOSC(code)
+				t.handleOSCTerm(code, oscTerminatorST)
+			})
+		case t.state.apc:
+			fyne.Do(func() {
+				t.handleAPC(code)
+			})
+		case t.state.dcs:
+			fyne.Do(func() {
+				t.handleDCS(code)
 			})
 		}
 		t.state.code = ""
 		t.state.osc = false
+		t.state.apc = false
+		t.state.dcs = false
 	case ']':
 		t.state.osc = true
 	case '(', ')':
@@ -225,7 +235,9 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 
 func (t *Terminal) parseEscape(r rune) {
 	t.state.code += string(r)
-	if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
+	// ECMA-48 CSI: parameter bytes 0x30-0x3F and intermediate bytes 0x20-0x2F
+	// are collected, anything else (normally a final byte 0x40-0x7E) dispatches.
+	if r < 0x20 || r > 0x3f {
 		code := t.state.code
 		fyne.Do(func() {
 			t.handleEscape(code)
@@ -262,7 +274,7 @@ func (t *Terminal) parseOSC(r rune) {
 	if r == asciiBell || r == 0 {
 		code := t.state.code
 		fyne.Do(func() {
-			t.handleOSC(code)
+			t.handleOSCTerm(code, oscTerminatorBell)
 		})
 		t.state.code = ""
 		t.state.osc = false
@@ -272,20 +284,11 @@ func (t *Terminal) parseOSC(r rune) {
 }
 
 func (t *Terminal) parseDCS(r rune) {
-	if r == '\\' {
-		code := t.state.code
-		fyne.Do(func() {
-			t.handleDCS(code)
-		})
-		t.state.code = ""
-		t.state.dcs = false
-	} else {
-		t.state.code += string(r)
-	}
+	t.state.code += string(r) // terminated by ST, see parseEscState
 }
 
 func (t *Terminal) handleOutputChar(r rune) {
-	if t.cursorCol == int(t.config.Columns) {
+	if t.cursorCol >= int(t.config.Columns) { // may be beyond the edge if restored from a wider terminal
 		if !t.disableAutoWrap {
 			t.cursorCol = 0
 			handleOutputLineFeed(t)
@@ -296,9 +299,20 @@ func (t *Terminal) handleOutputChar(r rune) {
 	}
 
 	var cellStyle widget.TextGridStyle
-	cellStyle = &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
+	textStyle := fyne.TextStyle{
+		Monospace: true,
+
+		Bold:          t.bold,
+		Italic:        t.italic,
+		Underline:     t.underline,
+		Strikethrough: t.strikethrough,
+	}
+	cellStyle = &widget.CustomTextGridStyle{
+		FGColor: t.currentFG, BGColor: t.currentBG,
+		TextStyle: textStyle,
+	}
 	if t.blinking {
-		cellStyle = widget2.NewTermTextGridStyle(t.currentFG, t.currentBG, highlightBitMask, t.blinking)
+		cellStyle = widget2.NewTermTextGridStyle(t.currentFG, t.currentBG, highlightBitMask, t.blinking, textStyle)
 	}
 
 	contentRow := t.rowOffset() + t.cursorRow
@@ -315,6 +329,7 @@ func (t *Terminal) handleOutputChar(r rune) {
 			t.content.Rows[contentRow].Cells[i].Rune = ' '
 		}
 	}
+	t.lastChar = r
 	t.cursorCol++
 }
 

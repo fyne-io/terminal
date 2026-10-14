@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -32,6 +33,14 @@ var escapes = map[rune]func(*Terminal, string){
 	'u': escapeRestoreCursor,
 	'i': escapePrinterMode,
 	'c': escapeDeviceAttribute,
+	'X': escapeEraseChars,
+	'M': escapeDeleteLines,
+	'T': escapeScrollDown,
+	'b': escapeRepeatChar,
+	't': escapeWindowOps,
+	'n': escapeDeviceStatusReport,
+	'p': escapeRequestMode,
+	'q': escapeQueryVersion,
 }
 
 func (t *Terminal) handleEscape(code string) {
@@ -44,8 +53,51 @@ func (t *Terminal) handleEscape(code string) {
 	if esc, ok := escapes[runes[len(code)-1]]; ok {
 		esc(t, code[:len(code)-1])
 	} else if t.debug {
-		log.Println("Unrecognised Escape:", code)
+		log.Println("Unrecognised Escape:", strconv.QuoteToASCII(code))
 	}
+}
+
+// enterAltBuffer saves the current screen and cursor, clears the display,
+// and enters the alternate screen buffer (used by curses apps).
+func (t *Terminal) enterAltBuffer() {
+	if t.altBufferActive {
+		return
+	}
+	// Save current grid content (deep copy)
+	t.altSavedGrid = make([]widget.TextGridRow, len(t.content.Rows))
+	for i, row := range t.content.Rows {
+		cells := make([]widget.TextGridCell, len(row.Cells))
+		copy(cells, row.Cells)
+		t.altSavedGrid[i] = widget.TextGridRow{Cells: cells}
+	}
+	t.altSavedRow = t.cursorRow
+	t.altSavedCol = t.cursorCol
+	t.altBufferActive = true
+	t.clearScreen()
+}
+
+// exitAltBuffer restores the saved screen and cursor from before
+// enterAltBuffer was called.
+func (t *Terminal) exitAltBuffer() {
+	if !t.altBufferActive {
+		return
+	}
+	t.altBufferActive = false
+	if t.altSavedGrid != nil {
+		// Restore saved grid content
+		for i, row := range t.altSavedGrid {
+			if i < len(t.content.Rows) {
+				t.content.SetRow(i, row)
+			}
+		}
+		// Clear any extra rows beyond the saved content
+		for i := len(t.altSavedGrid); i < len(t.content.Rows); i++ {
+			t.content.SetRow(i, widget.TextGridRow{})
+		}
+		t.altSavedGrid = nil
+	}
+	t.cursorRow = t.altSavedRow
+	t.cursorCol = t.altSavedCol
 }
 
 func (t *Terminal) clearScreen() {
@@ -163,6 +215,182 @@ func escapeDeleteChars(t *Terminal, msg string) {
 	t.content.SetRow(contentRow, widget.TextGridRow{Cells: cells})
 }
 
+// escapeEraseChars handles CSI Ps X (ECH - Erase Character).
+// Replaces Ps characters starting at cursor with blanks.
+func escapeEraseChars(t *Terminal, msg string) {
+	count, _ := strconv.Atoi(msg)
+	if count == 0 {
+		count = 1
+	}
+	// there is nothing to erase past the right edge
+	if room := int(t.config.Columns) - t.cursorCol; count > room {
+		count = room
+	}
+	if count <= 0 {
+		return
+	}
+
+	row := t.content.Row(t.cursorRow)
+	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
+	// Extend row if cursor is beyond current length
+	for len(row.Cells) < t.cursorCol+count {
+		row.Cells = append(row.Cells, widget.TextGridCell{Rune: ' ', Style: cellStyle})
+	}
+	for i := 0; i < count; i++ {
+		row.Cells[t.cursorCol+i] = widget.TextGridCell{Rune: ' ', Style: cellStyle}
+	}
+	t.content.SetRow(t.cursorRow, row)
+}
+
+// escapeDeleteLines handles CSI Ps M (DL - Delete Line).
+// Deletes Ps lines at cursor, scrolling lines below up within the scroll region.
+func escapeDeleteLines(t *Terminal, msg string) {
+	lines, _ := strconv.Atoi(msg)
+	if lines == 0 {
+		lines = 1
+	}
+	for i := t.cursorRow; i <= t.scrollBottom-lines; i++ {
+		t.content.SetRow(i, t.content.Row(i+lines))
+	}
+	for i := t.scrollBottom - lines + 1; i <= t.scrollBottom; i++ {
+		t.content.SetRow(i, widget.TextGridRow{})
+	}
+}
+
+// escapeScrollDown handles CSI Ps T (SD - Scroll Down).
+// Scrolls the scroll region down by Ps lines, inserting blank lines at the top.
+func escapeScrollDown(t *Terminal, msg string) {
+	lines, _ := strconv.Atoi(msg)
+	if lines == 0 {
+		lines = 1
+	}
+	for i := t.scrollBottom; i >= t.scrollTop+lines; i-- {
+		t.content.SetRow(i, t.content.Row(i-lines))
+	}
+	for i := t.scrollTop; i < t.scrollTop+lines && i <= t.scrollBottom; i++ {
+		t.content.SetRow(i, widget.TextGridRow{})
+	}
+}
+
+// escapeRepeatChar handles CSI Ps b (REP - Repeat).
+// Repeats the preceding graphic character Ps times.
+func escapeRepeatChar(t *Terminal, msg string) {
+	count, _ := strconv.Atoi(msg)
+	if count == 0 {
+		count = 1
+	}
+	if t.lastChar == 0 {
+		return
+	}
+	for i := 0; i < count; i++ {
+		t.handleOutputChar(t.lastChar)
+	}
+}
+
+// escapeWindowOps handles CSI Ps;..t (window operations).
+// Most are queries or title save/restore — safe to ignore.
+func escapeWindowOps(t *Terminal, msg string) {
+	switch msg {
+	case "14": // report text area size in pixels
+		size := t.Size()
+		scale := float32(1)
+		if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+			scale = c.Scale()
+		}
+		t.reply(fmt.Sprintf("[4;%d;%dt", int(size.Height*scale), int(size.Width*scale)))
+	case "16": // report cell size in pixels
+		cell := t.guessCellSize()
+		scale := float32(1)
+		if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+			scale = c.Scale()
+		}
+		t.reply(fmt.Sprintf("[6;%d;%dt", int(cell.Height*scale), int(cell.Width*scale)))
+	case "18": // report text area size in characters
+		t.reply(fmt.Sprintf("[8;%d;%dt", t.config.Rows, t.config.Columns))
+	default:
+		// no-op: title save/restore, window resize, etc.
+	}
+}
+
+// reply writes a CSI sequence (without the leading ESC) back to the application.
+func (t *Terminal) reply(s string) {
+	_, _ = t.in.Write(append([]byte{asciiEscape}, s...))
+}
+
+// escapeDeviceStatusReport answers DSR queries, most importantly the
+// cursor position report (CSI 6 n) that many TUI toolkits wait for.
+func escapeDeviceStatusReport(t *Terminal, msg string) {
+	private := strings.HasPrefix(msg, "?")
+	switch strings.TrimPrefix(msg, "?") {
+	case "5": // operating status
+		t.reply("[0n")
+	case "6": // cursor position
+		if private {
+			t.reply(fmt.Sprintf("[?%d;%dR", t.cursorRow+1, t.cursorCol+1))
+		} else {
+			t.reply(fmt.Sprintf("[%d;%dR", t.cursorRow+1, t.cursorCol+1))
+		}
+	default:
+		if t.debug {
+			log.Println("Unknown device status report", msg)
+		}
+	}
+}
+
+// escapeRequestMode answers DECRQM (CSI ? Pd $ p / CSI Pd $ p) with the
+// state of the requested mode: 0 not recognised, 1 set, 2 reset.
+func escapeRequestMode(t *Terminal, msg string) {
+	if !strings.HasSuffix(msg, "$") {
+		return // "!p" soft reset and friends are not supported
+	}
+	msg = strings.TrimSuffix(msg, "$")
+
+	private := strings.HasPrefix(msg, "?")
+	mode := strings.TrimPrefix(msg, "?")
+	state := 0
+	set := func(on bool) {
+		state = 2
+		if on {
+			state = 1
+		}
+	}
+	if private {
+		switch mode {
+		case "1", "12":
+			state = 2
+		case "7":
+			set(!t.disableAutoWrap)
+		case "9":
+			set(t.onMouseDown != nil)
+		case "1000":
+			set(t.onMouseDown != nil)
+		case "25":
+			set(!t.cursorHidden)
+		case "47", "1049":
+			set(t.altBufferActive)
+		case "2004":
+			set(t.bracketedPasteMode)
+		}
+		t.reply(fmt.Sprintf("[?%s;%d$y", mode, state))
+		return
+	}
+
+	if mode == "20" {
+		set(t.newLineMode)
+	}
+	t.reply(fmt.Sprintf("[%s;%d$y", mode, state))
+}
+
+// escapeQueryVersion answers XTVERSION (CSI > 0 q); the cursor style
+// request DECSCUSR (CSI Ps SP q) shares the final byte and is ignored.
+func escapeQueryVersion(t *Terminal, msg string) {
+	if msg == ">" || msg == ">0" {
+		_, _ = t.in.Write([]byte{asciiEscape, 'P', '>', '|'})
+		_, _ = t.in.Write([]byte("fyneterm"))
+		_, _ = t.in.Write([]byte{asciiEscape, '\\'})
+	}
+}
+
 func escapeEraseInLine(t *Terminal, msg string) {
 	contentRow := t.rowOffset() + t.cursorRow
 	mode, _ := strconv.Atoi(msg)
@@ -181,12 +409,7 @@ func escapeEraseInLine(t *Terminal, msg string) {
 		cells := make([]widget.TextGridCell, t.cursorCol)
 		t.content.SetRow(contentRow, widget.TextGridRow{Cells: append(cells, row.Cells[t.cursorCol:]...)})
 	case 2:
-		row := t.content.Row(contentRow)
-		if t.cursorCol >= len(row.Cells) {
-			return
-		}
-		cells := make([]widget.TextGridCell, len(row.Cells))
-		t.content.SetRow(contentRow, widget.TextGridRow{Cells: cells})
+		t.content.SetRow(contentRow, widget.TextGridRow{})
 	}
 }
 
@@ -209,9 +432,17 @@ func escapeInsertChars(t *Terminal, msg string) {
 	if chars == 0 {
 		chars = 1
 	}
+	// cells pushed past the right edge are lost, so only insert what can fit
+	cols := int(t.config.Columns)
+	if room := cols - t.cursorCol; chars > room {
+		chars = room
+	}
+	if chars <= 0 {
+		return
+	}
 
 	newCells := make([]widget.TextGridCell, chars)
-	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
+	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG, TextStyle: fyne.TextStyle{Monospace: true}}
 	for i := range newCells {
 		newCells[i] = widget.TextGridCell{
 			Rune:  ' ',
@@ -222,6 +453,9 @@ func escapeInsertChars(t *Terminal, msg string) {
 	contentRow := t.rowOffset() + t.cursorRow
 	row := &t.content.Rows[contentRow]
 	row.Cells = append(row.Cells[:t.cursorCol], append(newCells, row.Cells[t.cursorCol:]...)...)
+	if len(row.Cells) > cols {
+		row.Cells = row.Cells[:cols]
+	}
 }
 
 func escapeInsertLines(t *Terminal, msg string) {
@@ -310,24 +544,33 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 			}
 		case "1049":
 			t.bufferMode = enable
+			if enable {
+				t.enterAltBuffer()
+			} else {
+				t.exitAltBuffer()
+			}
+		case "1":
+			// DECCKM - cursor key mode (application vs normal)
+			// Affects what sequences arrow keys send; no display impact
+		case "12":
+			// ATT610 - cursor blink mode; no display impact
 		case "2004":
 			t.bracketedPasteMode = enable
 		case "47":
-			// TODO save screen
-			/*
-				if enable {
-					// save screen
-				} else {
-					// restore screen
-				}
-			*/
+			if enable {
+				t.enterAltBuffer()
+			} else {
+				t.exitAltBuffer()
+			}
+		case "":
+			// empty mode, ignore
 		default:
 			m := "l"
 			if enable {
 				m = "h"
 			}
 			if t.debug {
-				log.Println("Unknown private escape code", fmt.Sprintf("%s%s", mode, m))
+				log.Println("Unknown private escape code", fmt.Sprintf("?%s%s", mode, m))
 			}
 		}
 	}
@@ -358,6 +601,10 @@ func escapeMoveCursor(t *Terminal, msg string) {
 }
 
 func escapeRestoreCursor(t *Terminal, s string) {
+	if strings.HasPrefix(s, "?") || strings.HasPrefix(s, ">") || strings.HasPrefix(s, "=") || strings.HasPrefix(s, "<") {
+		// kitty keyboard protocol query/push/pop - not supported so no reply
+		return
+	}
 	if s != "" {
 		if t.debug {
 			log.Println("Corrupt restore cursor escape", s+"u")
@@ -461,7 +708,6 @@ func escapePrinterMode(t *Terminal, code string) {
 			} else if t.debug {
 				log.Println("Print data was received but no printer has been set")
 			}
-
 		}
 		t.printData = nil
 	default:

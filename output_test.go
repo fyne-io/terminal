@@ -19,3 +19,16 @@ func TestTerminal_Backspace(t *testing.T) {
 
 	assert.Equal(t, "Hello", term.content.Text())
 }
+
+func TestTerminal_WrapBeyondEdge(t *testing.T) {
+	term := New()
+	term.Resize(fyne.NewSize(45, 45))
+	assert.Equal(t, uint(5), term.config.Columns)
+
+	term.cursorCol = 8 // as if restored from a wider terminal
+	term.handleOutput([]byte("Hello World"))
+
+	for _, row := range term.content.Rows {
+		assert.LessOrEqual(t, len(row.Cells), 5)
+	}
+}

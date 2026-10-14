@@ -73,11 +73,14 @@ func (t *Terminal) pasteText(clipboard fyne.Clipboard) {
 	content := clipboard.Content()
 
 	if t.bracketedPasteMode {
-		_, _ = t.in.Write(append(
+		_, _ = t.in.Write(
 			append(
-				[]byte{asciiEscape, '[', '2', '0', '0', '~'},
-				[]byte(content)...),
-			[]byte{asciiEscape, '[', '2', '0', '1', '~'}...),
+				append(
+					[]byte{asciiEscape, '[', '2', '0', '0', '~'},
+					[]byte(content)...,
+				),
+				[]byte{asciiEscape, '[', '2', '0', '1', '~'}...,
+			),
 		)
 		return
 	}

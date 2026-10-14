@@ -90,12 +90,17 @@ func (t *Terminal) refreshCursor() {
 func (t *Terminal) CreateRenderer() fyne.WidgetRenderer {
 	t.ExtendBaseWidget(t)
 
-	t.content = widget2.NewTermGrid()
-	t.setupShortcuts()
+	// Retain any existing content when a new renderer is created.
+	if t.content == nil {
+		t.content = widget2.NewTermGrid()
+		t.setupShortcuts()
+	}
 
-	t.cursor = canvas.NewRectangle(theme.Color(theme.ColorNamePrimary))
-	t.cursor.Hidden = true
-	t.cursor.Resize(fyne.NewSize(cursorWidth, t.guessCellSize().Height))
+	if t.cursor == nil {
+		t.cursor = canvas.NewRectangle(theme.Color(theme.ColorNamePrimary))
+		t.cursor.Hidden = true
+		t.cursor.Resize(fyne.NewSize(cursorWidth, t.guessCellSize().Height))
+	}
 
 	inner := container.New(&termContentLayout{grid: t.content}, t.content, t.cursor)
 	t.scrollContainer = container.NewVScroll(inner)

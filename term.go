@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	bufLen           = 32768 // 32KB buffer for output, to align with modern L1 cache
-	highlightBitMask = 0x55
+	bufLen             = 32768 // 32KB buffer for output, to align with modern L1 cache
+	highlightBitMask   = 0x55
+	maxRefreshInterval = 17 * time.Millisecond
 )
 
 // Config is the state of a terminal, updated upon certain actions or commands.
@@ -58,15 +59,22 @@ type Terminal struct {
 	in  io.WriteCloser
 	out io.Reader
 
-	bell, bold, debug, focused bool
-	currentFG, currentBG       color.Color
-	cursorRow, cursorCol       int
-	savedRow, savedCol         int
-	scrollTop, scrollBottom    int
+	bell, debug, focused                   bool
+	bold, italic, underline, strikethrough bool
+	currentFG, currentBG                   color.Color
+	cursorRow, cursorCol                   int
+	savedRow, savedCol                     int
+	scrollTop, scrollBottom                int
 
 	cursor                   *canvas.Rectangle
 	cursorHidden, bufferMode bool // buffer mode is an xterm extension that impacts control keys
 	cursorMoved              func()
+
+	// Alternate screen buffer (used by curses/fullscreen apps via ?1049h/?47h)
+	altSavedGrid    []widget.TextGridRow // saved main screen rows
+	altSavedRow     int                  // saved cursor row
+	altSavedCol     int                  // saved cursor col
+	altBufferActive bool                 // true when alternate buffer is in use
 
 	scrollbackMax   int
 	scrollContainer *container.Scroll
@@ -90,11 +98,16 @@ type Terminal struct {
 	newLineMode            bool // new line mode or line feed mode
 	bracketedPasteMode     bool
 	disableAutoWrap        bool // disable auto wrap mode (DECAWM off)
+	lastChar               rune // last graphic character output (for CSI b REP)
 	state                  *parseState
+	lastRefresh            time.Time
 	blinking               bool
 	printData              []byte
 	printer                Printer
 	cmd                    *exec.Cmd
+	dirWatchDone           chan struct{} // closed to stop checking the working directory of cmd
+	closeLock              sync.Mutex
+	connected, stopping    bool
 	readWriterConfigurator ReadWriterConfigurator
 }
 
@@ -155,23 +168,24 @@ func (t *Terminal) MouseDown(ev *desktop.MouseEvent) {
 		return
 	}
 
-	if ev.Button == desktop.MouseButtonPrimary {
+	switch ev.Button {
+	case desktop.MouseButtonPrimary:
 		t.onMouseDown(1, ev.Modifier, ev.Position)
-	} else if ev.Button == desktop.MouseButtonSecondary {
+	case desktop.MouseButtonSecondary:
 		t.onMouseDown(2, ev.Modifier, ev.Position)
 	}
 }
 
 // MouseUp handles the up action for desktop mouse events.
 func (t *Terminal) MouseUp(ev *desktop.MouseEvent) {
-
 	if t.onMouseDown == nil {
 		return
 	}
 
-	if ev.Button == desktop.MouseButtonPrimary {
+	switch ev.Button {
+	case desktop.MouseButtonPrimary:
 		t.onMouseUp(1, ev.Modifier, ev.Position)
-	} else if ev.Button == desktop.MouseButtonSecondary {
+	case desktop.MouseButtonSecondary:
 		t.onMouseUp(2, ev.Modifier, ev.Position)
 	}
 }
@@ -256,6 +270,10 @@ func (t *Terminal) Resize(s fyne.Size) {
 	t.config.Columns, t.config.Rows = cols, rows
 	if t.scrollBottom == 0 || t.scrollBottom == oldRows-1 {
 		t.scrollBottom = int(t.config.Rows) - 1
+	}
+	if cols > 0 && t.cursorCol > int(cols) {
+		// we got narrower, keep the cursor on screen so that output will wrap
+		t.moveCursor(t.cursorRow, int(cols)-1)
 	}
 	t.onConfigure()
 
@@ -347,6 +365,9 @@ func (t *Terminal) onConfigure() {
 
 func (t *Terminal) open() error {
 	for t.config.Columns <= 2 { // wait until it has a valid area
+		if t.isStopping() {
+			return nil
+		}
 		time.Sleep(time.Millisecond * 10)
 	}
 	in, out, pty, err := t.startPTY()
@@ -360,9 +381,25 @@ func (t *Terminal) open() error {
 	}
 
 	t.pty = pty
+	t.setConnected()
 
 	t.updatePTYSize()
 	return nil
+}
+
+// Close stops this terminal, hanging up the connection so that anything running in it will exit.
+// Unlike Exit this does not rely on the running program responding to input.
+// A terminal cannot be run again after it has been closed.
+func (t *Terminal) Close() {
+	t.closeLock.Lock()
+	t.stopping = true
+	connected := t.connected
+	t.closeLock.Unlock()
+
+	if connected {
+		t.hangup()
+	}
+	_ = t.close()
 }
 
 // Exit requests that this terminal exits.
@@ -372,6 +409,17 @@ func (t *Terminal) Exit() {
 }
 
 func (t *Terminal) close() error {
+	t.closeLock.Lock()
+	defer t.closeLock.Unlock()
+	if !t.connected {
+		return nil // never opened, or Close got here first
+	}
+	t.connected = false
+
+	if t.dirWatchDone != nil {
+		close(t.dirWatchDone)
+		t.dirWatchDone = nil
+	}
 	if t.in != t.pty {
 		_ = t.in.Close() // we may already be closed
 	}
@@ -380,6 +428,20 @@ func (t *Terminal) close() error {
 	}
 
 	return t.pty.Close()
+}
+
+func (t *Terminal) isStopping() bool {
+	t.closeLock.Lock()
+	defer t.closeLock.Unlock()
+
+	return t.stopping
+}
+
+func (t *Terminal) setConnected() {
+	t.closeLock.Lock()
+	defer t.closeLock.Unlock()
+
+	t.connected = true
 }
 
 // don't call often - should we cache?
@@ -400,7 +462,7 @@ func (t *Terminal) run() {
 		if err != nil {
 			if t.cmd != nil {
 				// wait for cmd (shell) to exit, populates ProcessState.ExitCode
-				t.cmd.Wait()
+				_ = t.cmd.Wait()
 			}
 			if err == io.EOF || err.Error() == "EOF" {
 				break // term exit on macOS
@@ -424,7 +486,8 @@ func (t *Terminal) run() {
 		}
 
 		leftOver = t.handleOutput(fullBuf[:num])
-		if len(leftOver) == 0 {
+		if len(leftOver) == 0 || time.Since(t.lastRefresh) > maxRefreshInterval {
+			t.lastRefresh = time.Now()
 			fyne.Do(func() {
 				if t.scrollContainer != nil {
 					t.scrollContainer.ScrollToBottom()
@@ -437,17 +500,19 @@ func (t *Terminal) run() {
 
 // RunLocalShell starts the terminal by loading a shell and starting to process the input/output.
 func (t *Terminal) RunLocalShell() error {
-	if t.startDir != "" {
-		t.config.PWD = t.startDir
-	} else {
-		t.config.PWD, _ = os.Getwd()
-	}
+	t.config.PWD = t.startingDir()
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
+		if t.isStopping() {
+			return nil
+		}
 		time.Sleep(time.Millisecond * 50)
 	}
 	err := t.open()
 	if err != nil {
 		return err
+	}
+	if t.isStopping() { // closed whilst we were opening
+		return t.close()
 	}
 
 	t.run()
@@ -463,11 +528,18 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
 		t.config.PWD, _ = os.Getwd()
 	}
 	for t.config.Columns == 0 { // don't load the TTY until our output is configured
+		if t.isStopping() {
+			return nil
+		}
 		time.Sleep(time.Millisecond * 50)
 	}
 	t.in, t.out = in, out
 	if t.readWriterConfigurator != nil {
 		t.out, t.in = t.readWriterConfigurator.SetupReadWriter(out, in)
+	}
+	t.setConnected()
+	if t.isStopping() { // closed whilst we were connecting
+		return t.close()
 	}
 
 	t.run()
@@ -491,7 +563,7 @@ func (t *Terminal) setupShortcuts() {
 	if runtime.GOOS == "darwin" {
 		paste = &fyne.ShortcutPaste{} // we look up clipboard later
 	}
-	t.ShortcutHandler.AddShortcut(paste,
+	t.AddShortcut(paste,
 		func(sh fyne.Shortcut) {
 			clip := fyne.CurrentApp().Clipboard()
 			if ps, ok := sh.(*fyne.ShortcutPaste); ok && ps.Secondary {
@@ -505,7 +577,7 @@ func (t *Terminal) setupShortcuts() {
 		shortcutCopy = &fyne.ShortcutCopy{} // we look up clipboard later
 	}
 
-	t.ShortcutHandler.AddShortcut(shortcutCopy,
+	t.AddShortcut(shortcutCopy,
 		func(_ fyne.Shortcut) {
 			t.copySelectedText(fyne.CurrentApp().Clipboard())
 		})
@@ -577,24 +649,22 @@ func (t *Terminal) sanitizePosition(p fyne.Position) *fyne.Position {
 
 // Dragged is called by fyne when the left mouse is down and moved whilst over the widget.
 func (t *Terminal) Dragged(d *fyne.DragEvent) {
-	pos := t.sanitizePosition(d.Position)
-	if !t.selecting {
-		if t.keyboardState.altPressed {
-			t.blockMode = true
-		}
-		p := t.getTermPosition(*pos)
-		t.selStart = &p
-		t.selEnd = nil
+	if t.selecting {
+		// clear the highlight applied by the previous drag event
+		sr, sc, er, ec := t.getSelectedRange()
+		widget2.ClearHighlightRange(t.content, t.blockMode, sr, sc, er, ec)
+	} else {
+		// the first drag event arrives after the pointer has already moved, so
+		// take away the delta to find the cell the drag actually started from
+		start := t.getTermPosition(*t.sanitizePosition(d.Position.Subtract(d.Dragged)))
+		t.selStart = &start
+		t.blockMode = t.keyboardState.altPressed
+		t.selecting = true
 	}
-	// clear any previous selection
-	sr, sc, er, ec := t.getSelectedRange()
-	widget2.ClearHighlightRange(t.content, t.blockMode, sr, sc, er, ec)
 
-	// make sure that x,y,x1,y1 are always positive
-	t.selecting = true
 	t.mouseCursor = desktop.TextCursor
-	p := t.getTermPosition(*pos)
-	t.selEnd = &p
+	end := t.getTermPosition(*t.sanitizePosition(d.Position))
+	t.selEnd = &end
 	t.highlightSelectedText()
 }
 

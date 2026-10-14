@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/test"
 )
 
 // NopCloser returns a WriteCloser with a no-op Close method wrapping
@@ -105,7 +107,6 @@ func TestTerminal_TypedKey_LineMode(t *testing.T) {
 		newLineMode bool
 		want        []byte
 	}{
-
 		"Enter":                 {fyne.KeyEnter, false, []byte{'\n'}},
 		"Enter with line mode":  {fyne.KeyEnter, true, []byte{'\r'}},
 		"Return":                {fyne.KeyReturn, false, []byte{'\r'}},
@@ -137,37 +138,43 @@ func TestTerminal_TypedShortcut(t *testing.T) {
 		"LeftOption+U": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierAlt,
-				KeyName:  fyne.KeyU},
+				KeyName:  fyne.KeyU,
+			},
 			want: []byte{},
 		},
 		"Control+@": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  "@"},
+				KeyName:  "@",
+			},
 			want: []byte{0},
 		},
 		"Control+Space": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  fyne.KeySpace},
+				KeyName:  fyne.KeySpace,
+			},
 			want: []byte{0},
 		},
 		"Control+C": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  fyne.KeyC},
+				KeyName:  fyne.KeyC,
+			},
 			want: []byte{3},
 		},
 		"Control+_": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  "_"},
+				KeyName:  "_",
+			},
 			want: []byte{31},
 		},
 		"Control+X": {
 			shortcut: &desktop.CustomShortcut{
 				Modifier: fyne.KeyModifierControl,
-				KeyName:  fyne.KeyX},
+				KeyName:  fyne.KeyX,
+			},
 			want: []byte{24},
 		},
 	}
@@ -185,5 +192,29 @@ func TestTerminal_TypedShortcut(t *testing.T) {
 				t.Errorf("TypedShortcut() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestTerminal_TypedKey_ModifierHeldOnFocusChange(t *testing.T) {
+	buf1 := bytes.NewBuffer([]byte{})
+	term1 := New()
+	term1.in = NopCloser(buf1)
+	term2 := New()
+
+	w := test.NewTempWindow(t, container.NewGridWithColumns(2, term1, term2))
+	w.Canvas().Focus(term1)
+
+	// a shortcut like ctrl+shift+T moves focus whilst the modifier is still down
+	term1.KeyDown(&fyne.KeyEvent{Name: desktop.KeyShiftLeft})
+	w.Canvas().Focus(term2)
+	term2.KeyUp(&fyne.KeyEvent{Name: desktop.KeyShiftLeft})
+
+	w.Canvas().Focus(term1)
+	term1.TypedKey(&fyne.KeyEvent{Name: fyne.KeyReturn})
+
+	got := buf1.Bytes()
+	want := []byte{'\r'}
+	if !bytes.Equal(got, want) {
+		t.Errorf("TypedKey() = %v, want %v", got, want)
 	}
 }

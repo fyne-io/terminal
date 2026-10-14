@@ -224,6 +224,10 @@ func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 // FocusLost tells the terminal it no longer has focus
 func (t *Terminal) FocusLost() {
 	t.focused = false
+	// the key up for anything held down will go to whatever is focused next
+	t.keyboardState.shiftPressed = false
+	t.keyboardState.ctrlPressed = false
+	t.keyboardState.altPressed = false
 	t.Refresh()
 }
 

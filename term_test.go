@@ -20,6 +20,22 @@ func TestNewTerminal(t *testing.T) {
 	assert.NotNil(t, term.content)
 }
 
+func TestTerminal_CreateRenderer_KeepsContent(t *testing.T) {
+	term := New()
+	term.Resize(fyne.NewSize(200, 100))
+	term.handleOutput([]byte("Hello"))
+	assert.Equal(t, "Hello", term.Text())
+
+	grid, cursor := term.content, term.cursor
+	// Fyne destroys renderers of widgets that have not been drawn for a while
+	// (e.g. a background tab) and then calls CreateRenderer again.
+	term.CreateRenderer()
+
+	assert.Same(t, grid, term.content)
+	assert.Same(t, cursor, term.cursor)
+	assert.Equal(t, "Hello", term.Text())
+}
+
 func TestExitCode(t *testing.T) {
 	term := New()
 	assert.Equal(t, term.ExitCode(), int(-1))
@@ -28,11 +44,13 @@ func TestExitCode(t *testing.T) {
 func testExitCodeN(t *testing.T, n int) {
 	term := New()
 	term.Resize(fyne.NewSize(45, 45))
-	go term.RunLocalShell()
+	go func() {
+		_ = term.RunLocalShell()
+	}()
 	err := errors.New("NotYet")
 	for err != nil {
 		time.Sleep(50 * time.Millisecond)
-		_, err = term.Write([]byte(fmt.Sprintf("exit %d\n", n)))
+		_, err = fmt.Fprintf(term, "exit %d\n", n)
 	}
 	for term.ExitCode() == -1 {
 		time.Sleep(50 * time.Millisecond)
@@ -52,6 +70,28 @@ func TestTerminal_Resize(t *testing.T) {
 
 	assert.Equal(t, uint(5), term.config.Columns)
 	assert.Equal(t, uint(2), term.config.Rows)
+}
+
+func TestTerminal_Resize_Narrower(t *testing.T) {
+	term := New()
+	term.Resize(fyne.NewSize(85, 45))
+	assert.Equal(t, uint(10), term.config.Columns)
+
+	term.handleOutput([]byte("12345678"))
+	assert.Equal(t, 8, term.cursorCol)
+
+	term.Resize(fyne.NewSize(45, 45))
+	assert.Equal(t, uint(5), term.config.Columns)
+	assert.Equal(t, 4, term.cursorCol)
+
+	term.handleOutput([]byte("abcdefgh"))
+	assert.LessOrEqual(t, term.cursorCol, 5)
+	for i, row := range term.content.Rows {
+		if i == 0 {
+			continue // written before we got narrower
+		}
+		assert.LessOrEqual(t, len(row.Cells), 5)
+	}
 }
 
 func TestTerminal_AddListener(t *testing.T) {
