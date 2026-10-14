@@ -5,11 +5,9 @@ import (
 	"image/color"
 	"log"
 	"net/url"
-	"os"
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 )
 
