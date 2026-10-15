@@ -38,6 +38,9 @@ var escapes = map[rune]func(*Terminal, string){
 	'T': escapeScrollDown,
 	'b': escapeRepeatChar,
 	't': escapeWindowOps,
+	'n': escapeDeviceStatusReport,
+	'p': escapeRequestMode,
+	'q': escapeQueryVersion,
 }
 
 func (t *Terminal) handleEscape(code string) {
@@ -300,8 +303,106 @@ func escapeRepeatChar(t *Terminal, msg string) {
 
 // escapeWindowOps handles CSI Ps;..t (window operations).
 // Most are queries or title save/restore — safe to ignore.
-func escapeWindowOps(_ *Terminal, _ string) {
-	// no-op: title save/restore, window resize queries, etc.
+func escapeWindowOps(t *Terminal, msg string) {
+	switch msg {
+	case "14": // report text area size in pixels
+		size := t.Size()
+		scale := float32(1)
+		if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+			scale = c.Scale()
+		}
+		t.reply(fmt.Sprintf("[4;%d;%dt", int(size.Height*scale), int(size.Width*scale)))
+	case "16": // report cell size in pixels
+		cell := t.guessCellSize()
+		scale := float32(1)
+		if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+			scale = c.Scale()
+		}
+		t.reply(fmt.Sprintf("[6;%d;%dt", int(cell.Height*scale), int(cell.Width*scale)))
+	case "18": // report text area size in characters
+		t.reply(fmt.Sprintf("[8;%d;%dt", t.config.Rows, t.config.Columns))
+	default:
+		// no-op: title save/restore, window resize, etc.
+	}
+}
+
+// reply writes a CSI sequence (without the leading ESC) back to the application.
+func (t *Terminal) reply(s string) {
+	_, _ = t.in.Write(append([]byte{asciiEscape}, s...))
+}
+
+// escapeDeviceStatusReport answers DSR queries, most importantly the
+// cursor position report (CSI 6 n) that many TUI toolkits wait for.
+func escapeDeviceStatusReport(t *Terminal, msg string) {
+	private := strings.HasPrefix(msg, "?")
+	switch strings.TrimPrefix(msg, "?") {
+	case "5": // operating status
+		t.reply("[0n")
+	case "6": // cursor position
+		if private {
+			t.reply(fmt.Sprintf("[?%d;%dR", t.cursorRow+1, t.cursorCol+1))
+		} else {
+			t.reply(fmt.Sprintf("[%d;%dR", t.cursorRow+1, t.cursorCol+1))
+		}
+	default:
+		if t.debug {
+			log.Println("Unknown device status report", msg)
+		}
+	}
+}
+
+// escapeRequestMode answers DECRQM (CSI ? Pd $ p / CSI Pd $ p) with the
+// state of the requested mode: 0 not recognised, 1 set, 2 reset.
+func escapeRequestMode(t *Terminal, msg string) {
+	if !strings.HasSuffix(msg, "$") {
+		return // "!p" soft reset and friends are not supported
+	}
+	msg = strings.TrimSuffix(msg, "$")
+
+	private := strings.HasPrefix(msg, "?")
+	mode := strings.TrimPrefix(msg, "?")
+	state := 0
+	set := func(on bool) {
+		state = 2
+		if on {
+			state = 1
+		}
+	}
+	if private {
+		switch mode {
+		case "1", "12":
+			state = 2
+		case "7":
+			set(!t.disableAutoWrap)
+		case "9":
+			set(t.onMouseDown != nil)
+		case "1000":
+			set(t.onMouseDown != nil)
+		case "25":
+			set(!t.cursorHidden)
+		case "47", "1049":
+			set(t.altBufferActive)
+		case "2004":
+			set(t.bracketedPasteMode)
+		}
+		t.reply(fmt.Sprintf("[?%s;%d$y", mode, state))
+		return
+	}
+
+	if mode == "20" {
+		set(t.newLineMode)
+	}
+	t.reply(fmt.Sprintf("[%s;%d$y", mode, state))
+}
+
+// escapeQueryVersion answers XTVERSION (CSI > 0 q); the cursor style
+// request DECSCUSR (CSI Ps SP q) shares the final byte and is ignored.
+func escapeQueryVersion(t *Terminal, msg string) {
+	if msg == ">" || msg == ">0" {
+		_, _ = t.in.Write([]byte{asciiEscape, 'P', '>', '|'})
+		_, _ = t.in.Write([]byte("fyneterm"))
+		_, _ = t.in.Write([]byte{asciiEscape, '\\'})
+	}
 }
 
 func escapeEraseInLine(t *Terminal, msg string) {
@@ -519,6 +620,10 @@ func escapeMoveCursor(t *Terminal, msg string) {
 }
 
 func escapeRestoreCursor(t *Terminal, s string) {
+	if strings.HasPrefix(s, "?") || strings.HasPrefix(s, ">") || strings.HasPrefix(s, "=") || strings.HasPrefix(s, "<") {
+		// kitty keyboard protocol query/push/pop - not supported so no reply
+		return
+	}
 	if s != "" {
 		if t.debug {
 			log.Println("Corrupt restore cursor escape", s+"u")

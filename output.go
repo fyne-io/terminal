@@ -136,16 +136,16 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			t.state.escNext = true
 			continue
 		}
-		if t.state.dcs {
-			t.parseDCS(r)
-			continue
-		}
 		if t.state.escNext {
 			t.state.escNext = false
 			if cont := t.parseEscState(r); cont {
 				continue
 			}
 			t.state.esc = noEscape
+			continue
+		}
+		if t.state.dcs {
+			t.parseDCS(r)
 			continue
 		}
 		if t.state.apc {
@@ -194,22 +194,26 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 	switch r {
 	case '[':
 		return true
-	case '\\':
-		code, ok := t.state.takeCode()
-		if t.state.osc && ok {
-			fyne.Do(func() {
-				t.handleOSC(code)
-			})
-		}
-		// ST ends an APC string as well; without it, all later output was added to the APC
-		// instead of being shown, until a NUL arrived.
-		if t.state.apc && ok {
-			fyne.Do(func() {
-				t.handleAPC(code)
-			})
+	case '\\': // ST - string terminator for OSC, APC and DCS
+		if code, ok := t.state.takeCode(); ok {
+			switch {
+			case t.state.osc:
+				fyne.Do(func() {
+					t.handleOSCTerm(code, oscTerminatorST)
+				})
+			case t.state.apc:
+				fyne.Do(func() {
+					t.handleAPC(code)
+				})
+			case t.state.dcs:
+				fyne.Do(func() {
+					t.handleDCS(code)
+				})
+			}
 		}
 		t.state.osc = false
 		t.state.apc = false
+		t.state.dcs = false
 	case ']':
 		t.state.osc = true
 	case '(', ')':
@@ -235,7 +239,9 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 
 func (t *Terminal) parseEscape(r rune) {
 	t.state.addCode(r)
-	if (r < '0' || r > '9') && r != ';' && r != '=' && r != '?' && r != '>' {
+	// ECMA-48 CSI: parameter bytes 0x30-0x3F and intermediate bytes 0x20-0x2F
+	// are collected, anything else (normally a final byte 0x40-0x7E) dispatches.
+	if r < 0x20 || r > 0x3f {
 		if code, ok := t.state.takeCode(); ok {
 			fyne.Do(func() {
 				t.handleEscape(code)
@@ -296,7 +302,7 @@ func (t *Terminal) parseOSC(r rune) {
 	if r == asciiBell || r == 0 {
 		if code, ok := t.state.takeCode(); ok {
 			fyne.Do(func() {
-				t.handleOSC(code)
+				t.handleOSCTerm(code, oscTerminatorBell)
 			})
 		}
 		t.state.osc = false
@@ -306,16 +312,7 @@ func (t *Terminal) parseOSC(r rune) {
 }
 
 func (t *Terminal) parseDCS(r rune) {
-	if r == '\\' {
-		if code, ok := t.state.takeCode(); ok {
-			fyne.Do(func() {
-				t.handleDCS(code)
-			})
-		}
-		t.state.dcs = false
-	} else {
-		t.state.addCode(r)
-	}
+	t.state.addCode(r) // terminated by ST, see parseEscState
 }
 
 func (t *Terminal) handleOutputChar(r rune) {
