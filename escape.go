@@ -235,8 +235,6 @@ func escapeDeleteLines(t *Terminal, msg string) {
 	if lines == 0 {
 		lines = 1
 	}
-	// Only the lines from the cursor to the bottom of the scroll region can be deleted. A larger
-	// count blanked lines above the cursor, and looped for as long as the count.
 	if limit := t.scrollBottom - t.cursorRow + 1; lines > limit {
 		lines = limit
 	}
@@ -258,8 +256,6 @@ func escapeScrollDown(t *Terminal, msg string) {
 	if lines == 0 {
 		lines = 1
 	}
-	// At most the scroll region's height. A larger count overflowed scrollTop+lines when the
-	// region did not start at the top, and the loop below then ran for as long as the count.
 	if limit := t.scrollBottom - t.scrollTop + 1; lines > limit {
 		lines = limit
 	}
@@ -284,10 +280,8 @@ func escapeRepeatChar(t *Terminal, msg string) {
 	if t.lastChar == 0 {
 		return
 	}
-	// After a screenful and a line of the same character, from wherever the cursor started, each
-	// further line of it leaves the screen and the cursor as they were, so the whole lines past
-	// that are skipped; the loop ran for as long as the count. Without columns every character
-	// leaves the same state.
+	// Past a screenful and a line, each further line of the same character leaves the screen and
+	// the cursor unchanged, so whole lines beyond that are skipped.
 	cols, rows := int(t.config.Columns), int(t.config.Rows)
 	if limit := (cols + 1) * (rows + 2); count > limit {
 		period := cols
@@ -473,8 +467,6 @@ func escapeInsertLines(t *Terminal, msg string) {
 	if rows == 0 {
 		rows = 1
 	}
-	// Only the lines from the cursor to the bottom of the scroll region can be pushed down. A
-	// larger count overflowed cursorRow+rows, and the loop below then ran for as long as the count.
 	if limit := t.scrollBottom - t.cursorRow + 1; rows > limit {
 		rows = limit
 	}
@@ -482,8 +474,6 @@ func escapeInsertLines(t *Terminal, msg string) {
 		return
 	}
 	i := t.scrollBottom
-	// The lines move down by rows from the cursor's line on, so the copying stops above the rows
-	// lines that become blank.
 	for ; i > t.cursorRow+rows-1; i-- {
 		t.content.SetRow(i, t.content.Row(i-rows))
 	}
@@ -667,8 +657,6 @@ func escapeScrollUp(t *Terminal, msg string) {
 	if t.cursorRow < t.scrollTop || t.cursorRow > t.scrollBottom {
 		return
 	}
-	// At most the scroll region's height. A larger count blanked lines above the region, and the
-	// loop below ran for as long as the count.
 	if limit := t.scrollBottom - t.scrollTop + 1; lines > limit {
 		lines = limit
 	}

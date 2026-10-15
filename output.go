@@ -251,11 +251,6 @@ func (t *Terminal) parseEscape(r rune) {
 	}
 }
 
-// addCode adds r to the escape sequence or string being parsed. The sequence was a string
-// extended with +=, which copies all of it every time: an unterminated OSC, APC or DCS string, or
-// a long CSI, took time quadratic in its length (about a minute for 1 MiB, in which nothing else
-// was shown), and memory without a bound. It is a buffer now, and one longer than maxCodeLen is
-// dropped.
 func (s *parseState) addCode(r rune) {
 	if len(s.code) >= maxCodeLen {
 		s.codeTooLong = true
@@ -427,8 +422,6 @@ func handleOutputLineFeed(t *Terminal) {
 
 func handleOutputTab(t *Terminal) {
 	end := t.cursorCol - t.cursorCol%tabWidth + tabWidth
-	// A tab stops at the right margin and never wraps: unclamped, the loop below wrapped to
-	// column 0 before it reached end, and never finished.
 	if cols := int(t.config.Columns); end > cols-1 {
 		end = cols - 1
 	}
