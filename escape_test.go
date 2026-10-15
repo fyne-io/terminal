@@ -54,8 +54,6 @@ func TestScrollBack_Tmux(t *testing.T) {
 	term.handleOutput([]byte("\x1b[m"))     // Reset all attributes
 
 	// Step 5: Check the final content of the terminal
-	// The scroll margins are clamped to the screen, so the grid holds its own rows, empty, rather
-	// than the 46 an unclamped region of 1;47 grew it to.
 	expectedContent := "" // After scrolling and clearing, the visible area should be empty
 	for i := 0; i < int(term.config.Rows)-1; i++ {
 		expectedContent += "\n" // Each row should be an empty line

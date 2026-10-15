@@ -47,8 +47,6 @@ func (t *Terminal) handleEscape(code string) {
 		return
 	}
 
-	// The final character can be any rune: indexing the runes with the length in bytes
-	// panicked when it was not ASCII ("ESC [ é").
 	final, size := utf8.DecodeLastRuneInString(code)
 	if esc, ok := escapes[final]; ok {
 		esc(t, code[:len(code)-size])
@@ -192,11 +190,9 @@ func escapeDeleteChars(t *Terminal, msg string) {
 	}
 
 	row := t.content.Row(t.cursorRow)
-	// The cursor can be past the row's cells (a short row, a cleared line).
 	if t.cursorCol >= len(row.Cells) {
 		return
 	}
-	// At most the cells right of the cursor: a count near MaxInt overflowed cursorCol+i.
 	if room := len(row.Cells) - t.cursorCol; i > room {
 		i = room
 	}
@@ -343,7 +339,6 @@ func escapeInsertChars(t *Terminal, msg string) {
 		}
 	}
 
-	// On a fresh screen the cursor's row may not exist yet, and a row may end before the cursor.
 	for len(t.content.Rows) <= t.cursorRow {
 		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
 	}
@@ -556,9 +551,6 @@ func escapeSetScrollArea(t *Terminal, msg string) {
 		}
 	}
 
-	// Margins are clamped to the screen, and a region whose top is not above its bottom (a
-	// bottom of 0, for instance) resets to the full screen; scrolling indexed out of range in
-	// regions accepted as sent.
 	rows := int(t.config.Rows)
 	if start < 0 {
 		start = 0
@@ -649,8 +641,6 @@ func escapeDeviceAttribute(t *Terminal, code string) {
 		return
 	}
 
-	// The secondary and tertiary queries usually have no parameter ("ESC [ > c", as vim sends
-	// it): logging code[1] panicked whenever debug output was on.
 	if t.debug {
 		switch code[0] {
 		case '>':

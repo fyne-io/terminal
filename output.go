@@ -340,7 +340,6 @@ func (t *Terminal) ringBell() {
 }
 
 func (t *Terminal) scrollUp() {
-	// The region may reach past the rows written so far; an invalid one is ignored.
 	if t.scrollTop < 0 || t.scrollBottom < t.scrollTop {
 		return
 	}
@@ -355,7 +354,6 @@ func (t *Terminal) scrollUp() {
 }
 
 func (t *Terminal) scrollDown() {
-	// An invalid region is ignored rather than indexed.
 	if t.scrollTop < 0 || t.scrollBottom < t.scrollTop {
 		return
 	}
