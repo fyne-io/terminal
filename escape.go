@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -49,9 +50,9 @@ func (t *Terminal) handleEscape(code string) {
 		return
 	}
 
-	runes := []rune(code)
-	if esc, ok := escapes[runes[len(code)-1]]; ok {
-		esc(t, code[:len(code)-1])
+	final, size := utf8.DecodeLastRuneInString(code)
+	if esc, ok := escapes[final]; ok {
+		esc(t, code[:len(code)-size])
 	} else if t.debug {
 		log.Println("Unrecognised Escape:", strconv.QuoteToASCII(code))
 	}
@@ -190,9 +191,15 @@ func escapeDeleteChars(t *Terminal, msg string) {
 	if i == 0 {
 		i = 1
 	}
-	right := t.cursorCol + i
 
 	row := t.content.Row(t.cursorRow)
+	if t.cursorCol >= len(row.Cells) {
+		return
+	}
+	if room := len(row.Cells) - t.cursorCol; i > room {
+		i = room
+	}
+	right := t.cursorCol + i
 	cells := row.Cells[:t.cursorCol]
 	if right < len(row.Cells) {
 		cells = append(cells, row.Cells[right:]...)
@@ -433,7 +440,13 @@ func escapeInsertChars(t *Terminal, msg string) {
 		}
 	}
 
+	for len(t.content.Rows) <= t.cursorRow {
+		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
+	}
 	row := &t.content.Rows[t.cursorRow]
+	for len(row.Cells) < t.cursorCol {
+		row.Cells = append(row.Cells, widget.TextGridCell{Rune: ' ', Style: cellStyle})
+	}
 	row.Cells = append(row.Cells[:t.cursorCol], append(newCells, row.Cells[t.cursorCol:]...)...)
 	if len(row.Cells) > cols {
 		row.Cells = row.Cells[:cols]
@@ -558,11 +571,11 @@ func escapePrivateMode(t *Terminal, msg string, enable bool) {
 }
 
 func escapePrivateModeOff(t *Terminal, msg string) {
-	escapePrivateMode(t, msg[1:], false)
+	escapePrivateMode(t, strings.TrimPrefix(msg, "?"), false)
 }
 
 func escapePrivateModeOn(t *Terminal, msg string) {
-	escapePrivateMode(t, msg[1:], true)
+	escapePrivateMode(t, strings.TrimPrefix(msg, "?"), true)
 }
 
 func escapeMoveCursor(t *Terminal, msg string) {
@@ -615,6 +628,16 @@ func escapeSetScrollArea(t *Terminal, msg string) {
 		}
 	}
 
+	rows := int(t.config.Rows)
+	if start < 0 {
+		start = 0
+	}
+	if end > rows-1 {
+		end = rows - 1
+	}
+	if start >= end {
+		start, end = 0, rows-1
+	}
 	t.scrollTop = start
 	t.scrollBottom = end
 }
@@ -698,11 +721,11 @@ func escapeDeviceAttribute(t *Terminal, code string) {
 	if t.debug {
 		switch code[0] {
 		case '>':
-			log.Println("Unhandled secondary device attribute", code[1])
+			log.Println("Unhandled secondary device attribute", code[1:])
 		case '=':
-			log.Println("Unhandled tertiary device attribute", code[1])
+			log.Println("Unhandled tertiary device attribute", code[1:])
 		default:
-			log.Println("Unknown device attribute", code[0])
+			log.Println("Unknown device attribute", code)
 		}
 	}
 }

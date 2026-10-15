@@ -55,7 +55,7 @@ func TestScrollBack_Tmux(t *testing.T) {
 
 	// Step 5: Check the final content of the terminal
 	expectedContent := "" // After scrolling and clearing, the visible area should be empty
-	for i := 0; i < 46; i++ {
+	for i := 0; i < int(term.config.Rows)-1; i++ {
 		expectedContent += "\n" // Each row should be an empty line
 	}
 
@@ -376,4 +376,119 @@ func TestTerminalEscapeSequences(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHandleEscape_NonASCIIFinal(t *testing.T) {
+	term := New()
+	term.config.Columns = 10
+	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("\x1b[é\x1b[1;2€ok"))
+	assert.Equal(t, "ok", term.content.Text())
+}
+
+func TestDeleteChars(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"within the row":   {input: "\x1b[1;3H\x1b[2P", expected: "abef\n2"},
+		"past the row":     {input: "\x1b[1;3H\x1b[9P", expected: "ab\n2"},
+		"cursor past row":  {input: "\x1b[1;9H\x1b[P", expected: "abcdef\n2"},
+		"largest":          {input: "\x1b[1;3H\x1b[9223372036854775807P", expected: "ab\n2"},
+		"largest, at last": {input: "\x1b[1;6H\x1b[9223372036854775807P", expected: "abcde\n2"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := New()
+			term.config.Columns = 10
+			term.config.Rows = 2
+			term.scrollBottom = 1
+			term.Refresh() // ensure visuals set up
+			term.handleOutput([]byte("abcdef\r\n2"))
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.expected, term.content.Text())
+		})
+	}
+}
+
+func TestInsertChars_PastTheRow(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"fresh screen":     {input: "\x1b[2;3H\x1b[2@x", expected: "\n  x "},
+		"past a short row": {input: "ab\x1b[1;5H\x1b[@x", expected: "ab  x"},
+		"within the row":   {input: "abc\x1b[1;2H\x1b[@x", expected: "axbc"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := New()
+			term.config.Columns = 10
+			term.config.Rows = 2
+			term.scrollBottom = 1
+			term.Refresh() // ensure visuals set up
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.expected, term.content.Text())
+		})
+	}
+}
+
+func TestSetScrollArea_Invalid(t *testing.T) {
+	tests := map[string]struct {
+		input       string
+		top, bottom int
+	}{
+		"top below bottom": {input: "\x1b[3;1r\x1bD\x1bM", top: 0, bottom: 4},
+		"past the screen":  {input: "\x1b[1;47r\x1bM", top: 0, bottom: 4},
+		"bottom past":      {input: "\x1b[4;9r\x1b[4;1H\x1bM", top: 3, bottom: 4},
+		"bottom of zero":   {input: "\x1b[1;0r\x1b[5;1H\n\n", top: 0, bottom: 4},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := New()
+			term.config.Columns = 5
+			term.config.Rows = 5
+			term.scrollBottom = 4
+			term.Refresh() // ensure visuals set up
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.top, term.scrollTop)
+			assert.Equal(t, test.bottom, term.scrollBottom)
+		})
+	}
+}
+
+func TestSetMode_WithoutPrivateMarker(t *testing.T) {
+	term := New()
+	term.config.Columns = 10
+	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("\x1b[h\x1b[l\x1b[;h\x1b[4h\x1b[4l"))
+	assert.False(t, term.newLineMode)
+
+	term.handleOutput([]byte("\x1b[20h"))
+	assert.True(t, term.newLineMode)
+	term.handleOutput([]byte("\x1b[20l"))
+	assert.False(t, term.newLineMode)
+
+	term.handleOutput([]byte("\x1b[125l")) // not the private mode 25
+	assert.False(t, term.cursorHidden)
+	term.handleOutput([]byte("\x1b[?25l"))
+	assert.True(t, term.cursorHidden)
+}
+
+func TestDeviceAttributes_Debug(t *testing.T) {
+	term := New()
+	term.debug = true
+	term.config.Columns = 10
+	term.config.Rows = 2
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("\x1b[>c\x1b[=c\x1b[>0c\x1b[?1c"))
+	assert.Equal(t, "", term.content.Text())
 }
