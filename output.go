@@ -367,6 +367,12 @@ func (t *Terminal) ringBell() {
 }
 
 func (t *Terminal) scrollUp() {
+	if t.scrollTop < 0 || t.scrollBottom < t.scrollTop {
+		return
+	}
+	for len(t.content.Rows) <= t.scrollBottom {
+		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
+	}
 	for i := t.scrollBottom; i > t.scrollTop; i-- {
 		t.content.Rows[i] = t.content.Row(i - 1)
 	}
@@ -375,6 +381,9 @@ func (t *Terminal) scrollUp() {
 }
 
 func (t *Terminal) scrollDown() {
+	if t.scrollTop < 0 || t.scrollBottom < t.scrollTop {
+		return
+	}
 	i := t.scrollTop
 	for ; i < t.scrollBottom && i < len(t.content.Rows)-1; i++ {
 		t.content.Rows[i] = t.content.Row(i + 1)
