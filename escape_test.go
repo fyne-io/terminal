@@ -492,3 +492,104 @@ func TestDeviceAttributes_Debug(t *testing.T) {
 	term.handleOutput([]byte("\x1b[>c\x1b[=c\x1b[>0c\x1b[?1c"))
 	assert.Equal(t, "", term.content.Text())
 }
+
+func TestRepeatChar_LargeCount(t *testing.T) {
+	newTerm := func(cols, rows uint) *Terminal {
+		term := New()
+		term.config.Columns = cols
+		term.config.Rows = rows
+		term.scrollBottom = int(rows) - 1
+		term.Refresh() // ensure visuals set up
+		return term
+	}
+	sizes := []struct{ cols, rows uint }{{5, 3}, {3, 1}, {1, 1}, {0, 2}, {4, 0}}
+	prefixes := map[string]string{
+		"top left":        "",
+		"after text":      "ab\r\ncd",
+		"scroll region":   "1\r\n2\r\n3\x1b[2;3r\x1b[2;2H",
+		"below region":    "\x1b[1;2r\x1b[3;1H",
+		"without wrap":    "\x1b[?7l",
+		"line drawing":    "\x1b(0",
+		"past the margin": "\x1b[1;5Hxy",
+	}
+
+	// repeating a character must look the same as writing it that many times
+	for _, size := range sizes {
+		for name, prefix := range prefixes {
+			for _, count := range []int{1, 14, 15, 16, 29, 30, 31, 47, 100, 1001} {
+				written := newTerm(size.cols, size.rows)
+				written.handleOutput([]byte(prefix + strings.Repeat("q", count+1)))
+				repeated := newTerm(size.cols, size.rows)
+				repeated.handleOutput([]byte(prefix + "q\x1b[" + strconv.Itoa(count) + "b"))
+
+				where := name + " " + strconv.Itoa(int(size.cols)) + "x" + strconv.Itoa(int(size.rows)) + " " + strconv.Itoa(count)
+				assert.Equal(t, written.content.Text(), repeated.content.Text(), where)
+				assert.Equal(t, written.cursorRow, repeated.cursorRow, where)
+				assert.Equal(t, written.cursorCol, repeated.cursorCol, where)
+			}
+		}
+	}
+
+	term := newTerm(80, 24)
+	term.handleOutput([]byte("x\x1b[9223372036854775807b"))
+	assert.Equal(t, 23, term.cursorRow)
+}
+
+// newLinesTerm returns a 5x5 terminal showing the lines 1 to 5.
+func newLinesTerm() *Terminal {
+	term := New()
+	term.config.Columns = 5
+	term.config.Rows = 5
+	term.scrollBottom = 4
+	term.Refresh() // ensure visuals set up
+
+	term.handleOutput([]byte("1\r\n2\r\n3\r\n4\r\n5"))
+	return term
+}
+
+func TestInsertLines(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"one line":         {input: "\x1b[2;1H\x1b[L", expected: "1\n\n2\n3\n4"},
+		"two lines":        {input: "\x1b[2;1H\x1b[2L", expected: "1\n\n\n2\n3"},
+		"in scroll region": {input: "\x1b[2;4r\x1b[3;1H\x1b[2L", expected: "1\n2\n\n\n5"},
+		"below the region": {input: "\x1b[2;3r\x1b[5;1H\x1b[2L", expected: "1\n2\n3\n4\n5"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := newLinesTerm()
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.expected, term.content.Text())
+		})
+	}
+}
+
+func TestLineCounts_Overflow(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"delete lines":               {input: "\x1b[2;1H\x1b[9M", expected: "1\n\n\n\n"},
+		"delete lines, largest":      {input: "\x1b[2;1H\x1b[9223372036854775807M", expected: "1\n\n\n\n"},
+		"delete lines below region":  {input: "\x1b[2;3r\x1b[5;1H\x1b[9M", expected: "1\n2\n3\n4\n5"},
+		"delete lines, whole screen": {input: "\x1b[1;1H\x1b[9223372036854775807M", expected: "\n\n\n\n"},
+		"insert lines":               {input: "\x1b[2;1H\x1b[9L", expected: "1\n\n\n\n"},
+		"insert lines, largest":      {input: "\x1b[3;1H\x1b[9223372036854775807L", expected: "1\n2\n\n\n"},
+		"scroll up":                  {input: "\x1b[2;4r\x1b[3;1H\x1b[9S", expected: "1\n\n\n\n5"},
+		"scroll up, largest":         {input: "\x1b[2;4r\x1b[3;1H\x1b[9223372036854775807S", expected: "1\n\n\n\n5"},
+		"scroll down":                {input: "\x1b[2;4r\x1b[9T", expected: "1\n\n\n\n5"},
+		"scroll down, largest":       {input: "\x1b[2;4r\x1b[9223372036854775807T", expected: "1\n\n\n\n5"},
+		"scroll down, whole screen":  {input: "\x1b[9223372036854775807T", expected: "\n\n\n\n"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			term := newLinesTerm()
+			term.handleOutput([]byte(test.input))
+			assert.Equal(t, test.expected, term.content.Text())
+		})
+	}
+}

@@ -242,6 +242,12 @@ func escapeDeleteLines(t *Terminal, msg string) {
 	if lines == 0 {
 		lines = 1
 	}
+	if limit := t.scrollBottom - t.cursorRow + 1; lines > limit {
+		lines = limit
+	}
+	if lines <= 0 {
+		return
+	}
 	for i := t.cursorRow; i <= t.scrollBottom-lines; i++ {
 		t.content.SetRow(i, t.content.Row(i+lines))
 	}
@@ -256,6 +262,12 @@ func escapeScrollDown(t *Terminal, msg string) {
 	lines, _ := strconv.Atoi(msg)
 	if lines == 0 {
 		lines = 1
+	}
+	if limit := t.scrollBottom - t.scrollTop + 1; lines > limit {
+		lines = limit
+	}
+	if lines <= 0 {
+		return
 	}
 	for i := t.scrollBottom; i >= t.scrollTop+lines; i-- {
 		t.content.SetRow(i, t.content.Row(i-lines))
@@ -274,6 +286,16 @@ func escapeRepeatChar(t *Terminal, msg string) {
 	}
 	if t.lastChar == 0 {
 		return
+	}
+	// Past a screenful and a line, each further line of the same character leaves the screen and
+	// the cursor unchanged, so whole lines beyond that are skipped.
+	cols, rows := int(t.config.Columns), int(t.config.Rows)
+	if limit := (cols + 1) * (rows + 2); count > limit {
+		period := cols
+		if period == 0 {
+			period = 1
+		}
+		count = limit + (count-limit)%period
 	}
 	for i := 0; i < count; i++ {
 		t.handleOutputChar(t.lastChar)
@@ -458,8 +480,14 @@ func escapeInsertLines(t *Terminal, msg string) {
 	if rows == 0 {
 		rows = 1
 	}
+	if limit := t.scrollBottom - t.cursorRow + 1; rows > limit {
+		rows = limit
+	}
+	if rows <= 0 {
+		return
+	}
 	i := t.scrollBottom
-	for ; i > t.cursorRow-rows+1; i-- {
+	for ; i > t.cursorRow+rows-1; i-- {
 		t.content.SetRow(i, t.content.Row(i-rows))
 	}
 	for ; i >= t.cursorRow; i-- {
@@ -651,6 +679,9 @@ func escapeScrollUp(t *Terminal, msg string) {
 	// Ensure we are within the scrollable area
 	if t.cursorRow < t.scrollTop || t.cursorRow > t.scrollBottom {
 		return
+	}
+	if limit := t.scrollBottom - t.scrollTop + 1; lines > limit {
+		lines = limit
 	}
 
 	// Calculate new cursor position after scrolling
