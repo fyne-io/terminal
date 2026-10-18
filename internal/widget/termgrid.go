@@ -17,23 +17,68 @@ const blinkingInterval = 500 * time.Millisecond
 type TermGrid struct {
 	widget.TextGrid
 
+	// OnScrolled is called when the grid content moves, with the new offset of the content from the top left.
+	OnScrolled func(fyne.Position)
+
 	tickerCancel context.CancelFunc
+	scroll       *container.Scroll
 }
 
 // CreateRenderer is a private method to Fyne which links this widget to it's renderer
 func (t *TermGrid) CreateRenderer() fyne.WidgetRenderer {
 	t.ExtendBaseWidget(t)
 
-	return t.TextGrid.CreateRenderer()
+	r := t.TextGrid.CreateRenderer()
+	if scroll, ok := r.Objects()[0].(*container.Scroll); ok {
+		t.scroll = scroll
+		t.hookScroll()
+	}
+	return r
 }
 
-// NewTermGrid creates a new empty TextGrid widget.
+// NewTermGrid creates a new empty TextGrid widget that scrolls vertically through its rows.
 func NewTermGrid() *TermGrid {
 	grid := &TermGrid{}
 	grid.ExtendBaseWidget(grid)
 
-	grid.Scroll = container.ScrollNone
+	grid.Scroll = container.ScrollVerticalOnly
 	return grid
+}
+
+// ScrollOffset returns how far the grid content has been scrolled from its top left, in pixels.
+// Before the grid has been rendered there is no scroll state so a zero offset is returned.
+func (t *TermGrid) ScrollOffset() fyne.Position {
+	if t.scroll == nil {
+		return fyne.Position{}
+	}
+
+	return t.scroll.Offset
+}
+
+// ScrollToBottom scrolls the grid so that the most recent rows are visible.
+// It is safe to call before the grid has been rendered, in which case it does nothing.
+func (t *TermGrid) ScrollToBottom() {
+	if t.scroll == nil {
+		return
+	}
+
+	t.TextGrid.ScrollToBottom()
+}
+
+// hookScroll wraps the scroll listener that TextGrid uses to recycle its rows so that we are told about scrolling too.
+func (t *TermGrid) hookScroll() {
+	// TextGrid installs its listener when the content is first rendered, so make sure that has happened
+	t.scroll.Content.Refresh()
+
+	inner := t.scroll.OnScrolled
+	t.scroll.OnScrolled = func(offset fyne.Position) {
+		if inner != nil {
+			inner(offset)
+		}
+		if f := t.OnScrolled; f != nil {
+			f(offset)
+		}
+	}
 }
 
 // Refresh will be called when this grid should update.

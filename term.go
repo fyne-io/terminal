@@ -16,7 +16,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/driver/mobile"
 	"fyne.io/fyne/v2/theme"
@@ -76,8 +75,7 @@ type Terminal struct {
 	altSavedCol     int                  // saved cursor col
 	altBufferActive bool                 // true when alternate buffer is in use
 
-	scrollbackMax   int
-	scrollContainer *container.Scroll
+	scrollbackMax int
 
 	onMouseDown, onMouseUp func(int, fyne.KeyModifier, fyne.Position)
 	g0Charset              charSet
@@ -489,9 +487,7 @@ func (t *Terminal) run() {
 		if len(leftOver) == 0 || time.Since(t.lastRefresh) > maxRefreshInterval {
 			t.lastRefresh = time.Now()
 			fyne.Do(func() {
-				if t.scrollContainer != nil {
-					t.scrollContainer.ScrollToBottom()
-				}
+				t.content.ScrollToBottom()
 				t.Refresh()
 			})
 		}

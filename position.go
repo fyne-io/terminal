@@ -14,17 +14,13 @@ func (r position) String() string {
 	return fmt.Sprintf("row: %x, col: %x", r.Row, r.Col)
 }
 
+// getTermPosition returns the position within the terminal content (including scrollback)
+// for the given widget-relative coordinates, taking any scroll offset into account.
 func (t *Terminal) getTermPosition(pos fyne.Position) position {
-	cell := t.guessCellSize()
-
-	// Adjust for scroll offset to get content-relative coordinates
-	scrollY := float32(0)
-	if t.scrollContainer != nil {
-		scrollY = t.scrollContainer.Offset.Y
+	if t.content != nil {
+		pos = pos.Add(t.content.ScrollOffset())
 	}
-	col := int(pos.X/cell.Width) + 1
-	row := int((pos.Y+scrollY)/cell.Height) + 1
-	return position{col, row}
+	return t.getScreenPosition(pos)
 }
 
 // getScreenPosition returns the screen-relative position (ignoring scroll offset).
