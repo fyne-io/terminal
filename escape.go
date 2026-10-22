@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
+	"github.com/mattn/go-runewidth"
 )
 
 var escapes = map[rune]func(*Terminal, string){
@@ -201,6 +202,12 @@ func escapeDeleteChars(t *Terminal, msg string) {
 	if start >= len(row.Cells) {
 		return
 	}
+	if room := len(row.Cells) - start; count > room {
+		count = room // 天文/负数参数钳制（master panic 修复保留）
+	}
+	if count < 0 {
+		count = 0
+	}
 	end := start + count
 	for end < len(row.Cells) && row.Cells[end].Rune == 0 {
 		end++ // 连同宽字符的续格一起删除
@@ -304,12 +311,15 @@ func escapeRepeatChar(t *Terminal, msg string) {
 	// Past a screenful and a line, each further line of the same character leaves the screen and
 	// the cursor unchanged, so whole lines beyond that are skipped.
 	cols, rows := int(t.config.Columns), int(t.config.Rows)
-	if limit := (cols + 1) * (rows + 2); count > limit {
-		period := cols
-		if period == 0 {
-			period = 1
-		}
-		count = limit + (count-limit)%period
+	perLine := cols
+	if w := runewidth.RuneWidth(t.lastChar); w > 1 {
+		perLine = cols / w // wide chars take w cells: fewer fit per line
+	}
+	if perLine < 1 {
+		perLine = 1
+	}
+	if limit := (perLine + 1) * (rows + 2); count > limit {
+		count = limit + (count-limit)%perLine
 	}
 	for i := 0; i < count; i++ {
 		t.handleOutputChar(t.lastChar)
