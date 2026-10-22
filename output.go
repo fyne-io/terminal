@@ -98,7 +98,6 @@ type parseState struct {
 }
 
 func (t *Terminal) handleOutput(buf []byte) []byte {
-	// The selection belongs to the main goroutine, where the mouse changes it.
 	fyne.Do(func() {
 		if t.hasSelectedText() {
 			t.clearSelectedText()
@@ -159,7 +158,6 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			t.parseOSC(r)
 			continue
 		} else if t.state.vt100 != 0 {
-			// the character sets are designated and used on the main goroutine, see below
 			code := string([]rune{t.state.vt100, r})
 			fyne.Do(func() {
 				t.handleVT100(code)
@@ -179,8 +177,6 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 				out(t)
 			})
 		} else {
-			// Shift in and shift out switch the character set on the main goroutine, so the
-			// set in use is looked up there.
 			chr := r
 			fyne.Do(func() {
 				t.handleOutputChar(t.mapCharset(chr))
@@ -191,7 +187,6 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 	return buf
 }
 
-// mapCharset returns r in the character set in use.
 func (t *Terminal) mapCharset(r rune) rune {
 	if t.useG1CharSet {
 		return charSetMap[t.g1Charset](r)
@@ -227,9 +222,6 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 		t.state.osc = true
 	case '(', ')':
 		t.state.vt100 = r
-	// These four change the screen, which belongs to the main goroutine, where the CSI
-	// sequences and the text are handled too; a restored cursor is clamped to the screen, which
-	// may have been resized since it was saved.
 	case '7':
 		fyne.Do(func() {
 			t.savedRow = t.cursorRow
@@ -381,7 +373,7 @@ func (t *Terminal) ringBell() {
 
 	go func() {
 		time.Sleep(time.Millisecond * 300)
-		fyne.Do(func() { // the cursor reads the bell when it is drawn, on the main goroutine
+		fyne.Do(func() {
 			t.bell = false
 			t.Refresh()
 		})

@@ -505,8 +505,6 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
 	if pwd == "" {
 		pwd, _ = os.Getwd()
 	}
-	// The configuration and the input belong to the main goroutine, where Resize writes the size,
-	// onConfigure reads the configuration and typing writes to t.in.
 	fyne.DoAndWait(func() {
 		t.config.PWD = pwd
 	})
@@ -533,7 +531,6 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
 	return t.close()
 }
 
-// columns returns the number of columns, read on the main goroutine.
 func (t *Terminal) columns() (cols uint) {
 	fyne.DoAndWait(func() {
 		cols = t.config.Columns
