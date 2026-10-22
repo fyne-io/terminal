@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
+	"github.com/mattn/go-runewidth"
 )
 
 var escapes = map[rune]func(*Terminal, string){
@@ -108,8 +109,8 @@ func (t *Terminal) clearScreen() {
 
 func (t *Terminal) clearScreenFromCursor() {
 	row := t.content.Row(t.cursorRow)
-	from := t.cursorCol
-	if t.cursorCol > len(row.Cells) {
+	from := t.cellStart(t.cursorRow, t.cursorCol)
+	if from > len(row.Cells) {
 		from = len(row.Cells)
 	}
 	if from > 0 {
@@ -125,9 +126,10 @@ func (t *Terminal) clearScreenFromCursor() {
 
 func (t *Terminal) clearScreenToCursor() {
 	row := t.content.Row(t.cursorRow)
-	cells := make([]widget.TextGridCell, t.cursorCol)
-	if t.cursorCol < len(row.Cells) {
-		cells = append(cells, row.Cells[t.cursorCol:]...)
+	end := t.cellEnd(t.cursorRow, t.cursorCol)
+	cells := make([]widget.TextGridCell, end)
+	if end < len(row.Cells) {
+		cells = append(cells, row.Cells[end:]...)
 	}
 
 	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
@@ -187,22 +189,33 @@ func escapeColorMode(t *Terminal, msg string) {
 }
 
 func escapeDeleteChars(t *Terminal, msg string) {
-	i, _ := strconv.Atoi(msg)
-	if i == 0 {
-		i = 1
+	count, _ := strconv.Atoi(msg)
+	if count == 0 {
+		count = 1
 	}
 
 	row := t.content.Row(t.cursorRow)
-	if t.cursorCol >= len(row.Cells) {
+	start := t.cursorCol
+	for start > 0 && start < len(row.Cells) && row.Cells[start].Rune == 0 {
+		start-- // 光标落在续格上时回退到宽字符起点
+	}
+	if start >= len(row.Cells) {
 		return
 	}
-	if room := len(row.Cells) - t.cursorCol; i > room {
-		i = room
+	if room := len(row.Cells) - start; count > room {
+		count = room // 天文/负数参数钳制（master panic 修复保留）
 	}
-	right := t.cursorCol + i
-	cells := row.Cells[:t.cursorCol]
-	if right < len(row.Cells) {
-		cells = append(cells, row.Cells[right:]...)
+	if count < 0 {
+		count = 0
+	}
+	end := start + count
+	for end < len(row.Cells) && row.Cells[end].Rune == 0 {
+		end++ // 连同宽字符的续格一起删除
+	}
+
+	cells := row.Cells[:start]
+	if end < len(row.Cells) {
+		cells = append(cells, row.Cells[end:]...)
 	}
 
 	t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: cells})
@@ -224,13 +237,21 @@ func escapeEraseChars(t *Terminal, msg string) {
 	}
 
 	row := t.content.Row(t.cursorRow)
+	start := t.cursorCol
+	for start > 0 && start < len(row.Cells) && row.Cells[start].Rune == 0 {
+		start--
+	}
+	end := start + count
+	for end < len(row.Cells) && row.Cells[end].Rune == 0 {
+		end++
+	}
+
 	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG}
-	// Extend row if cursor is beyond current length
-	for len(row.Cells) < t.cursorCol+count {
+	for len(row.Cells) < end {
 		row.Cells = append(row.Cells, widget.TextGridCell{Rune: ' ', Style: cellStyle})
 	}
-	for i := 0; i < count; i++ {
-		row.Cells[t.cursorCol+i] = widget.TextGridCell{Rune: ' ', Style: cellStyle}
+	for i := start; i < end; i++ {
+		row.Cells[i] = widget.TextGridCell{Rune: ' ', Style: cellStyle}
 	}
 	t.content.SetRow(t.cursorRow, row)
 }
@@ -290,12 +311,15 @@ func escapeRepeatChar(t *Terminal, msg string) {
 	// Past a screenful and a line, each further line of the same character leaves the screen and
 	// the cursor unchanged, so whole lines beyond that are skipped.
 	cols, rows := int(t.config.Columns), int(t.config.Rows)
-	if limit := (cols + 1) * (rows + 2); count > limit {
-		period := cols
-		if period == 0 {
-			period = 1
-		}
-		count = limit + (count-limit)%period
+	perLine := cols
+	if w := runewidth.RuneWidth(t.lastChar); w > 1 {
+		perLine = cols / w // wide chars take w cells: fewer fit per line
+	}
+	if perLine < 1 {
+		perLine = 1
+	}
+	if limit := (perLine + 1) * (rows + 2); count > limit {
+		count = limit + (count-limit)%perLine
 	}
 	for i := 0; i < count; i++ {
 		t.handleOutputChar(t.lastChar)
@@ -411,17 +435,20 @@ func escapeEraseInLine(t *Terminal, msg string) {
 	switch mode {
 	case 0:
 		row := t.content.Row(t.cursorRow)
-		if t.cursorCol >= len(row.Cells) {
+		start := t.cellStart(t.cursorRow, t.cursorCol)
+		if start >= len(row.Cells) {
 			return
 		}
-		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:t.cursorCol]})
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: row.Cells[:start]})
 	case 1:
 		row := t.content.Row(t.cursorRow)
-		if t.cursorCol >= len(row.Cells) {
+		end := t.cellEnd(t.cursorRow, t.cursorCol)
+		if end >= len(row.Cells) {
+			t.content.SetRow(t.cursorRow, widget.TextGridRow{})
 			return
 		}
-		cells := make([]widget.TextGridCell, t.cursorCol)
-		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: append(cells, row.Cells[t.cursorCol:]...)})
+		cells := make([]widget.TextGridCell, end)
+		t.content.SetRow(t.cursorRow, widget.TextGridRow{Cells: append(cells, row.Cells[end:]...)})
 	case 2:
 		t.content.SetRow(t.cursorRow, widget.TextGridRow{})
 	}
@@ -453,6 +480,8 @@ func escapeInsertChars(t *Terminal, msg string) {
 		return
 	}
 
+	insertCol := t.cellStart(t.cursorRow, t.cursorCol)
+
 	newCells := make([]widget.TextGridCell, chars)
 	cellStyle := &widget.CustomTextGridStyle{FGColor: t.currentFG, BGColor: t.currentBG, TextStyle: fyne.TextStyle{Monospace: true}}
 	for i := range newCells {
@@ -466,10 +495,10 @@ func escapeInsertChars(t *Terminal, msg string) {
 		t.content.Rows = append(t.content.Rows, widget.TextGridRow{})
 	}
 	row := &t.content.Rows[t.cursorRow]
-	for len(row.Cells) < t.cursorCol {
+	for len(row.Cells) < insertCol {
 		row.Cells = append(row.Cells, widget.TextGridCell{Rune: ' ', Style: cellStyle})
 	}
-	row.Cells = append(row.Cells[:t.cursorCol], append(newCells, row.Cells[t.cursorCol:]...)...)
+	row.Cells = append(row.Cells[:insertCol], append(newCells, row.Cells[insertCol:]...)...)
 	if len(row.Cells) > cols {
 		row.Cells = row.Cells[:cols]
 	}
