@@ -501,21 +501,26 @@ func (t *Terminal) RunLocalShell() error {
 
 // RunWithConnection starts the terminal by connecting to an external resource like an SSH connection.
 func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
-	if t.startDir != "" {
-		t.config.PWD = t.startDir
-	} else {
-		t.config.PWD, _ = os.Getwd()
+	pwd := t.startDir
+	if pwd == "" {
+		pwd, _ = os.Getwd()
 	}
-	for t.config.Columns == 0 { // don't load the TTY until our output is configured
+	fyne.DoAndWait(func() {
+		t.config.PWD = pwd
+	})
+	for t.columns() == 0 { // don't load the TTY until our output is configured
 		if t.isStopping() {
 			return nil
 		}
 		time.Sleep(time.Millisecond * 50)
 	}
-	t.in, t.out = in, out
+	t.out = out
 	if t.readWriterConfigurator != nil {
-		t.out, t.in = t.readWriterConfigurator.SetupReadWriter(out, in)
+		t.out, in = t.readWriterConfigurator.SetupReadWriter(out, in)
 	}
+	fyne.DoAndWait(func() {
+		t.in = in
+	})
 	t.setConnected()
 	if t.isStopping() { // closed whilst we were connecting
 		return t.close()
@@ -524,6 +529,13 @@ func (t *Terminal) RunWithConnection(in io.WriteCloser, out io.Reader) error {
 	t.run()
 
 	return t.close()
+}
+
+func (t *Terminal) columns() (cols uint) {
+	fyne.DoAndWait(func() {
+		cols = t.config.Columns
+	})
+	return cols
 }
 
 // Write is used to send commands into an open terminal connection.

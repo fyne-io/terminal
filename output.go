@@ -98,9 +98,11 @@ type parseState struct {
 }
 
 func (t *Terminal) handleOutput(buf []byte) []byte {
-	if t.hasSelectedText() {
-		t.clearSelectedText()
-	}
+	fyne.Do(func() {
+		if t.hasSelectedText() {
+			t.clearSelectedText()
+		}
+	})
 	if t.state == nil {
 		t.state = &parseState{
 			esc: noEscape,
@@ -156,7 +158,10 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 			t.parseOSC(r)
 			continue
 		} else if t.state.vt100 != 0 {
-			t.handleVT100(string([]rune{t.state.vt100, r}))
+			code := string([]rune{t.state.vt100, r})
+			fyne.Do(func() {
+				t.handleVT100(code)
+			})
 			t.state.vt100 = 0
 			continue
 		} else if t.state.esc != noEscape {
@@ -172,22 +177,21 @@ func (t *Terminal) handleOutput(buf []byte) []byte {
 				out(t)
 			})
 		} else {
-			// check to see which charset to use
-			if t.useG1CharSet {
-				chr := charSetMap[t.g1Charset](r)
-				fyne.Do(func() {
-					t.handleOutputChar(chr)
-				})
-			} else {
-				chr := charSetMap[t.g0Charset](r)
-				fyne.Do(func() {
-					t.handleOutputChar(chr)
-				})
-			}
+			chr := r
+			fyne.Do(func() {
+				t.handleOutputChar(t.mapCharset(chr))
+			})
 		}
 	}
 
 	return buf
+}
+
+func (t *Terminal) mapCharset(r rune) rune {
+	if t.useG1CharSet {
+		return charSetMap[t.g1Charset](r)
+	}
+	return charSetMap[t.g0Charset](r)
 }
 
 func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
@@ -219,15 +223,16 @@ func (t *Terminal) parseEscState(r rune) (shouldContinue bool) {
 	case '(', ')':
 		t.state.vt100 = r
 	case '7':
-		t.savedRow = t.cursorRow
-		t.savedCol = t.cursorCol
+		fyne.Do(func() {
+			t.savedRow = t.cursorRow
+			t.savedCol = t.cursorCol
+		})
 	case '8':
-		t.cursorRow = t.savedRow
-		t.cursorCol = t.savedCol
+		fyne.Do(func() { t.moveCursor(t.savedRow, t.savedCol) })
 	case 'D':
-		t.scrollDown()
+		fyne.Do(t.scrollDown)
 	case 'M':
-		t.scrollUp()
+		fyne.Do(t.scrollUp)
 	case 'P':
 		t.state.dcs = true
 	case '_':
@@ -242,7 +247,14 @@ func (t *Terminal) parseEscape(r rune) {
 	// ECMA-48 CSI: parameter bytes 0x30-0x3F and intermediate bytes 0x20-0x2F
 	// are collected, anything else (normally a final byte 0x40-0x7E) dispatches.
 	if r < 0x20 || r > 0x3f {
-		if code, ok := t.state.takeCode(); ok {
+		code, ok := t.state.takeCode()
+		switch {
+		case !ok:
+		case r == 'i':
+			// Media copy decides how the output after it is parsed, so it is handled here,
+			// before the next character.
+			escapePrinterMode(t, trimLeftZeros(code[:len(code)-1]))
+		default:
 			fyne.Do(func() {
 				t.handleEscape(code)
 			})
@@ -361,8 +373,10 @@ func (t *Terminal) ringBell() {
 
 	go func() {
 		time.Sleep(time.Millisecond * 300)
-		t.bell = false
-		fyne.Do(t.Refresh)
+		fyne.Do(func() {
+			t.bell = false
+			t.Refresh()
+		})
 	}()
 }
 
